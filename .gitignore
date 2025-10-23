@@ -1,0 +1,16 @@
+#SSH 파일
+*.pem
+*.key
+*.ppk
+
+#환경변수
+.env
+.env.local
+
+#OD
+.DS_Store
+Thumbs.db
+
+#IDE
+.idea/
+*.iml
