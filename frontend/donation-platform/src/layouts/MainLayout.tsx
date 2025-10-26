@@ -14,8 +14,10 @@ interface MainLayoutProps {
   onMarkAsRead: (id: number) => void;
   onMarkAllAsRead: () => void;
   onDeleteNotification: (id: number) => void;
-  notificationSettings: Record<string, { enabled: boolean; email: boolean; push: boolean }>;
-  onUpdateNotificationSettings: (settings: Record<string, { enabled: boolean; email: boolean; push: boolean }>) => void;
+
+  //아래 두줄 각각 sms: boolan; 추가
+  notificationSettings: Record<string, { enabled: boolean; email: boolean; sms: boolean; push: boolean }>;
+  onUpdateNotificationSettings: (settings: Record<string, { enabled: boolean; email: boolean; sms: boolean; push: boolean }>) => void;
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({

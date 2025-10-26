@@ -14,8 +14,10 @@ interface HeaderProps {
   onMarkAsRead: (id: number) => void;
   onMarkAllAsRead: () => void;
   onDeleteNotification: (id: number) => void;
-  notificationSettings: Record<string, { enabled: boolean; email: boolean; push: boolean }>;
-  onUpdateNotificationSettings: (settings: Record<string, { enabled: boolean; email: boolean; push: boolean }>) => void;
+  
+  //아래 두줄 각각 sms: boolean; 추가
+  notificationSettings: Record<string, { enabled: boolean; email: boolean; sms: boolean; push: boolean }>;
+  onUpdateNotificationSettings: (settings: Record<string, { enabled: boolean; email: boolean; sms: boolean; push: boolean }>) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -33,6 +35,14 @@ const Header: React.FC<HeaderProps> = ({
   onUpdateNotificationSettings,
 }) => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+
+  // 251027추가
+  const handleShowConsentModal = () => {
+    // 수신 동의 모달을 여는 로직
+    console.log('수신 동의 모달 열기');
+    alert('수신 동의 모달 (구현 예정)');
+  };
+
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-[1400px] mx-auto px-8 py-5 flex items-center justify-between">
@@ -96,6 +106,9 @@ const Header: React.FC<HeaderProps> = ({
                   onOpenFullPage={() => setCurrentPage('notifications')}
                   notificationSettings={notificationSettings}
                   onUpdateSettings={onUpdateNotificationSettings}
+
+                  //251027추가
+                  onShowConsentModal={handleShowConsentModal} 
                 />
               </div>
 
