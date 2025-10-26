@@ -14,3 +14,8 @@ Thumbs.db
 #IDE
 .idea/
 *.iml
+
+# Node modules (추가!)
+**/node_modules/
+**/dist/
+**/build/
