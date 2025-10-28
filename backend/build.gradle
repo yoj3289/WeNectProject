@@ -34,8 +34,18 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// 스프링 시큐리티 의존성 추가
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // 웹 프로젝트인 경우, 아래 의존성도 함께 추가
+    implementation 'org.springframework.boot:spring-boot-starter-web'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+compileJava {
+    options.compilerArgs << '-parameters'
 }
