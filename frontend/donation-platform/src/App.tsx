@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Type imports
-import type { PageType, UserType, TabType, Project, CommunityPost, UserProfile, AdminUser, Notification, SettlementRequest, DonationHistory, PiggyBank } from './types';
+import type { UserType, Project, CommunityPost, UserProfile, AdminUser, Notification, SettlementRequest, DonationHistory, PiggyBank } from './types';
 
 // Page imports
 import HomePage from './pages/HomePage';
@@ -28,24 +30,28 @@ import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
 import AdminLayout from './layouts/AdminLayout';
 
+// React Query 클라이언트 생성
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5분
+      gcTime: 10 * 60 * 1000, // 10분
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
 const DonationPlatform: React.FC = () => {
-  // Page & UI states
-  const [currentPage, setCurrentPage] = useState<PageType>('home');
+  // UI states
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userType, setUserType] = useState<UserType>('individual');
-  const [activeTab, setActiveTab] = useState<TabType>('intro');
   const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null);
-
-  // Auth states
-  const [loginAttempts, setLoginAttempts] = useState<Map<string, number>>(new Map());
-  const [lockedAccounts, setLockedAccounts] = useState<Set<string>>(new Set());
 
   // Project & Donation states
   const [favoriteProjectIds, setFavoriteProjectIds] = useState<Set<number>>(new Set([1, 2, 5]));
-  const [selectedCategory, setSelectedCategory] = useState('전체');
-  const [sortOption, setSortOption] = useState('최신순');
 
   // Community states
   const [uploadedImageFiles, setUploadedImageFiles] = useState<File[]>([]);
@@ -80,7 +86,6 @@ const DonationPlatform: React.FC = () => {
     { id: 3, name: '이영희', email: 'user2@example.com', type: '일반', status: 'inactive', registeredDate: '2024-01-20', lastLogin: '2024-02-28 18:45' }
   ]);
 
-  // Mock data
   const [userProfile, setUserProfile] = useState<UserProfile>({
     name: '김민수',
     email: 'user@example.com',
@@ -204,17 +209,10 @@ const DonationPlatform: React.FC = () => {
     { id: 6, title: '장애인 재활 프로그램', category: '장애인복지', currentAmount: 1500000, targetAmount: 8000000, dday: 60, donors: 45, image: '', description: '장애인들의 자립을 위한 재활 프로그램을 진행합니다.', organization: '함께하는세상', status: 'approved' }
   ];
 
-  const recentDonations = [
-    { name: '김**', amount: 50000, project: '소외계층 아동 급식 지원', time: '5분 전' },
-    { name: '익명', amount: 30000, project: '유기동물 보호소 운영비', time: '12분 전' },
-    { name: '이**', amount: 100000, project: '독거노인 생활 지원', time: '25분 전' },
-    { name: '박**', amount: 20000, project: '산불 피해 지역 복구', time: '1시간 전' }
-  ];
-
   const communityPosts: CommunityPost[] = [
-    { id: 1, type: '공지', title: '2024년 3월 정산 일정 안내', author: '관리자', date: '2024-03-15', views: 234 },
-    { id: 2, type: '질문', title: '기부금 영수증 발급은 어떻게 하나요?', author: '김민수', date: '2024-03-14', views: 89 },
-    { id: 3, type: '응원', title: '소외계층 아동 급식 지원 프로젝트를 응원합니다!', author: '이영희', date: '2024-03-13', views: 156 }
+    { id: 1, type: 'NOTICE', title: '2024년 3월 정산 일정 안내', author: '관리자', date: '2024-03-15', views: 234 },
+    { id: 2, type: 'QUESTION', title: '기부금 영수증 발급은 어떻게 하나요?', author: '김민수', date: '2024-03-14', views: 89 },
+    { id: 3, type: 'SUPPORT', title: '소외계층 아동 급식 지원 프로젝트를 응원합니다!', author: '이영희', date: '2024-03-13', views: 156 }
   ];
 
   const donationHistory: DonationHistory[] = [
@@ -231,10 +229,6 @@ const DonationPlatform: React.FC = () => {
   // Utility functions
   const formatAmount = (amount: number): string => {
     return amount.toLocaleString('ko-KR');
-  };
-
-  const calculatePercentage = (current: number, target: number): number => {
-    return Math.round((current / target) * 100);
   };
 
   const toggleFavoriteProject = (projectId: number) => {
@@ -263,7 +257,6 @@ const DonationPlatform: React.FC = () => {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUserType('individual');
-    setCurrentPage('home');
     alert('로그아웃되었습니다.');
   };
 
@@ -309,481 +302,355 @@ const DonationPlatform: React.FC = () => {
     ));
   };
 
-  // Render pages
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'home':
-        return (
-          <HomePage
-            projects={projects}
-            recentDonations={recentDonations}
-            isLoggedIn={isLoggedIn}
-            userType={userType}
-            setCurrentPage={setCurrentPage}
-            setSelectedProject={setSelectedProject}
-            setActiveTab={setActiveTab}
-            formatAmount={formatAmount}
-            calculatePercentage={calculatePercentage}
-          />
-        );
-
-      case 'login':
-        return (
-          <AuthLayout setCurrentPage={setCurrentPage}>
-            <LoginPage
-              setCurrentPage={setCurrentPage}
-              setIsLoggedIn={setIsLoggedIn}
-              setUserType={setUserType}
-              loginAttempts={loginAttempts}
-              setLoginAttempts={setLoginAttempts}
-              lockedAccounts={lockedAccounts}
-              setLockedAccounts={setLockedAccounts}
-            />
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Auth Routes - AuthLayout 내부에서 처리 */}
+        <Route path="/login" element={
+          <AuthLayout>
+            <LoginPage />
           </AuthLayout>
-        );
-
-      case 'signup':
-        return (
-          <AuthLayout setCurrentPage={setCurrentPage}>
-            <SignupPage
-              setCurrentPage={setCurrentPage}
-              setIsLoggedIn={setIsLoggedIn}
-              setUserType={setUserType}
-            />
+        } />
+        <Route path="/signup" element={
+          <AuthLayout>
+            <SignupPage />
           </AuthLayout>
-        );
+        } />
 
-      case 'projects':
-        return (
-          <ProjectListPage
-            projects={projects.filter(p => p.status === 'approved')}
-            isLoggedIn={isLoggedIn}
-            favoriteProjectIds={favoriteProjectIds}
-            onProjectSelect={(project) => {
-              setSelectedProject(project);
-              setCurrentPage('detail');
-              setActiveTab('intro');
-            }}
-            onToggleFavorite={toggleFavoriteProject}
-            onNavigateToLogin={() => setCurrentPage('login')}
-          />
-        );
+        {/* Admin Routes - AdminLayout으로 감싸기 */}
+        <Route path="/admin/*" element={
+          <AdminLayout
+            activeMenu={activeMenu}
+            setActiveMenu={setActiveMenu}
+          >
+            <Routes>
+              <Route path="dashboard" element={
+                <DashboardPage
+                  sidebarOpen={sidebarOpen}
+                  setSidebarOpen={setSidebarOpen}
+                  activeMenu={activeMenu}
+                  setActiveMenu={setActiveMenu}
+                  projectFilter={projectFilter}
+                  setProjectFilter={setProjectFilter}
+                  projectCategoryFilter={projectCategoryFilter}
+                  setProjectCategoryFilter={setProjectCategoryFilter}
+                  projectSearchTerm={projectSearchTerm}
+                  setProjectSearchTerm={setProjectSearchTerm}
+                  userTypeFilter={userTypeFilter}
+                  setUserTypeFilter={setUserTypeFilter}
+                  userStatusFilter={userStatusFilter}
+                  setUserStatusFilter={setUserStatusFilter}
+                  userSearchTerm={userSearchTerm}
+                  setUserSearchTerm={setUserSearchTerm}
+                  settlementFilter={settlementFilter}
+                  setSettlementFilter={setSettlementFilter}
+                  settlementSearchTerm={settlementSearchTerm}
+                  setSettlementSearchTerm={setSettlementSearchTerm}
+                  selectedProjects={selectedProjects}
+                  setSelectedProjects={setSelectedProjects}
+                  selectedUsers={selectedUsers}
+                  setSelectedUsers={setSelectedUsers}
+                  selectedSettlements={selectedSettlements}
+                  setSelectedSettlements={setSelectedSettlements}
+                  selectedProject={selectedProject}
+                  setSelectedProject={setSelectedProject}
+                  selectedUser={selectedUser}
+                  setSelectedUser={setSelectedUser}
+                  selectedSettlement={selectedSettlement}
+                  setSelectedSettlement={setSelectedSettlement}
+                  showProjectModal={showProjectModal}
+                  setShowProjectModal={setShowProjectModal}
+                  showUserModal={showUserModal}
+                  setShowUserModal={setShowUserModal}
+                  showSettlementModal={showSettlementModal}
+                  setShowSettlementModal={setShowSettlementModal}
+                  rejectReason={rejectReason}
+                  setRejectReason={setRejectReason}
+                  adminUsers={adminUsers}
+                />
+              } />
+              <Route path="users" element={
+                <UserManagementPage
+                  sidebarOpen={sidebarOpen}
+                  setSidebarOpen={setSidebarOpen}
+                  activeMenu={activeMenu}
+                  setActiveMenu={setActiveMenu}
+                  projectFilter={projectFilter}
+                  setProjectFilter={setProjectFilter}
+                  projectCategoryFilter={projectCategoryFilter}
+                  setProjectCategoryFilter={setProjectCategoryFilter}
+                  projectSearchTerm={projectSearchTerm}
+                  setProjectSearchTerm={setProjectSearchTerm}
+                  userTypeFilter={userTypeFilter}
+                  setUserTypeFilter={setUserTypeFilter}
+                  userStatusFilter={userStatusFilter}
+                  setUserStatusFilter={setUserStatusFilter}
+                  userSearchTerm={userSearchTerm}
+                  setUserSearchTerm={setUserSearchTerm}
+                  settlementFilter={settlementFilter}
+                  setSettlementFilter={setSettlementFilter}
+                  settlementSearchTerm={settlementSearchTerm}
+                  setSettlementSearchTerm={setSettlementSearchTerm}
+                  selectedProjects={selectedProjects}
+                  setSelectedProjects={setSelectedProjects}
+                  selectedUsers={selectedUsers}
+                  setSelectedUsers={setSelectedUsers}
+                  selectedSettlements={selectedSettlements}
+                  setSelectedSettlements={setSelectedSettlements}
+                  selectedProject={selectedProject}
+                  setSelectedProject={setSelectedProject}
+                  selectedUser={selectedUser}
+                  setSelectedUser={setSelectedUser}
+                  selectedSettlement={selectedSettlement}
+                  setSelectedSettlement={setSelectedSettlement}
+                  showProjectModal={showProjectModal}
+                  setShowProjectModal={setShowProjectModal}
+                  showUserModal={showUserModal}
+                  setShowUserModal={setShowUserModal}
+                  showSettlementModal={showSettlementModal}
+                  setShowSettlementModal={setShowSettlementModal}
+                />
+              } />
+              <Route path="projects" element={
+                <ProjectManagementPage
+                  sidebarOpen={sidebarOpen}
+                  setSidebarOpen={setSidebarOpen}
+                  activeMenu={activeMenu}
+                  setActiveMenu={setActiveMenu}
+                  projectFilter={projectFilter}
+                  setProjectFilter={setProjectFilter}
+                  projectCategoryFilter={projectCategoryFilter}
+                  setProjectCategoryFilter={setProjectCategoryFilter}
+                  projectSearchTerm={projectSearchTerm}
+                  setProjectSearchTerm={setProjectSearchTerm}
+                  userTypeFilter={userTypeFilter}
+                  setUserTypeFilter={setUserTypeFilter}
+                  userStatusFilter={userStatusFilter}
+                  setUserStatusFilter={setUserStatusFilter}
+                  userSearchTerm={userSearchTerm}
+                  setUserSearchTerm={setUserSearchTerm}
+                  settlementFilter={settlementFilter}
+                  setSettlementFilter={setSettlementFilter}
+                  settlementSearchTerm={settlementSearchTerm}
+                  setSettlementSearchTerm={setSettlementSearchTerm}
+                  selectedProjects={selectedProjects}
+                  setSelectedProjects={setSelectedProjects}
+                  selectedUsers={selectedUsers}
+                  setSelectedUsers={setSelectedUsers}
+                  selectedSettlements={selectedSettlements}
+                  setSelectedSettlements={setSelectedSettlements}
+                  selectedProject={selectedProject}
+                  setSelectedProject={setSelectedProject}
+                  selectedUser={selectedUser}
+                  setSelectedUser={setSelectedUser}
+                  selectedSettlement={selectedSettlement}
+                  setSelectedSettlement={setSelectedSettlement}
+                  showProjectModal={showProjectModal}
+                  setShowProjectModal={setShowProjectModal}
+                  showUserModal={showUserModal}
+                  setShowUserModal={setShowUserModal}
+                  showSettlementModal={showSettlementModal}
+                  setShowSettlementModal={setShowSettlementModal}
+                  rejectReason={rejectReason}
+                  setRejectReason={setRejectReason}
+                />
+              } />
+              <Route path="settlements" element={
+                <SettlementManagementPage
+                  sidebarOpen={sidebarOpen}
+                  setSidebarOpen={setSidebarOpen}
+                  activeMenu={activeMenu}
+                  setActiveMenu={setActiveMenu}
+                  projectFilter={projectFilter}
+                  setProjectFilter={setProjectFilter}
+                  projectCategoryFilter={projectCategoryFilter}
+                  setProjectCategoryFilter={setProjectCategoryFilter}
+                  projectSearchTerm={projectSearchTerm}
+                  setProjectSearchTerm={setProjectSearchTerm}
+                  userTypeFilter={userTypeFilter}
+                  setUserTypeFilter={setUserTypeFilter}
+                  userStatusFilter={userStatusFilter}
+                  setUserStatusFilter={setUserStatusFilter}
+                  userSearchTerm={userSearchTerm}
+                  setUserSearchTerm={setUserSearchTerm}
+                  settlementFilter={settlementFilter}
+                  setSettlementFilter={setSettlementFilter}
+                  settlementSearchTerm={settlementSearchTerm}
+                  setSettlementSearchTerm={setSettlementSearchTerm}
+                  selectedProjects={selectedProjects}
+                  setSelectedProjects={setSelectedProjects}
+                  selectedUsers={selectedUsers}
+                  setSelectedUsers={setSelectedUsers}
+                  selectedSettlements={selectedSettlements}
+                  setSelectedSettlements={setSelectedSettlements}
+                  selectedProject={selectedProject}
+                  setSelectedProject={setSelectedProject}
+                  selectedUser={selectedUser}
+                  setSelectedUser={setSelectedUser}
+                  selectedSettlement={selectedSettlement}
+                  setSelectedSettlement={setSelectedSettlement}
+                  showProjectModal={showProjectModal}
+                  setShowProjectModal={setShowProjectModal}
+                  showUserModal={showUserModal}
+                  setShowUserModal={setShowUserModal}
+                  showSettlementModal={showSettlementModal}
+                  setShowSettlementModal={setShowSettlementModal}
+                  rejectReason={rejectReason}
+                  setRejectReason={setRejectReason}
+                />
+              } />
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            </Routes>
+          </AdminLayout>
+        } />
 
-      case 'detail':
-        if (!selectedProject) return null;
-        return (
-          <ProjectDetailPage
-            project={selectedProject}
-            isLoggedIn={isLoggedIn}
-            favoriteProjectIds={favoriteProjectIds}
-            onToggleFavorite={toggleFavoriteProject}
-            onNavigateToLogin={() => setCurrentPage('login')}
-            onShowDonationModal={() => setShowDonationModal(true)}
-            onBack={() => setCurrentPage('projects')}
-          />
-        );
-
-      case 'create-project':
-        return (
-          <ProjectCreatePage
-            onBack={() => setCurrentPage('mypage')}
-            onSubmit={() => {
-              alert('프로젝트 신청이 완료되었습니다. 관리자 승인 후 게시됩니다.');
-              setCurrentPage('mypage');
-            }}
-          />
-        );
-
-      case 'community':
-        return (
-          <BoardPage
-            isLoggedIn={isLoggedIn}
-            userType={userType}
-            communityPosts={communityPosts}
-            postViews={postViews}
-            uploadedImageFiles={uploadedImageFiles}
-            onNavigateToPostDetail={(post) => {
-              setSelectedPost(post);
-              setCurrentPage('post-detail');
-              incrementView(post.id);
-            }}
-            onNavigateToCreatePost={() => setCurrentPage('create-post')}
-            onImageUpload={handleImageUpload}
-            onRemoveImage={removeImage}
-            setUploadedImageFiles={setUploadedImageFiles}
-          />
-        );
-
-      case 'post-detail':
-        if (!selectedPost) return null;
-        return (
-          <PostDetailPage
-            selectedPost={selectedPost}
-            isLoggedIn={isLoggedIn}
-            userType={userType}
-            currentUserName={userProfile.name}
-            postViews={postViews}
-            onNavigateToBoard={() => setCurrentPage('community')}
-            onNavigateToEdit={(post) => {
-              setSelectedPost(post);
-              setCurrentPage('edit-post');
-            }}
-            onDeletePost={(postId) => {
-              alert('게시글이 삭제되었습니다.');
-              setCurrentPage('community');
-            }}
-            onIncrementView={incrementView}
-          />
-        );
-
-      case 'edit-post':
-        if (!selectedPost) return null;
-        return (
-          <EditPostPage
-            selectedPost={selectedPost}
-            userType={userType}
-            uploadedImageFiles={uploadedImageFiles}
-            onNavigateToPostDetail={(post) => {
-              setSelectedPost(post);
-              setCurrentPage('post-detail');
-            }}
-            onUpdatePost={(postId, updatedData) => {
-              alert('게시글이 수정되었습니다.');
-              setSelectedPost({ ...selectedPost, ...updatedData });
-              setCurrentPage('post-detail');
-            }}
-            onImageUpload={handleImageUpload}
-            onRemoveImage={removeImage}
-            setUploadedImageFiles={setUploadedImageFiles}
-          />
-        );
-
-      case 'mypage':
-        return (
-          <ProfilePage
-            userType={userType}
-            userProfile={userProfile}
-            setUserProfile={setUserProfile}
-            donationHistory={donationHistory}
-            favoriteProjects={projects.filter(p => favoriteProjectIds.has(p.id))}
-            piggyBanks={piggyBanks}
-            setCurrentPage={setCurrentPage}
-            favoriteProjectIds={favoriteProjectIds}
-            setFavoriteProjectIds={setFavoriteProjectIds}
-            setSelectedProject={setSelectedProject}
-            setActiveTab={setActiveTab}
-          />
-        );
-
-      case 'notifications':
-        return (
+        {/* Notification Page - 레이아웃 없음 */}
+        <Route path="/notifications" element={
           <NotificationPage
             notifications={notifications}
             onMarkAsRead={handleMarkAsRead}
             onMarkAllAsRead={handleMarkAllAsRead}
             onDelete={handleDeleteNotification}
             onArchive={handleArchiveNotification}
-            onBack={() => setCurrentPage('home')}
             notificationSettings={notificationSettings}
             onUpdateSettings={(settings) => setNotificationSettings(settings as typeof notificationSettings)}
             onShowConsentModal={() => alert('수신 동의 관리 모달을 표시합니다.')}
             onShowHistoryModal={() => alert('발송 내역 모달을 표시합니다.')}
           />
-        );
+        } />
 
-      case 'admin':
-        return (
-          <AdminLayout
-            activeMenu={activeMenu}
-            setActiveMenu={setActiveMenu}
-            onGoHome={() => setCurrentPage('home')}
-          >
-            {(activeMenu === 'dashboard' || activeMenu === 'dashboard') && (
-              <DashboardPage
-                sidebarOpen={sidebarOpen}
-                setSidebarOpen={setSidebarOpen}
-                activeMenu={activeMenu}
-                setActiveMenu={setActiveMenu}
-                projectFilter={projectFilter}
-                setProjectFilter={setProjectFilter}
-                projectCategoryFilter={projectCategoryFilter}
-                setProjectCategoryFilter={setProjectCategoryFilter}
-                projectSearchTerm={projectSearchTerm}
-                setProjectSearchTerm={setProjectSearchTerm}
-                userTypeFilter={userTypeFilter}
-                setUserTypeFilter={setUserTypeFilter}
-                userStatusFilter={userStatusFilter}
-                setUserStatusFilter={setUserStatusFilter}
-                userSearchTerm={userSearchTerm}
-                setUserSearchTerm={setUserSearchTerm}
-                settlementFilter={settlementFilter}
-                setSettlementFilter={setSettlementFilter}
-                settlementSearchTerm={settlementSearchTerm}
-                setSettlementSearchTerm={setSettlementSearchTerm}
-                selectedProjects={selectedProjects}
-                setSelectedProjects={setSelectedProjects}
-                selectedUsers={selectedUsers}
-                setSelectedUsers={setSelectedUsers}
-                selectedSettlements={selectedSettlements}
-                setSelectedSettlements={setSelectedSettlements}
-                selectedProject={selectedProject}
-                setSelectedProject={setSelectedProject}
-                selectedUser={selectedUser}
-                setSelectedUser={setSelectedUser}
-                selectedSettlement={selectedSettlement}
-                setSelectedSettlement={setSelectedSettlement}
-                showProjectModal={showProjectModal}
-                setShowProjectModal={setShowProjectModal}
-                showUserModal={showUserModal}
-                setShowUserModal={setShowUserModal}
-                showSettlementModal={showSettlementModal}
-                setShowSettlementModal={setShowSettlementModal}
-                rejectReason={rejectReason}
-                setRejectReason={setRejectReason}
-                adminUsers={adminUsers}
-              />
-            )}
-            {(activeMenu === 'projects' || activeMenu === '프로젝트 승인') && (
-              <ProjectManagementPage
-                sidebarOpen={sidebarOpen}
-                setSidebarOpen={setSidebarOpen}
-                activeMenu={activeMenu}
-                setActiveMenu={setActiveMenu}
-                projectFilter={projectFilter}
-                setProjectFilter={setProjectFilter}
-                projectCategoryFilter={projectCategoryFilter}
-                setProjectCategoryFilter={setProjectCategoryFilter}
-                projectSearchTerm={projectSearchTerm}
-                setProjectSearchTerm={setProjectSearchTerm}
-                userTypeFilter={userTypeFilter}
-                setUserTypeFilter={setUserTypeFilter}
-                userStatusFilter={userStatusFilter}
-                setUserStatusFilter={setUserStatusFilter}
-                userSearchTerm={userSearchTerm}
-                setUserSearchTerm={setUserSearchTerm}
-                settlementFilter={settlementFilter}
-                setSettlementFilter={setSettlementFilter}
-                settlementSearchTerm={settlementSearchTerm}
-                setSettlementSearchTerm={setSettlementSearchTerm}
-                selectedProjects={selectedProjects}
-                setSelectedProjects={setSelectedProjects}
-                selectedUsers={selectedUsers}
-                setSelectedUsers={setSelectedUsers}
-                selectedSettlements={selectedSettlements}
-                setSelectedSettlements={setSelectedSettlements}
-                selectedProject={selectedProject}
-                setSelectedProject={setSelectedProject}
-                selectedUser={selectedUser}
-                setSelectedUser={setSelectedUser}
-                selectedSettlement={selectedSettlement}
-                setSelectedSettlement={setSelectedSettlement}
-                showProjectModal={showProjectModal}
-                setShowProjectModal={setShowProjectModal}
-                showUserModal={showUserModal}
-                setShowUserModal={setShowUserModal}
-                showSettlementModal={showSettlementModal}
-                setShowSettlementModal={setShowSettlementModal}
-                rejectReason={rejectReason}
-                setRejectReason={setRejectReason}
-              />
-            )}
-            {(activeMenu === 'users' || activeMenu === '사용자 관리') && (
-              <UserManagementPage
-                sidebarOpen={sidebarOpen}
-                setSidebarOpen={setSidebarOpen}
-                activeMenu={activeMenu}
-                setActiveMenu={setActiveMenu}
-                projectFilter={projectFilter}
-                setProjectFilter={setProjectFilter}
-                projectCategoryFilter={projectCategoryFilter}
-                setProjectCategoryFilter={setProjectCategoryFilter}
-                projectSearchTerm={projectSearchTerm}
-                setProjectSearchTerm={setProjectSearchTerm}
-                userTypeFilter={userTypeFilter}
-                setUserTypeFilter={setUserTypeFilter}
-                userStatusFilter={userStatusFilter}
-                setUserStatusFilter={setUserStatusFilter}
-                userSearchTerm={userSearchTerm}
-                setUserSearchTerm={setUserSearchTerm}
-                settlementFilter={settlementFilter}
-                setSettlementFilter={setSettlementFilter}
-                settlementSearchTerm={settlementSearchTerm}
-                setSettlementSearchTerm={setSettlementSearchTerm}
-                selectedProjects={selectedProjects}
-                setSelectedProjects={setSelectedProjects}
-                selectedUsers={selectedUsers}
-                setSelectedUsers={setSelectedUsers}
-                selectedSettlements={selectedSettlements}
-                setSelectedSettlements={setSelectedSettlements}
-                selectedProject={selectedProject}
-                setSelectedProject={setSelectedProject}
-                selectedUser={selectedUser}
-                setSelectedUser={setSelectedUser}
-                selectedSettlement={selectedSettlement}
-                setSelectedSettlement={setSelectedSettlement}
-                showProjectModal={showProjectModal}
-                setShowProjectModal={setShowProjectModal}
-                showUserModal={showUserModal}
-                setShowUserModal={setShowUserModal}
-                showSettlementModal={showSettlementModal}
-                setShowSettlementModal={setShowSettlementModal}
-              />
-            )}
-            {(activeMenu === 'settlements' || activeMenu === '정산 관리') && (
-              <SettlementManagementPage
-                sidebarOpen={sidebarOpen}
-                setSidebarOpen={setSidebarOpen}
-                activeMenu={activeMenu}
-                setActiveMenu={setActiveMenu}
-                projectFilter={projectFilter}
-                setProjectFilter={setProjectFilter}
-                projectCategoryFilter={projectCategoryFilter}
-                setProjectCategoryFilter={setProjectCategoryFilter}
-                projectSearchTerm={projectSearchTerm}
-                setProjectSearchTerm={setProjectSearchTerm}
-                userTypeFilter={userTypeFilter}
-                setUserTypeFilter={setUserTypeFilter}
-                userStatusFilter={userStatusFilter}
-                setUserStatusFilter={setUserStatusFilter}
-                userSearchTerm={userSearchTerm}
-                setUserSearchTerm={setUserSearchTerm}
-                settlementFilter={settlementFilter}
-                setSettlementFilter={setSettlementFilter}
-                settlementSearchTerm={settlementSearchTerm}
-                setSettlementSearchTerm={setSettlementSearchTerm}
-                selectedProjects={selectedProjects}
-                setSelectedProjects={setSelectedProjects}
-                selectedUsers={selectedUsers}
-                setSelectedUsers={setSelectedUsers}
-                selectedSettlements={selectedSettlements}
-                setSelectedSettlements={setSelectedSettlements}
-                selectedProject={selectedProject}
-                setSelectedProject={setSelectedProject}
-                selectedUser={selectedUser}
-                setSelectedUser={setSelectedUser}
-                selectedSettlement={selectedSettlement}
-                setSelectedSettlement={setSelectedSettlement}
-                showProjectModal={showProjectModal}
-                setShowProjectModal={setShowProjectModal}
-                showUserModal={showUserModal}
-                setShowUserModal={setShowUserModal}
-                showSettlementModal={showSettlementModal}
-                setShowSettlementModal={setShowSettlementModal}
-                rejectReason={rejectReason}
-                setRejectReason={setRejectReason}
-              />
-            )}
-          </AdminLayout>
-        );
-
-      default:
-        return (
-          <HomePage
-            projects={projects}
-            recentDonations={recentDonations}
+        {/* Main Routes - MainLayout으로 감싸기 */}
+        <Route path="/*" element={
+          <MainLayout
             isLoggedIn={isLoggedIn}
             userType={userType}
-            setCurrentPage={setCurrentPage}
-            setSelectedProject={setSelectedProject}
-            setActiveTab={setActiveTab}
-            formatAmount={formatAmount}
-            calculatePercentage={calculatePercentage}
-          />
-        );
-    }
-  };
+            notifications={notifications}
+            userProfile={userProfile}
+            handleLogout={handleLogout}
+            onMarkAsRead={handleMarkAsRead}
+            onMarkAllAsRead={handleMarkAllAsRead}
+            onDeleteNotification={handleDeleteNotification}
+            notificationSettings={notificationSettings}
+            onUpdateNotificationSettings={(settings) => setNotificationSettings(settings as typeof notificationSettings)}
+          >
+            <Routes>
+              <Route path="/" element={
+                <HomePage
+                  isLoggedIn={isLoggedIn}
+                  userType={userType}
+                />
+              } />
+              <Route path="/projects" element={
+                <ProjectListPage
+                  isLoggedIn={isLoggedIn}
+                  favoriteProjectIds={favoriteProjectIds}
+                  onProjectSelect={(project) => setSelectedProject(project)}
+                  onNavigateToLogin={() => {}}
+                />
+              } />
+              <Route path="/projects/:id" element={
+                <ProjectDetailPage
+                  projectId={selectedProject?.id || 0}
+                  isLoggedIn={isLoggedIn}
+                  favoriteProjectIds={favoriteProjectIds}
+                  onNavigateToLogin={() => {}}
+                  onShowDonationModal={() => setShowDonationModal(true)}
+                />
+              } />
+              <Route path="/projects/create" element={
+                <ProjectCreatePage
+                  onSubmit={() => {
+                    alert('프로젝트 신청이 완료되었습니다. 관리자 승인 후 게시됩니다.');
+                  }}
+                />
+              } />
+              <Route path="/community" element={
+                <BoardPage
+                  isLoggedIn={isLoggedIn}
+                  userType={userType}
+                  communityPosts={communityPosts}
+                  postViews={postViews}
+                  uploadedImageFiles={uploadedImageFiles}
+                  onNavigateToPostDetail={(post) => {
+                    setSelectedPost(post);
+                    incrementView(post.id);
+                  }}
+                  onNavigateToCreatePost={() => {}}
+                  onImageUpload={handleImageUpload}
+                  onRemoveImage={removeImage}
+                  setUploadedImageFiles={setUploadedImageFiles}
+                />
+              } />
+              <Route path="/community/:id" element={
+                selectedPost ? (
+                  <PostDetailPage
+                    selectedPost={selectedPost}
+                    isLoggedIn={isLoggedIn}
+                    userType={userType}
+                    currentUserName={userProfile.name}
+                    postViews={postViews}
+                    onNavigateToEdit={(post) => setSelectedPost(post)}
+                    onNavigateToBoard={() => window.location.href = '/community'}
+                    onDeletePost={(postId) => {
+                      alert('게시글이 삭제되었습니다.');
+                    }}
+                    onIncrementView={incrementView}
+                  />
+                ) : <Navigate to="/community" replace />
+              } />
+              <Route path="/community/edit/:id" element={
+                selectedPost ? (
+                  <EditPostPage
+                    selectedPost={selectedPost}
+                    userType={userType}
+                    uploadedImageFiles={uploadedImageFiles}
+                    onNavigateToPostDetail={(post) => setSelectedPost(post)}
+                    onUpdatePost={(postId, updatedData) => {
+                      alert('게시글이 수정되었습니다.');
+                      setSelectedPost({ ...selectedPost, ...updatedData });
+                    }}
+                    onImageUpload={handleImageUpload}
+                    onRemoveImage={removeImage}
+                    setUploadedImageFiles={setUploadedImageFiles}
+                  />
+                ) : <Navigate to="/community" replace />
+              } />
+              <Route path="/profile" element={
+                <ProfilePage
+                  userType={userType}
+                  userProfile={userProfile}
+                  setUserProfile={setUserProfile}
+                  donationHistory={donationHistory}
+                  favoriteProjects={projects.filter(p => favoriteProjectIds.has(p.id))}
+                  piggyBanks={piggyBanks}
+                  favoriteProjectIds={favoriteProjectIds}
+                  setFavoriteProjectIds={setFavoriteProjectIds}
+                  setSelectedProject={setSelectedProject}
+                />
+              } />
+            </Routes>
+          </MainLayout>
+        } />
+      </Routes>
 
-  // Main render - apply layout based on page type
-  const isAuthPage = currentPage === 'login' || currentPage === 'signup';
-  const isAdminPage = currentPage === 'admin';
-  const isNotificationPage = currentPage === 'notifications';
-
-  if (isAuthPage) {
-    return (
-      <>
-        {renderPage()}
-        <DonationModal
-          selectedProject={selectedProject}
-          showDonationModal={showDonationModal}
-          setShowDonationModal={setShowDonationModal}
-          formatAmount={formatAmount}
-        />
-      </>
-    );
-  }
-
-  if (isAdminPage) {
-    return (
-      <>
-        {renderPage()}
-        <DonationModal
-          selectedProject={selectedProject}
-          showDonationModal={showDonationModal}
-          setShowDonationModal={setShowDonationModal}
-          formatAmount={formatAmount}
-        />
-      </>
-    );
-  }
-
-  if (isNotificationPage) {
-    return (
-      <>
-        {renderPage()}
-      </>
-    );
-  }
-
-  return (
-    <MainLayout
-      currentPage={currentPage}
-      setCurrentPage={setCurrentPage}
-      isLoggedIn={isLoggedIn}
-      userType={userType}
-      notifications={notifications}
-      userProfile={userProfile}
-      handleLogout={handleLogout}
-      onMarkAsRead={handleMarkAsRead}
-      onMarkAllAsRead={handleMarkAllAsRead}
-      onDeleteNotification={handleDeleteNotification}
-      notificationSettings={notificationSettings}
-      onUpdateNotificationSettings={(settings) => setNotificationSettings(settings as typeof notificationSettings)}
-    >
-      {renderPage()}
+      {/* Global Modals */}
       <DonationModal
         selectedProject={selectedProject}
         showDonationModal={showDonationModal}
         setShowDonationModal={setShowDonationModal}
         formatAmount={formatAmount}
       />
-    </MainLayout>
+    </BrowserRouter>
   );
 };
 
-export default DonationPlatform;
+// QueryClientProvider로 감싸서 export
+const App: React.FC = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <DonationPlatform />
+    </QueryClientProvider>
+  );
+};
 
-
-/*
-src/
-├── types/              # 타입 정의
-│   ├── index.ts
-│   └── admin.ts
-├── pages/              # 페이지 컴포넌트 (12개)
-│   ├── auth/           # UI-001, UI-002
-│   ├── user/           # UI-003
-│   ├── project/        # UI-004, UI-005, UI-006
-│   ├── donation/       # UI-007, UI-008, UI-009
-│   ├── community/      # UI-010
-│   └── admin/          # UI-012, UI-013, RQ-014
-├── components/         # 재사용 컴포넌트
-│   ├── common/         # Header, Sidebar
-│   └── donation/       # DonationModal
-├── layouts/            # 레이아웃
-│   ├── MainLayout.tsx
-│   ├── AdminLayout.tsx
-│   └── AuthLayout.tsx
-└── App.tsx             # 라우팅만 담당 (500줄)
-
-npm run dev
-
-*/
+export default App;

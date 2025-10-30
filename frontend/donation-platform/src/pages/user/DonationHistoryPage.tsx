@@ -159,22 +159,22 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
-      <div className="max-w-7xl mx-auto px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
         <button
           onClick={onBack}
-          className="mb-6 text-gray-600 hover:text-gray-900 font-semibold"
+          className="mb-4 md:mb-6 text-gray-600 hover:text-gray-900 font-semibold text-sm md:text-base"
         >
           ← 돌아가기
         </button>
 
         {/* 헤더 */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">기부 내역</h1>
-          <p className="text-gray-600">나의 소중한 기부 활동을 확인하고 영수증을 받아보세요</p>
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">기부 내역</h1>
+          <p className="text-sm md:text-base text-gray-600">나의 소중한 기부 활동을 확인하고 영수증을 받아보세요</p>
         </div>
 
         {/* 통계 카드 */}
-        <div className="grid grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
           <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-6 border border-red-200">
             <div className="flex items-center justify-between mb-2">
               <DollarSign className="text-red-600" size={32} />
@@ -201,17 +201,17 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
         </div>
 
         {/* 필터 및 검색 */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <div className="flex items-center gap-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mb-6">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4">
             {/* 검색 */}
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input
                 type="text"
                 placeholder="프로젝트명 또는 기관명 검색..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm md:text-base"
               />
             </div>
 
@@ -219,7 +219,7 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="px-3 md:px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm md:text-base"
             >
               <option value="2024">2024년</option>
               <option value="2023">2023년</option>
@@ -230,7 +230,7 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as 'all' | 'completed' | 'pending')}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="px-3 md:px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm md:text-base"
             >
               <option value="all">전체</option>
               <option value="completed">완료</option>
@@ -240,10 +240,11 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
             {/* 전체 다운로드 */}
             <button
               onClick={downloadAllReceipts}
-              className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors flex items-center gap-2 whitespace-nowrap"
+              className="px-4 md:px-6 py-2.5 md:py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors flex items-center justify-center gap-2 whitespace-nowrap text-sm md:text-base"
             >
-              <Download size={20} />
-              전체 다운로드
+              <Download size={18} />
+              <span className="hidden sm:inline">전체 다운로드</span>
+              <span className="sm:hidden">다운로드</span>
             </button>
           </div>
         </div>
@@ -257,71 +258,124 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
               <p className="text-sm text-gray-500">검색 조건을 변경해보세요</p>
             </div>
           ) : (
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">날짜</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">기관</th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase">금액</th>
-                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">영수증 번호</th>
-                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">상태</th>
-                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">영수증</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
+            <>
+              {/* 데스크톱 테이블 뷰 */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">날짜</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">기관</th>
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase">금액</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">영수증 번호</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">상태</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">영수증</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {filteredHistory.map((donation) => (
+                      <tr key={donation.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <Calendar size={16} className="text-gray-400" />
+                            <span className="text-sm text-gray-700">{donation.date}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="font-semibold text-gray-800">{donation.projectTitle}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-sm text-gray-600">{donation.organization}</p>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <p className="font-bold text-lg text-red-600">
+                            {donation.amount.toLocaleString()}원
+                          </p>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <p className="text-sm font-mono text-gray-600">{donation.receiptNumber}</p>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          {donation.status === 'completed' ? (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                              <CheckCircle size={14} />
+                              완료
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
+                              <AlertCircle size={14} />
+                              대기중
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          {donation.status === 'completed' ? (
+                            <button
+                              onClick={() => generateReceiptPDF(donation)}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition-colors"
+                            >
+                              <Download size={16} />
+                              다운로드
+                            </button>
+                          ) : (
+                            <span className="text-sm text-gray-400">처리 중</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 모바일 카드 뷰 */}
+              <div className="lg:hidden divide-y divide-gray-200">
                 {filteredHistory.map((donation) => (
-                  <tr key={donation.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={16} className="text-gray-400" />
-                        <span className="text-sm text-gray-700">{donation.date}</span>
+                  <div key={donation.id} className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <p className="font-bold text-gray-900 mb-1">{donation.projectTitle}</p>
+                        <p className="text-sm text-gray-600">{donation.organization}</p>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="font-semibold text-gray-800">{donation.projectTitle}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-gray-600">{donation.organization}</p>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <p className="font-bold text-lg text-red-600">
-                        {donation.amount.toLocaleString()}원
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <p className="text-sm font-mono text-gray-600">{donation.receiptNumber}</p>
-                    </td>
-                    <td className="px-6 py-4 text-center">
                       {donation.status === 'completed' ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                          <CheckCircle size={14} />
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                          <CheckCircle size={12} />
                           완료
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
-                          <AlertCircle size={14} />
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
+                          <AlertCircle size={12} />
                           대기중
                         </span>
                       )}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {donation.status === 'completed' ? (
-                        <button
-                          onClick={() => generateReceiptPDF(donation)}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition-colors"
-                        >
-                          <Download size={16} />
-                          다운로드
-                        </button>
-                      ) : (
-                        <span className="text-sm text-gray-400">처리 중</span>
-                      )}
-                    </td>
-                  </tr>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                      <Calendar size={14} />
+                      <span>{donation.date}</span>
+                    </div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">기부 금액</p>
+                        <p className="text-xl font-bold text-red-600">{donation.amount.toLocaleString()}원</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500 mb-1">영수증 번호</p>
+                        <p className="text-xs font-mono text-gray-600">{donation.receiptNumber}</p>
+                      </div>
+                    </div>
+                    {donation.status === 'completed' && (
+                      <button
+                        onClick={() => generateReceiptPDF(donation)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition-colors"
+                      >
+                        <Download size={16} />
+                        영수증 다운로드
+                      </button>
+                    )}
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </>
           )}
         </div>
 

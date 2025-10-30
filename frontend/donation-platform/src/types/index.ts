@@ -43,11 +43,21 @@ export interface PiggyBank {
   totalAmount: number;
   withdrawnAmount: number;
   balance: number;
-  status: 'active' | 'withdrawn' | 'locked';
+  status: 'active' | 'withdrawn' | 'locked' | 'pending_settlement';
   lastUpdated: string;
 }
 
 // 커뮤니티 관련 타입
+export type PostType = 'NOTICE' | 'QUESTION' | 'SUPPORT' | 'GENERAL';
+
+// UI 표시용 매핑 유틸
+export const POST_TYPE_LABELS: Record<PostType, string> = {
+  NOTICE: '공지',
+  QUESTION: '질문',
+  SUPPORT: '응원',
+  GENERAL: '일반'
+};
+
 export interface Comment {
   id: number;
   author: string;
@@ -59,7 +69,7 @@ export interface Comment {
 
 export interface CommunityPost {
   id: number;
-  type: '공지' | '질문' | '응원';
+  type: PostType;
   title: string;
   author: string;
   date: string;

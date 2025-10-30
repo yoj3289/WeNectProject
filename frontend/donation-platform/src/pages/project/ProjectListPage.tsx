@@ -1,28 +1,36 @@
 import React, { useState } from 'react';
-import { Search, Heart, FileText, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility } from 'lucide-react';
+import { Search, Heart, FileText, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2, AlertCircle } from 'lucide-react';
+import { useProjects, useToggleFavoriteProject } from '../../hooks/useProjects';
 import type { Project } from '../../types';
 
 interface ProjectListPageProps {
-  projects: Project[];
   isLoggedIn: boolean;
   favoriteProjectIds: Set<number>;
   onProjectSelect: (project: Project) => void;
-  onToggleFavorite: (projectId: number) => void;
   onNavigateToLogin: () => void;
 }
 
 const ProjectListPage: React.FC<ProjectListPageProps> = ({
-  projects,
   isLoggedIn,
   favoriteProjectIds,
   onProjectSelect,
-  onToggleFavorite,
   onNavigateToLogin
 }) => {
   // State
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [sortOption, setSortOption] = useState<string>('최신순');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
+
+  // API: 프로젝트 목록 조회
+  const { data: projects, isLoading, isError, error, refetch } = useProjects({
+    status: 'approved',
+    category: selectedCategory === '전체' ? undefined : selectedCategory,
+    search: searchKeyword.trim() || undefined,
+    sortBy: sortOption === '최신순' ? 'latest' : sortOption === '마감임박순' ? 'deadline' : 'fundingRate',
+  });
+
+  // API: 관심 프로젝트 토글
+  const toggleFavoriteMutation = useToggleFavoriteProject();
 
   // Helper Functions
   const formatAmount = (amount: number): string => {
@@ -46,58 +54,18 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
     return iconMap[category] || { icon: <Heart size={80} />, bgColor: 'from-gray-100 to-gray-200' };
   };
 
-  // 필터링 및 정렬 로직
-  const getFilteredAndSortedProjects = (): Project[] => {
-    let result = [...projects];
-
-    // 승인된 프로젝트만 표시
-    result = result.filter(p => p.status === 'approved');
-
-    // 카테고리 필터링
-    if (selectedCategory !== '전체') {
-      result = result.filter(p => p.category === selectedCategory);
-    }
-
-    // 키워드 검색 (제목, 설명, 기관명으로 검색)
-    if (searchKeyword.trim()) {
-      const keyword = searchKeyword.toLowerCase();
-      result = result.filter(p =>
-        p.title.toLowerCase().includes(keyword) ||
-        p.description.toLowerCase().includes(keyword) ||
-        p.organization.toLowerCase().includes(keyword)
-      );
-    }
-
-    // 정렬
-    switch (sortOption) {
-      case '최신순':
-        result.sort((a, b) => b.id - a.id);
-        break;
-      case '마감임박순':
-        result.sort((a, b) => a.dday - b.dday);
-        break;
-      case '모금률순':
-        result.sort((a, b) => {
-          const progressA = (a.currentAmount / a.targetAmount) * 100;
-          const progressB = (b.currentAmount / b.targetAmount) * 100;
-          return progressB - progressA;
-        });
-        break;
-    }
-
-    return result;
-  };
-
-  const displayProjects = getFilteredAndSortedProjects();
-
   // Handlers
-  const handleFavoriteClick = (e: React.MouseEvent, projectId: number) => {
+  const handleFavoriteClick = async (e: React.MouseEvent, projectId: number) => {
     e.stopPropagation();
     if (!isLoggedIn) {
       alert('로그인이 필요한 서비스입니다.');
       onNavigateToLogin();
     } else {
-      onToggleFavorite(projectId);
+      try {
+        await toggleFavoriteMutation.mutateAsync(projectId);
+      } catch (error: any) {
+        alert(error.response?.data?.message || '관심 프로젝트 설정에 실패했습니다.');
+      }
     }
   };
 
@@ -110,21 +78,55 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
     setSearchKeyword('');
   };
 
+  // 로딩 상태
+  if (isLoading) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-red-500 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">프로젝트를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 에러 상태
+  if (isError) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-gray-600 mb-4">
+            {(error as any)?.response?.data?.message || '프로젝트를 불러오는데 실패했습니다.'}
+          </p>
+          <button
+            onClick={() => refetch()}
+            className="px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const displayProjects = projects?.content || [];
+
   return (
     <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-[1400px] mx-auto px-8 py-12">
-        <h1 className="text-5xl font-bold mb-10">프로젝트 둘러보기</h1>
+      <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 md:mb-8 lg:mb-10">프로젝트 둘러보기</h1>
 
-        <div className="flex gap-4 mb-8">
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 md:mb-8">
           {/* 검색창 */}
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
               placeholder="프로젝트 검색..."
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500"
+              className="w-full pl-10 md:pl-12 pr-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 text-sm md:text-base"
             />
           </div>
 
@@ -132,7 +134,7 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-6 py-4 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 cursor-pointer"
+            className="px-4 md:px-6 py-3 md:py-4 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 cursor-pointer text-sm md:text-base"
           >
             <option>전체</option>
             <option>아동복지</option>
@@ -147,7 +149,7 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
           <select
             value={sortOption}
             onChange={(e) => setSortOption(e.target.value)}
-            className="px-6 py-4 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 cursor-pointer"
+            className="px-4 md:px-6 py-3 md:py-4 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 cursor-pointer text-sm md:text-base"
           >
             <option>최신순</option>
             <option>마감임박순</option>
@@ -193,7 +195,7 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {displayProjects.map(project => {
               const progress = calculatePercentage(project.currentAmount, project.targetAmount);
               const isFavorite = favoriteProjectIds.has(project.id);
@@ -207,11 +209,11 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
                   {/* 관심 프로젝트 하트 버튼 */}
                   <button
                     onClick={(e) => handleFavoriteClick(e, project.id)}
-                    className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-lg hover:scale-110 transition-transform"
+                    className="absolute top-3 right-3 md:top-4 md:right-4 z-10 p-1.5 md:p-2 bg-white rounded-full shadow-lg hover:scale-110 transition-transform"
                   >
                     <Heart
-                      size={24}
-                      className={isFavorite ? 'text-red-500' : 'text-gray-400'}
+                      size={20}
+                      className={`md:w-6 md:h-6 ${isFavorite ? 'text-red-500' : 'text-gray-400'}`}
                       fill={isFavorite ? 'currentColor' : 'none'}
                     />
                   </button>
@@ -220,15 +222,15 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
                     className="cursor-pointer"
                     onClick={() => handleProjectClick(project)}
                   >
-                    <div className={`h-48 bg-gradient-to-br ${categoryInfo.bgColor} flex items-center justify-center text-gray-400`}>
+                    <div className={`h-40 md:h-48 bg-gradient-to-br ${categoryInfo.bgColor} flex items-center justify-center text-gray-400`}>
                       {categoryInfo.icon}
                     </div>
-                    <div className="p-5">
-                      <div className="text-sm text-red-500 font-semibold mb-2">{project.category}</div>
-                      <h4 className="text-lg font-bold mb-3 line-clamp-2">{project.title}</h4>
+                    <div className="p-4 md:p-5">
+                      <div className="text-xs md:text-sm text-red-500 font-semibold mb-2">{project.category}</div>
+                      <h4 className="text-base md:text-lg font-bold mb-3 line-clamp-2">{project.title}</h4>
 
                       <div className="mb-4">
-                        <div className="flex justify-between text-sm mb-2">
+                        <div className="flex justify-between text-xs md:text-sm mb-2">
                           <span className="font-bold text-red-500">{progress}%</span>
                           <span className="text-gray-600">D-{project.dday}</span>
                         </div>
@@ -240,7 +242,7 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex justify-between text-sm text-gray-600">
+                      <div className="flex justify-between text-xs md:text-sm text-gray-600">
                         <span>{formatAmount(project.currentAmount)}원</span>
                         <span>{project.donors}명 참여</span>
                       </div>

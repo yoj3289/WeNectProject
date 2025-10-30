@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Image, X } from 'lucide-react';
-import type { CommunityPost } from '../../types';
+import { Image, X, Loader2 } from 'lucide-react';
+import type { CommunityPost, PostType } from '../../types';
+import { POST_TYPE_LABELS } from '../../types';
+import { useUpdatePost, useCreatePost } from '../../hooks/useCommunity';
 
 interface EditPostPageProps {
   selectedPost: CommunityPost | null;
@@ -10,7 +12,7 @@ interface EditPostPageProps {
   onUpdatePost: (postId: number, updatedData: {
     title: string;
     content: string;
-    type: '공지' | '질문' | '응원';
+    type: PostType;
     images?: string[];
   }) => void;
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -33,10 +35,14 @@ const EditPostPage: React.FC<EditPostPageProps> = ({
   onRemoveImage,
   setUploadedImageFiles
 }) => {
+  const updatePostMutation = useUpdatePost();
+  const createPostMutation = useCreatePost();
+
   const [postTitle, setPostTitle] = useState('');
   const [postContent, setPostContent] = useState('');
-  const [postType, setPostType] = useState<'공지' | '질문' | '응원'>('질문');
+  const [postType, setPostType] = useState<PostType>('QUESTION');
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (selectedPost) {
@@ -51,7 +57,7 @@ const EditPostPage: React.FC<EditPostPageProps> = ({
     }
   }, [selectedPost]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!postTitle.trim()) {
       alert('제목을 입력해주세요.');
       return;
@@ -62,27 +68,33 @@ const EditPostPage: React.FC<EditPostPageProps> = ({
     }
 
     // 일반 사용자가 공지사항을 작성하려고 하는 경우 차단
-    if (postType === '공지' && userType === 'individual') {
+    if (postType === 'NOTICE' && userType === 'individual') {
       alert('일반 사용자는 공지사항을 작성할 수 없습니다.');
       return;
     }
 
     if (!selectedPost) return;
 
-    // 새로 업로드된 이미지를 URL로 변환
-    const newImageUrls = uploadedImageFiles.map(file => URL.createObjectURL(file));
-    const allImages = [...existingImages, ...newImageUrls];
+    setIsSubmitting(true);
 
-    onUpdatePost(selectedPost.id, {
-      title: postTitle,
-      content: postContent,
-      type: postType,
-      images: allImages
-    });
+    try {
+      await updatePostMutation.mutateAsync({
+        id: selectedPost.id,
+        data: {
+          title: postTitle,
+          content: postContent
+        }
+      });
 
-    alert('게시글이 수정되었습니다.');
-    setUploadedImageFiles([]);
-    onNavigateToPostDetail(selectedPost);
+      alert('게시글이 수정되었습니다.');
+      setUploadedImageFiles([]);
+      onNavigateToPostDetail(selectedPost);
+    } catch (error) {
+      alert('게시글 수정에 실패했습니다.');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -98,11 +110,12 @@ const EditPostPage: React.FC<EditPostPageProps> = ({
     setExistingImages(existingImages.filter((_, i) => i !== index));
   };
 
-  const getCategoryColor = (type: string) => {
+  const getCategoryColor = (type: PostType) => {
     switch(type) {
-      case '공지': return 'bg-red-500';
-      case '질문': return 'bg-blue-500';
-      case '응원': return 'bg-green-500';
+      case 'NOTICE': return 'bg-red-500';
+      case 'QUESTION': return 'bg-blue-500';
+      case 'SUPPORT': return 'bg-green-500';
+      case 'GENERAL': return 'bg-gray-500';
       default: return 'bg-gray-500';
     }
   };
@@ -138,8 +151,8 @@ const EditPostPage: React.FC<EditPostPageProps> = ({
               </label>
               <div className="flex gap-2">
                 {(userType === 'organization' || userType === 'admin'
-                  ? ['공지', '질문', '응원']
-                  : ['질문', '응원']
+                  ? (['NOTICE', 'QUESTION', 'SUPPORT'] as PostType[])
+                  : (['QUESTION', 'SUPPORT'] as PostType[])
                 ).map(type => (
                   <button
                     key={type}
@@ -148,9 +161,9 @@ const EditPostPage: React.FC<EditPostPageProps> = ({
                         ? `${getCategoryColor(type)} border-transparent text-white`
                         : 'border-gray-300 text-gray-700 hover:border-gray-400'
                     }`}
-                    onClick={() => setPostType(type as '공지' | '질문' | '응원')}
+                    onClick={() => setPostType(type)}
                   >
-                    {type}
+                    {POST_TYPE_LABELS[type]}
                   </button>
                 ))}
               </div>
@@ -272,9 +285,17 @@ const EditPostPage: React.FC<EditPostPageProps> = ({
               </button>
               <button
                 onClick={handleSubmit}
-                className="flex-1 px-6 py-3 bg-red-500 text-white rounded-lg font-medium hover:shadow-lg transition-shadow"
+                disabled={isSubmitting}
+                className="flex-1 px-6 py-3 bg-red-500 text-white rounded-lg font-medium hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                수정하기
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    수정 중...
+                  </>
+                ) : (
+                  '수정하기'
+                )}
               </button>
             </div>
           </div>

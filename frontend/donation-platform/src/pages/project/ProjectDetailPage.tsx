@@ -1,54 +1,38 @@
 import React, { useState } from 'react';
-import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff } from 'lucide-react';
-import type { Project, TabType } from '../../types';
+import { useNavigate } from 'react-router-dom';
+import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
+import { useProjectDetail, useToggleFavoriteProject } from '../../hooks/useProjects';
+import { useDonors } from '../../hooks/useDonations';
+import type { TabType } from '../../types';
 
 interface ProjectDetailPageProps {
-  project: Project;
+  projectId: number;
   isLoggedIn: boolean;
   favoriteProjectIds: Set<number>;
-  onToggleFavorite: (projectId: number) => void;
   onNavigateToLogin: () => void;
   onShowDonationModal: () => void;
-  onBack: () => void;
-}
-
-// 기부자 타입 정의
-interface Donor {
-  id: number;
-  name: string;
-  amount: number;
-  date: string;
-  isAnonymous: boolean;
-  message?: string;
 }
 
 const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
-  project,
+  projectId,
   isLoggedIn,
   favoriteProjectIds,
-  onToggleFavorite,
   onNavigateToLogin,
-  onShowDonationModal,
-  onBack
+  onShowDonationModal
 }) => {
+  const navigate = useNavigate();
   // State
   const [activeTab, setActiveTab] = useState<TabType>('intro');
   const [showAnonymousDonors, setShowAnonymousDonors] = useState(true);
 
-  // 샘플 기부자 데이터
-  const donors: Donor[] = [
-    { id: 1, name: '김민수', amount: 50000, date: '2024-03-15 14:30', isAnonymous: false, message: '좋은 일에 쓰이길 바랍니다!' },
-    { id: 2, name: '익명', amount: 100000, date: '2024-03-15 12:20', isAnonymous: true, message: '응원합니다' },
-    { id: 3, name: '이지은', amount: 30000, date: '2024-03-15 10:15', isAnonymous: false },
-    { id: 4, name: '박서준', amount: 200000, date: '2024-03-14 18:45', isAnonymous: false, message: '아이들의 미래를 위해 작은 힘을 보탭니다. 파이팅!' },
-    { id: 5, name: '익명', amount: 50000, date: '2024-03-14 16:30', isAnonymous: true },
-    { id: 6, name: '최유진', amount: 20000, date: '2024-03-14 14:20', isAnonymous: false, message: '좋은 프로젝트네요!' },
-    { id: 7, name: '익명', amount: 150000, date: '2024-03-14 11:10', isAnonymous: true, message: '힘내세요!' },
-    { id: 8, name: '정해인', amount: 30000, date: '2024-03-13 20:30', isAnonymous: false },
-  ];
+  // API: 프로젝트 상세 정보 조회
+  const { data: project, isLoading: isLoadingProject, isError: isErrorProject, error: projectError } = useProjectDetail(projectId);
 
-  // 응원 메시지가 있는 기부자만 필터링
-  const donorsWithMessages = donors.filter(d => d.message);
+  // API: 기부자 목록 조회
+  const { data: donors = [], isLoading: isLoadingDonors } = useDonors(projectId);
+
+  // API: 관심 프로젝트 토글
+  const toggleFavoriteMutation = useToggleFavoriteProject();
 
   // Helper Functions
   const formatAmount = (amount: number): string => {
@@ -58,9 +42,6 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   const calculatePercentage = (current: number, target: number): number => {
     return Math.round((current / target) * 100);
   };
-
-  const progress = calculatePercentage(project.currentAmount, project.targetAmount);
-  const isFavorite = favoriteProjectIds.has(project.id);
 
   // 카테고리별 아이콘과 색상 매핑
   const getCategoryIcon = (category: string) => {
@@ -74,8 +55,6 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     };
     return iconMap[category] || { icon: <Heart size={120} />, bgColor: 'from-gray-100 to-gray-200' };
   };
-
-  const categoryInfo = getCategoryIcon(project.category);
 
   // SNS 공유 함수
   const shareToSNS = (platform: string, projectTitle: string) => {
@@ -101,12 +80,16 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   };
 
   // Handlers
-  const handleFavoriteClick = () => {
+  const handleFavoriteClick = async () => {
     if (!isLoggedIn) {
       alert('로그인이 필요한 서비스입니다.');
       onNavigateToLogin();
     } else {
-      onToggleFavorite(project.id);
+      try {
+        await toggleFavoriteMutation.mutateAsync(projectId);
+      } catch (error: any) {
+        alert(error.response?.data?.message || '관심 프로젝트 설정에 실패했습니다.');
+      }
     }
   };
 
@@ -117,6 +100,45 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
       onShowDonationModal();
     }
   };
+
+  // 로딩 상태
+  if (isLoadingProject) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-red-500 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">프로젝트 정보를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 에러 상태
+  if (isErrorProject || !project) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-gray-600 mb-4">
+            {(projectError as any)?.response?.data?.message || '프로젝트를 불러오는데 실패했습니다.'}
+          </p>
+          <button
+            onClick={() => navigate(-1)}
+            className="px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600"
+          >
+            목록으로 돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const progress = calculatePercentage(project.currentAmount, project.targetAmount);
+  const isFavorite = favoriteProjectIds.has(project.id);
+  const categoryInfo = getCategoryIcon(project.category);
+
+  // 응원 메시지가 있는 기부자만 필터링
+  const donorsWithMessages = donors.filter(d => d.message);
 
   // 탭 컨텐츠 렌더링
   const renderTabContent = () => {
@@ -167,7 +189,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               </div>
             </div>
 
-            {/* 진행 타임라인 */}
+            {/* 진행 타임라인 - 실제로는 백엔드에서 프로젝트 이력 API 호출 */}
             <div className="p-6 bg-white rounded-lg border border-gray-200">
               <h4 className="font-bold text-lg mb-4">진행 타임라인</h4>
               <div className="space-y-4">
@@ -175,21 +197,23 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                   <div className="w-3 h-3 rounded-full bg-red-500 mt-1"></div>
                   <div>
                     <p className="font-bold text-gray-800">프로젝트 시작</p>
-                    <p className="text-sm text-gray-600">2024-02-01</p>
+                    <p className="text-sm text-gray-600">{project.startDate || '2024-02-01'}</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-3 h-3 rounded-full bg-red-500 mt-1"></div>
-                  <div>
-                    <p className="font-bold text-gray-800">50% 달성</p>
-                    <p className="text-sm text-gray-600">2024-02-20</p>
+                {progress >= 50 && (
+                  <div className="flex items-start gap-4">
+                    <div className="w-3 h-3 rounded-full bg-red-500 mt-1"></div>
+                    <div>
+                      <p className="font-bold text-gray-800">50% 달성</p>
+                      <p className="text-sm text-gray-600">진행 중</p>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="flex items-start gap-4">
                   <div className="w-3 h-3 rounded-full bg-gray-300 mt-1"></div>
                   <div>
                     <p className="font-bold text-gray-400">목표 달성 예상</p>
-                    <p className="text-sm text-gray-400">2024-03-30</p>
+                    <p className="text-sm text-gray-400">{project.endDate || '2024-03-30'}</p>
                   </div>
                 </div>
               </div>
@@ -200,78 +224,99 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
         return (
           <div className="space-y-6">
             {/* 기부자 통계 */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="p-6 bg-gradient-to-br from-red-50 to-pink-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-2">총 기부자 수</p>
-                <p className="text-3xl font-bold text-red-600">{donors.length}명</p>
+            {isLoadingDonors ? (
+              <div className="text-center py-8">
+                <Loader2 className="w-8 h-8 text-red-500 animate-spin mx-auto mb-2" />
+                <p className="text-gray-600">기부자 목록을 불러오는 중...</p>
               </div>
-              <div className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-2">평균 기부액</p>
-                <p className="text-3xl font-bold text-blue-600">
-                  {formatAmount(Math.round(donors.reduce((sum, d) => sum + d.amount, 0) / donors.length))}원
-                </p>
-              </div>
-              <div className="p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-2">최고 기부액</p>
-                <p className="text-3xl font-bold text-purple-600">
-                  {formatAmount(Math.max(...donors.map(d => d.amount)))}원
-                </p>
-              </div>
-            </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="p-6 bg-gradient-to-br from-red-50 to-pink-50 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-2">총 기부자 수</p>
+                    <p className="text-3xl font-bold text-red-600">{donors.length}명</p>
+                  </div>
+                  <div className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-2">평균 기부액</p>
+                    <p className="text-3xl font-bold text-blue-600">
+                      {donors.length > 0
+                        ? formatAmount(Math.round(donors.reduce((sum, d) => sum + d.amount, 0) / donors.length))
+                        : 0}원
+                    </p>
+                  </div>
+                  <div className="p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-2">최고 기부액</p>
+                    <p className="text-3xl font-bold text-purple-600">
+                      {donors.length > 0
+                        ? formatAmount(Math.max(...donors.map(d => d.amount)))
+                        : 0}원
+                    </p>
+                  </div>
+                </div>
 
-            {/* 익명 표시 토글 */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <span className="font-semibold text-gray-700">익명 기부자 표시</span>
-              <button
-                onClick={() => setShowAnonymousDonors(!showAnonymousDonors)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  showAnonymousDonors
-                    ? 'bg-red-500 text-white'
-                    : 'bg-gray-300 text-gray-700'
-                }`}
-              >
-                {showAnonymousDonors ? <Eye size={18} /> : <EyeOff size={18} />}
-                {showAnonymousDonors ? '표시' : '숨김'}
-              </button>
-            </div>
+                {/* 익명 표시 토글 */}
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <span className="font-semibold text-gray-700">익명 기부자 표시</span>
+                  <button
+                    onClick={() => setShowAnonymousDonors(!showAnonymousDonors)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                      showAnonymousDonors
+                        ? 'bg-red-500 text-white'
+                        : 'bg-gray-300 text-gray-700'
+                    }`}
+                  >
+                    {showAnonymousDonors ? <Eye size={18} /> : <EyeOff size={18} />}
+                    {showAnonymousDonors ? '표시' : '숨김'}
+                  </button>
+                </div>
 
-            {/* 기부자 목록 */}
-            <div className="bg-white rounded-lg border border-gray-200">
-              <div className="p-4 border-b border-gray-200 bg-gray-50">
-                <h4 className="font-bold text-lg">기부자 목록</h4>
-              </div>
-              <div className="divide-y divide-gray-200">
-                {donors
-                  .filter(donor => showAnonymousDonors || !donor.isAnonymous)
-                  .map((donor) => (
-                    <div key={donor.id} className="p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-red-100 to-pink-100 rounded-full flex items-center justify-center">
-                            <Users size={20} className="text-red-600" />
-                          </div>
-                          <div>
-                            <p className="font-bold text-gray-800">
-                              {donor.isAnonymous ? '익명' : donor.name}
-                            </p>
-                            <p className="text-sm text-gray-500">{donor.date}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-lg text-red-600">
-                            {formatAmount(donor.amount)}원
-                          </p>
-                        </div>
+                {/* 기부자 목록 */}
+                <div className="bg-white rounded-lg border border-gray-200">
+                  <div className="p-4 border-b border-gray-200 bg-gray-50">
+                    <h4 className="font-bold text-lg">기부자 목록</h4>
+                  </div>
+                  <div className="divide-y divide-gray-200">
+                    {donors.length === 0 ? (
+                      <div className="text-center py-16 text-gray-500">
+                        <Users className="mx-auto mb-4 text-gray-300" size={64} />
+                        <p className="text-lg font-semibold">아직 기부자가 없습니다</p>
+                        <p className="text-sm mt-2">첫 번째 기부자가 되어주세요!</p>
                       </div>
-                      {donor.message && (
-                        <div className="mt-3 ml-13 p-3 bg-gray-50 rounded-lg">
-                          <p className="text-sm text-gray-700 italic">"{donor.message}"</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            </div>
+                    ) : (
+                      donors
+                        .filter(donor => showAnonymousDonors || !donor.isAnonymous)
+                        .map((donor) => (
+                          <div key={donor.id} className="p-4 hover:bg-gray-50 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-red-100 to-pink-100 rounded-full flex items-center justify-center">
+                                  <Users size={20} className="text-red-600" />
+                                </div>
+                                <div>
+                                  <p className="font-bold text-gray-800">
+                                    {donor.isAnonymous ? '익명' : donor.name}
+                                  </p>
+                                  <p className="text-sm text-gray-500">{donor.date}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-lg text-red-600">
+                                  {formatAmount(donor.amount)}원
+                                </p>
+                              </div>
+                            </div>
+                            {donor.message && (
+                              <div className="mt-3 ml-13 p-3 bg-gray-50 rounded-lg">
+                                <p className="text-sm text-gray-700 italic">"{donor.message}"</p>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         );
       case 'messages':
@@ -282,7 +327,12 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               <p className="text-2xl font-bold text-red-600">{donorsWithMessages.length}개</p>
             </div>
 
-            {donorsWithMessages.length === 0 ? (
+            {isLoadingDonors ? (
+              <div className="text-center py-8">
+                <Loader2 className="w-8 h-8 text-red-500 animate-spin mx-auto mb-2" />
+                <p className="text-gray-600">응원 메시지를 불러오는 중...</p>
+              </div>
+            ) : donorsWithMessages.length === 0 ? (
               <div className="text-center py-16 text-gray-500">
                 <Heart className="mx-auto mb-4 text-gray-300" size={64} />
                 <p className="text-lg font-semibold">아직 응원 메시지가 없습니다</p>
@@ -326,19 +376,19 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
   return (
     <div className="bg-gray-50 min-h-screen pb-12">
-      <div className="max-w-7xl mx-auto px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
         <button
-          onClick={onBack}
-          className="mb-6 text-gray-600 hover:text-gray-900 font-semibold"
+          onClick={() => navigate(-1)}
+          className="mb-4 md:mb-6 text-gray-600 hover:text-gray-900 font-semibold text-sm md:text-base"
         >
           ← 목록으로
         </button>
 
-        <div className="grid grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
           {/* 메인 컨텐츠 */}
-          <div className="col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 md:space-y-6">
             {/* 프로젝트 이미지 */}
-            <div className={`bg-gradient-to-br ${categoryInfo.bgColor} rounded-2xl p-16 flex items-center justify-center`}>
+            <div className={`bg-gradient-to-br ${categoryInfo.bgColor} rounded-xl md:rounded-2xl p-8 md:p-12 lg:p-16 flex items-center justify-center`}>
               <div className="text-gray-400">
                 {categoryInfo.icon}
               </div>
@@ -347,21 +397,21 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
             {/* 프로젝트 상세 카드 (제목 + 탭) */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               {/* 프로젝트 헤더 */}
-              <div className="p-8 border-b border-gray-200">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-sm font-semibold">
+              <div className="p-4 md:p-6 lg:p-8 border-b border-gray-200">
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <span className="px-2 md:px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs md:text-sm font-semibold">
                     {project.category}
                   </span>
-                  <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-semibold">
+                  <span className="px-2 md:px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs md:text-sm font-semibold">
                     D-{project.dday}
                   </span>
                 </div>
-                <h1 className="text-4xl font-bold text-gray-900 mb-3">{project.title}</h1>
-                <p className="text-xl text-gray-600">{project.organization}</p>
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 md:mb-3">{project.title}</h1>
+                <p className="text-base md:text-lg lg:text-xl text-gray-600">{project.organization.name}</p>
               </div>
 
               {/* 탭 네비게이션 */}
-              <div className="flex border-b border-gray-200">
+              <div className="flex border-b border-gray-200 overflow-x-auto">
                 {[
                   { id: 'intro', label: '프로젝트 소개' },
                   { id: 'progress', label: '진행현황' },
@@ -371,7 +421,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as TabType)}
-                    className={`flex-1 py-4 font-semibold transition-colors ${
+                    className={`flex-1 py-3 md:py-4 font-semibold transition-colors text-sm md:text-base whitespace-nowrap ${
                       activeTab === tab.id
                         ? 'bg-red-500 text-white'
                         : 'text-gray-600 hover:bg-gray-50'
@@ -383,15 +433,15 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               </div>
 
               {/* 탭 컨텐츠 */}
-              <div className="p-8">
+              <div className="p-4 md:p-6 lg:p-8">
                 {renderTabContent()}
               </div>
             </div>
           </div>
 
           {/* 사이드바 */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl p-6 border border-gray-200 sticky top-8">
+          <div className="space-y-4 md:space-y-6 lg:order-last order-first">
+            <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 lg:sticky lg:top-8">
               {/* 진행률 표시 */}
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-3">
@@ -434,16 +484,21 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               {/* 관심 프로젝트 버튼 */}
               <button
                 onClick={handleFavoriteClick}
-                className={`w-full py-3 rounded-lg font-bold text-lg transition-all mb-3 flex items-center justify-center gap-2 ${
+                disabled={toggleFavoriteMutation.isPending}
+                className={`w-full py-3 rounded-lg font-bold text-lg transition-all mb-3 flex items-center justify-center gap-2 disabled:cursor-not-allowed ${
                   isFavorite
                     ? 'bg-red-50 text-red-500 border-2 border-red-500 hover:bg-red-100'
                     : 'bg-gray-100 text-gray-700 border-2 border-gray-300 hover:bg-gray-200'
                 }`}
               >
-                <Heart
-                  size={20}
-                  fill={isFavorite ? 'currentColor' : 'none'}
-                />
+                {toggleFavoriteMutation.isPending ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : (
+                  <Heart
+                    size={20}
+                    fill={isFavorite ? 'currentColor' : 'none'}
+                  />
+                )}
                 {isFavorite ? '관심 프로젝트 등록됨' : '관심 프로젝트 등록'}
               </button>
 

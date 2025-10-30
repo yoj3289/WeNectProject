@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, User, LogOut, Home } from 'lucide-react';
 import Sidebar from '../components/common/Sidebar';
 
@@ -6,15 +7,14 @@ interface AdminLayoutProps {
   children: React.ReactNode;
   activeMenu: string;
   setActiveMenu: (menu: string) => void;
-  onGoHome?: () => void;
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({
   children,
   activeMenu,
   setActiveMenu,
-  onGoHome,
 }) => {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
@@ -34,15 +34,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
 
           <div className="flex items-center gap-4">
             {/* 홈으로 */}
-            {onGoHome && (
-              <button
-                onClick={onGoHome}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-lg hover:from-rose-600 hover:to-pink-600 transition-colors"
-              >
-                <Home size={18} />
-                <span className="font-medium">메인으로</span>
-              </button>
-            )}
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-lg hover:from-rose-600 hover:to-pink-600 transition-colors"
+            >
+              <Home size={18} />
+              <span className="font-medium">메인으로</span>
+            </button>
 
             {/* 알림 */}
             <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">

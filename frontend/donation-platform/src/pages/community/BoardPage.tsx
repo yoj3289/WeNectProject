@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { MessageSquare, Eye, Heart, ChevronRight, Search, Reply, Image as ImageIcon, Send, X, Pin } from 'lucide-react';
-import type { CommunityPost } from '../../types';
+import { MessageSquare, Eye, Heart, ChevronRight, Search, Reply, Image as ImageIcon, Send, X, Pin, Loader2 } from 'lucide-react';
+import type { CommunityPost, PostType } from '../../types';
+import { POST_TYPE_LABELS } from '../../types';
+import { usePosts } from '../../hooks/useCommunity';
 
 interface BoardPageProps {
   isLoggedIn: boolean;
@@ -56,66 +58,29 @@ const BoardPage: React.FC<BoardPageProps> = ({
   const [replyTo, setReplyTo] = useState<any>(null);
   const [postTitle, setPostTitle] = useState('');
   const [postContent, setPostContent] = useState('');
-  const [postType, setPostType] = useState<'공지' | '질문' | '응원'>('질문');
+  const [postType, setPostType] = useState<PostType>('QUESTION');
 
-  // 샘플 게시글 데이터 (확장된 정보 포함)
-  const extendedPosts: ExtendedPost[] = [
-    {
-      id: 1,
-      type: '공지',
-      title: '프로젝트 진행 상황 공지사항',
-      author: '희망재단',
-      authorType: 'organization',
-      content: '안녕하세요. 희망재단입니다.\n\n현재 프로젝트가 목표 금액의 80%를 달성했습니다. 여러분의 따뜻한 마음에 진심으로 감사드립니다.\n\n앞으로도 투명한 운영과 정기적인 진행상황 보고를 통해 신뢰를 지켜나가겠습니다.',
-      date: '2024-03-15',
-      views: 324,
-      likes: 45,
-      isPinned: true,
-      images: [],
-      comments: [
-        { id: 1, author: '김민수', content: '응원합니다! 좋은 일에 함께할 수 있어서 기쁩니다.', date: '2024-03-15', replies: [] },
-        { id: 2, author: '이지은', content: '화이팅입니다!', date: '2024-03-15', replies: [] }
-      ]
-    },
-    {
-      id: 2,
-      type: '질문',
-      title: '기부금 영수증은 어떻게 발급받나요?',
-      author: '박서준',
-      authorType: 'individual',
-      content: '안녕하세요. 기부를 진행했는데 영수증 발급 방법을 알고 싶습니다.',
-      date: '2024-03-14',
-      views: 156,
-      likes: 12,
-      isPinned: false,
-      images: [],
-      comments: [
-        {
-          id: 3,
-          author: '희망재단',
-          content: '마이페이지 > 기부내역에서 다운로드 가능합니다. 추가 문의사항은 고객센터로 연락 주세요.',
-          date: '2024-03-14',
-          replies: [
-            { id: 4, author: '박서준', content: '감사합니다! 확인했어요.', date: '2024-03-14' }
-          ]
-        }
-      ]
-    },
-    {
-      id: 3,
-      type: '응원',
-      title: '소중한 프로젝트 응원합니다!',
-      author: '최유진',
-      authorType: 'individual',
-      content: '이렇게 좋은 프로젝트에 참여할 수 있어서 영광입니다. 작은 힘이지만 보탬이 되었으면 좋겠습니다. 파이팅!',
-      date: '2024-03-13',
-      views: 89,
-      likes: 28,
-      isPinned: false,
-      images: [],
-      comments: []
-    }
-  ];
+  // API에서 게시글 데이터 가져오기
+  const { data: postsData, isLoading, isError } = usePosts({
+    type: selectedCategory === 'all' ? undefined : selectedCategory,
+    keyword: searchTerm
+  });
+
+  // API 응답을 ExtendedPost 형식으로 변환
+  const extendedPosts: ExtendedPost[] = postsData?.content.map(post => ({
+    id: post.postId,
+    type: post.type,
+    title: post.title,
+    author: post.author.userName,
+    authorType: post.author.userType === 'ORGANIZATION' ? 'organization' : 'individual',
+    content: post.content,
+    date: new Date(post.createdAt).toLocaleDateString('ko-KR'),
+    views: post.viewCount,
+    likes: post.likeCount,
+    isPinned: post.isPinned,
+    images: post.images?.map(img => img.imageUrl) || [],
+    comments: []
+  })) || [];
 
   const filteredPosts = extendedPosts.filter(post => {
     const matchesCategory = selectedCategory === 'all' || post.type === selectedCategory;
@@ -147,7 +112,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
     }
 
     // 권한 관리: 일반 사용자가 공지사항을 작성하려고 하는 경우 차단
-    if (postType === '공지' && userType === 'individual') {
+    if (postType === 'NOTICE' && userType === 'individual') {
       alert('일반 사용자는 공지사항을 작성할 수 없습니다.\n질문 또는 응원 카테고리를 선택해주세요.');
       return;
     }
@@ -155,20 +120,21 @@ const BoardPage: React.FC<BoardPageProps> = ({
     // 이미지가 첨부된 경우 처리
     const imageUrls = uploadedImageFiles.map(file => URL.createObjectURL(file));
 
-    alert(`게시글이 등록되었습니다.\n제목: ${postTitle}\n카테고리: ${postType}\n이미지: ${imageUrls.length}개`);
+    alert(`게시글이 등록되었습니다.\n제목: ${postTitle}\n카테고리: ${POST_TYPE_LABELS[postType]}\n이미지: ${imageUrls.length}개`);
 
     setPostTitle('');
     setPostContent('');
-    setPostType('질문');
+    setPostType('QUESTION');
     setUploadedImageFiles([]);
     setCurrentView('list');
   };
 
-  const getCategoryColor = (type: string) => {
+  const getCategoryColor = (type: PostType) => {
     switch(type) {
-      case '공지': return 'bg-red-500';
-      case '질문': return 'bg-blue-500';
-      case '응원': return 'bg-green-500';
+      case 'NOTICE': return 'bg-red-500';
+      case 'QUESTION': return 'bg-blue-500';
+      case 'SUPPORT': return 'bg-green-500';
+      case 'GENERAL': return 'bg-gray-500';
       default: return 'bg-gray-500';
     }
   };
@@ -186,17 +152,22 @@ const BoardPage: React.FC<BoardPageProps> = ({
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex gap-2 flex-wrap">
-            {['all', '공지', '질문', '응원'].map(category => (
+            {[
+              { value: 'all', label: '전체' },
+              { value: 'NOTICE', label: '공지' },
+              { value: 'QUESTION', label: '질문' },
+              { value: 'SUPPORT', label: '응원' }
+            ].map(category => (
               <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
+                key={category.value}
+                onClick={() => setSelectedCategory(category.value)}
                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  selectedCategory === category
+                  selectedCategory === category.value
                     ? 'bg-red-500 text-white shadow-md'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                {category === 'all' ? '전체' : category}
+                {category.label}
               </button>
             ))}
           </div>
@@ -226,7 +197,17 @@ const BoardPage: React.FC<BoardPageProps> = ({
 
       {/* 게시글 목록 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        {filteredPosts.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-16">
+            <Loader2 className="mx-auto mb-4 animate-spin text-red-500" size={48} />
+            <p className="text-gray-500">게시글을 불러오는 중...</p>
+          </div>
+        ) : isError ? (
+          <div className="text-center py-16 text-red-500">
+            <MessageSquare className="mx-auto mb-4" size={48} />
+            <p>게시글을 불러올 수 없습니다</p>
+          </div>
+        ) : filteredPosts.length === 0 ? (
           <div className="text-center py-16 text-gray-500">
             <MessageSquare className="mx-auto mb-4" size={48} />
             <p>게시글이 없습니다</p>
@@ -246,7 +227,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       <span className={`${getCategoryColor(post.type)} text-white text-xs px-3 py-1 rounded-full font-medium`}>
-                        {post.type}
+                        {POST_TYPE_LABELS[post.type]}
                       </span>
                       {post.authorType === 'organization' && (
                         <span className="bg-purple-100 text-purple-600 text-xs px-2 py-1 rounded font-medium">
@@ -310,7 +291,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center gap-2 mb-3">
               <span className={`${getCategoryColor(selectedPost.type)} text-white text-xs px-3 py-1 rounded-full font-medium`}>
-                {selectedPost.type}
+                {POST_TYPE_LABELS[selectedPost.type]}
               </span>
               {selectedPost.authorType === 'organization' && (
                 <span className="bg-purple-100 text-purple-600 text-xs px-2 py-1 rounded font-medium">
@@ -475,8 +456,8 @@ const BoardPage: React.FC<BoardPageProps> = ({
             </label>
             <div className="flex gap-2 flex-wrap">
               {(userType === 'organization' || userType === 'admin'
-                ? ['공지', '질문', '응원']
-                : ['질문', '응원']
+                ? (['NOTICE', 'QUESTION', 'SUPPORT'] as PostType[])
+                : (['QUESTION', 'SUPPORT'] as PostType[])
               ).map(type => (
                 <button
                   key={type}
@@ -485,9 +466,9 @@ const BoardPage: React.FC<BoardPageProps> = ({
                       ? `${getCategoryColor(type)} border-transparent text-white`
                       : 'border-gray-300 text-gray-700 hover:border-gray-400'
                   }`}
-                  onClick={() => setPostType(type as '공지' | '질문' | '응원')}
+                  onClick={() => setPostType(type)}
                 >
-                  {type}
+                  {POST_TYPE_LABELS[type]}
                 </button>
               ))}
             </div>

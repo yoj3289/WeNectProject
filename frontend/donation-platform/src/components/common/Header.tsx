@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Heart, Bell, User, LogOut } from 'lucide-react';
 import NotificationDropdown from './NotificationDropdown';
-import type { PageType, UserType, Notification, UserProfile } from '../../types';
+import type { UserType, Notification, UserProfile } from '../../types';
 
 interface HeaderProps {
-  currentPage: PageType;
-  setCurrentPage: (page: PageType) => void;
   isLoggedIn: boolean;
   userType: UserType;
   notifications: Notification[];
@@ -14,15 +13,13 @@ interface HeaderProps {
   onMarkAsRead: (id: number) => void;
   onMarkAllAsRead: () => void;
   onDeleteNotification: (id: number) => void;
-  
+
   //아래 두줄 각각 sms: boolean; 추가
   notificationSettings: Record<string, { enabled: boolean; email: boolean; sms: boolean; push: boolean }>;
   onUpdateNotificationSettings: (settings: Record<string, { enabled: boolean; email: boolean; sms: boolean; push: boolean }>) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
-  currentPage,
-  setCurrentPage,
   isLoggedIn,
   userType,
   notifications,
@@ -34,6 +31,8 @@ const Header: React.FC<HeaderProps> = ({
   notificationSettings,
   onUpdateNotificationSettings,
 }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   // 251027추가
@@ -49,7 +48,7 @@ const Header: React.FC<HeaderProps> = ({
         {/* 로고 */}
         <div
           className="flex items-center gap-2 cursor-pointer"
-          onClick={() => setCurrentPage('home')}
+          onClick={() => navigate('/')}
         >
           <Heart className="text-red-500" size={32} fill="currentColor" />
           <span className="text-2xl font-bold">위넥트 테스트 버전</span>
@@ -58,20 +57,20 @@ const Header: React.FC<HeaderProps> = ({
         {/* 네비게이션 메뉴 */}
         <nav className="flex items-center gap-8">
           <button
-            onClick={() => setCurrentPage('projects')}
+            onClick={() => navigate('/projects')}
             className="text-lg font-semibold hover:text-red-500 transition-colors"
           >
             프로젝트
           </button>
           <button
-            onClick={() => setCurrentPage('community')}
+            onClick={() => navigate('/community')}
             className="text-lg font-semibold hover:text-red-500 transition-colors"
           >
             커뮤니티
           </button>
           {isLoggedIn && userType === 'admin' && (
             <button
-              onClick={() => setCurrentPage('admin')}
+              onClick={() => navigate('/admin')}
               className="text-lg font-semibold hover:text-red-500 transition-colors"
             >
               관리자
@@ -103,18 +102,18 @@ const Header: React.FC<HeaderProps> = ({
                   onMarkAsRead={onMarkAsRead}
                   onMarkAllAsRead={onMarkAllAsRead}
                   onDelete={onDeleteNotification}
-                  onOpenFullPage={() => setCurrentPage('notifications')}
+                  onOpenFullPage={() => navigate('/notifications')}
                   notificationSettings={notificationSettings}
                   onUpdateSettings={onUpdateNotificationSettings}
 
                   //251027추가
-                  onShowConsentModal={handleShowConsentModal} 
+                  onShowConsentModal={handleShowConsentModal}
                 />
               </div>
 
               {/* 마이페이지 버튼 */}
               <button
-                onClick={() => setCurrentPage('mypage')}
+                onClick={() => navigate('/profile')}
                 className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <User size={24} />
@@ -133,7 +132,7 @@ const Header: React.FC<HeaderProps> = ({
           ) : (
             /* 로그인 버튼 */
             <button
-              onClick={() => setCurrentPage('login')}
+              onClick={() => navigate('/login')}
               className="px-6 py-3 font-semibold hover:bg-gray-100 rounded-lg transition-colors"
             >
               로그인

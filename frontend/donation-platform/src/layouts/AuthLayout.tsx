@@ -1,19 +1,20 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Heart } from 'lucide-react';
-import type { PageType } from '../types';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
-  setCurrentPage: (page: PageType) => void;
 }
 
-const AuthLayout: React.FC<AuthLayoutProps> = ({ children, setCurrentPage }) => {
+const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-blue-50 flex flex-col">
       {/* 로고 헤더 */}
       <div className="p-6">
         <button
-          onClick={() => setCurrentPage('home')}
+          onClick={() => navigate('/')}
           className="flex items-center space-x-2 text-rose-600 hover:text-rose-700 transition-colors"
         >
           <Heart className="w-8 h-8 fill-current" />

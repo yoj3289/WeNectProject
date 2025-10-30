@@ -1,11 +1,9 @@
 import React from 'react';
 import Header from '../components/common/Header';
-import type { PageType, UserType, Notification, UserProfile } from '../types';
+import type { UserType, Notification, UserProfile } from '../types';
 
 interface MainLayoutProps {
   children: React.ReactNode;
-  currentPage: PageType;
-  setCurrentPage: (page: PageType) => void;
   isLoggedIn: boolean;
   userType: UserType;
   notifications: Notification[];
@@ -22,8 +20,6 @@ interface MainLayoutProps {
 
 const MainLayout: React.FC<MainLayoutProps> = ({
   children,
-  currentPage,
-  setCurrentPage,
   isLoggedIn,
   userType,
   notifications,
@@ -38,8 +34,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   return (
     <div className="min-h-screen bg-gray-50">
       <Header
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
         isLoggedIn={isLoggedIn}
         userType={userType}
         notifications={notifications}

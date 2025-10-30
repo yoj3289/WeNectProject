@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Search, CheckCheck, Archive, Trash2, Heart, MessageCircle, TrendingUp, Calendar, DollarSign, AlertCircle, X as XIcon, Settings, ArrowLeft, Star, ExternalLink, Mail, Smartphone, Monitor, FileText, Filter } from 'lucide-react';
 import type { Notification } from '../../types';
 
@@ -8,7 +9,6 @@ interface NotificationPageProps {
   onMarkAllAsRead: () => void;
   onDelete: (id: number) => void;
   onArchive: (id: number) => void;
-  onBack: () => void;
   notificationSettings: Record<string, { enabled: boolean; email: boolean; sms: boolean; push: boolean }>;
   onUpdateSettings: (settings: Record<string, { enabled: boolean; email: boolean; sms: boolean; push: boolean }>) => void;
   onShowConsentModal: () => void;
@@ -21,12 +21,12 @@ const NotificationPage: React.FC<NotificationPageProps> = ({
   onMarkAllAsRead,
   onDelete,
   onArchive,
-  onBack,
   notificationSettings,
   onUpdateSettings,
   onShowConsentModal,
   onShowHistoryModal
 }) => {
+  const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -210,7 +210,7 @@ const NotificationPage: React.FC<NotificationPageProps> = ({
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <button
-                onClick={onBack}
+                onClick={() => navigate(-1)}
                 className="p-2 hover:bg-white/20 rounded-xl transition-colors"
               >
                 <ArrowLeft size={28} />

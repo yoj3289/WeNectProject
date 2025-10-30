@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Edit, Trash2, Reply, Send, X } from 'lucide-react';
-import type { CommunityPost, Comment } from '../../types';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Eye, Edit, Trash2, Reply, Send, X, Loader2 } from 'lucide-react';
+import type { CommunityPost, Comment, PostType } from '../../types';
+import { POST_TYPE_LABELS } from '../../types';
+import { usePost, useComments, useCreateComment, useDeleteComment, useUpdateComment } from '../../hooks/useCommunity';
 
 interface PostDetailPageProps {
   selectedPost: CommunityPost | null;
@@ -8,8 +11,8 @@ interface PostDetailPageProps {
   userType: 'individual' | 'organization' | 'admin';
   currentUserName: string;
   postViews: Map<number, number>;
-  onNavigateToBoard: () => void;
   onNavigateToEdit: (post: CommunityPost) => void;
+  onNavigateToBoard: () => void;
   onDeletePost: (postId: number) => void;
   onIncrementView: (postId: number) => void;
 }
@@ -25,69 +28,98 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
   userType,
   currentUserName,
   postViews,
-  onNavigateToBoard,
   onNavigateToEdit,
+  onNavigateToBoard,
   onDeletePost,
   onIncrementView
 }) => {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const postId = id ? parseInt(id) : selectedPost?.id;
+
+  // API에서 게시글 데이터 가져오기
+  const { data: postData, isLoading: isPostLoading, isError: isPostError } = usePost(postId || 0);
+  const { data: commentsData, isLoading: isCommentsLoading } = useComments(postId || 0);
+
+  const createCommentMutation = useCreateComment();
+  const updateCommentMutation = useUpdateComment();
+  const deleteCommentMutation = useDeleteComment();
+
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<number | null>(null);
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState('');
 
-  // 게시글이 변경될 때마다 댓글 초기화
+  // API 응답을 CommunityPost 형식으로 변환
+  const post: CommunityPost | null = postData ? {
+    id: postData.postId,
+    type: postData.type,
+    title: postData.title,
+    author: postData.author.userName,
+    date: new Date(postData.createdAt).toLocaleDateString('ko-KR'),
+    views: postData.viewCount,
+    content: postData.content,
+    comments: []
+  } : selectedPost;
+
+  // 댓글 데이터 변환
   useEffect(() => {
-    if (selectedPost?.comments) {
+    if (commentsData) {
+      const convertedComments: Comment[] = commentsData
+        .filter(c => !c.parentCommentId)
+        .map(comment => ({
+          id: comment.commentId,
+          author: comment.author.userName,
+          content: comment.content,
+          date: new Date(comment.createdAt).toLocaleDateString('ko-KR'),
+          replies: commentsData
+            .filter(r => r.parentCommentId === comment.commentId)
+            .map(reply => ({
+              id: reply.commentId,
+              author: reply.author.userName,
+              content: reply.content,
+              date: new Date(reply.createdAt).toLocaleDateString('ko-KR')
+            }))
+        }));
+      setComments(convertedComments);
+    } else if (selectedPost?.comments) {
       setComments(selectedPost.comments);
-    } else {
-      setComments([]);
     }
-  }, [selectedPost?.id]);
+  }, [commentsData, selectedPost]);
 
   // 조회수 증가 (페이지 진입 시 한 번만 실행)
   useEffect(() => {
-    if (selectedPost) {
-      onIncrementView(selectedPost.id);
+    if (post) {
+      onIncrementView(post.id);
     }
-  }, [selectedPost?.id]);
+  }, [post?.id]);
 
   // 댓글 추가
-  const addComment = (content: string, parentId?: number) => {
+  const addComment = async (content: string, parentId?: number) => {
     if (!content.trim()) {
       alert('댓글 내용을 입력해주세요.');
       return;
     }
 
-    const comment: Comment = {
-      id: Date.now(),
-      author: currentUserName || '사용자',
-      content,
-      date: new Date().toLocaleDateString('ko-KR'),
-      parentId,
-      replies: []
-    };
+    if (!postId) return;
 
-    if (parentId) {
-      // 대댓글인 경우
-      const updatedComments = comments.map(c => {
-        if (c.id === parentId) {
-          return {
-            ...c,
-            replies: [...(c.replies || []), comment]
-          };
+    try {
+      await createCommentMutation.mutateAsync({
+        postId,
+        data: {
+          content,
+          parentCommentId: parentId
         }
-        return c;
       });
-      setComments(updatedComments);
-    } else {
-      // 일반 댓글인 경우
-      setComments([...comments, comment]);
-    }
 
-    setNewComment('');
-    setReplyTo(null);
-    alert('댓글이 등록되었습니다.');
+      setNewComment('');
+      setReplyTo(null);
+      alert('댓글이 등록되었습니다.');
+    } catch (error) {
+      alert('댓글 등록에 실패했습니다.');
+      console.error(error);
+    }
   };
 
   // 댓글 수정 시작
@@ -97,37 +129,25 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
   };
 
   // 댓글 수정 저장
-  const saveEditComment = (commentId: number, isReply: boolean = false, parentId?: number) => {
+  const saveEditComment = async (commentId: number, isReply: boolean = false, parentId?: number) => {
     if (!editingCommentContent.trim()) {
       alert('댓글 내용을 입력해주세요.');
       return;
     }
 
-    if (isReply && parentId) {
-      // 대댓글 수정
-      const updatedComments = comments.map(c => {
-        if (c.id === parentId && c.replies) {
-          return {
-            ...c,
-            replies: c.replies.map(r =>
-              r.id === commentId ? { ...r, content: editingCommentContent } : r
-            )
-          };
-        }
-        return c;
+    try {
+      await updateCommentMutation.mutateAsync({
+        commentId,
+        content: editingCommentContent
       });
-      setComments(updatedComments);
-    } else {
-      // 일반 댓글 수정
-      const updatedComments = comments.map(c =>
-        c.id === commentId ? { ...c, content: editingCommentContent } : c
-      );
-      setComments(updatedComments);
-    }
 
-    setEditingCommentId(null);
-    setEditingCommentContent('');
-    alert('댓글이 수정되었습니다.');
+      setEditingCommentId(null);
+      setEditingCommentContent('');
+      alert('댓글이 수정되었습니다.');
+    } catch (error) {
+      alert('댓글 수정에 실패했습니다.');
+      console.error(error);
+    }
   };
 
   // 댓글 수정 취소
@@ -137,27 +157,16 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
   };
 
   // 댓글 삭제
-  const deleteComment = (id: number, isReply: boolean = false, parentId?: number) => {
+  const deleteComment = async (id: number, isReply: boolean = false, parentId?: number) => {
     if (!confirm('댓글을 삭제하시겠습니까?')) return;
 
-    if (isReply && parentId) {
-      // 대댓글 삭제
-      const updatedComments = comments.map(c => {
-        if (c.id === parentId && c.replies) {
-          return {
-            ...c,
-            replies: c.replies.filter(r => r.id !== id)
-          };
-        }
-        return c;
-      });
-      setComments(updatedComments);
-    } else {
-      // 일반 댓글 및 그 대댓글 삭제
-      setComments(comments.filter(c => c.id !== id));
+    try {
+      await deleteCommentMutation.mutateAsync(id);
+      alert('댓글이 삭제되었습니다.');
+    } catch (error) {
+      alert('댓글 삭제에 실패했습니다.');
+      console.error(error);
     }
-
-    alert('댓글이 삭제되었습니다.');
   };
 
   // 댓글 수정 권한 체크
@@ -167,27 +176,38 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
 
   // 게시글 수정 권한 체크
   const canEditPost = () => {
-    if (!selectedPost) return false;
-    return isLoggedIn && (selectedPost.author === currentUserName || userType === 'admin');
+    if (!post) return false;
+    return isLoggedIn && (post.author === currentUserName || userType === 'admin');
   };
 
   // 게시글 삭제 권한 체크
   const canDeletePost = () => {
-    if (!selectedPost) return false;
-    return isLoggedIn && (selectedPost.author === currentUserName || userType === 'admin');
+    if (!post) return false;
+    return isLoggedIn && (post.author === currentUserName || userType === 'admin');
   };
 
   const handleDeletePost = () => {
-    if (!selectedPost) return;
+    if (!post) return;
 
     if (confirm('게시글을 삭제하시겠습니까?')) {
-      onDeletePost(selectedPost.id);
+      onDeletePost(post.id);
       alert('게시글이 삭제되었습니다.');
-      onNavigateToBoard();
+      navigate('/community');
     }
   };
 
-  if (!selectedPost) {
+  if (isPostLoading || isCommentsLoading) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="mx-auto mb-4 animate-spin text-red-500" size={48} />
+          <p className="text-gray-500">게시글을 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isPostError || !post) {
     return (
       <div className="bg-gray-50 min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -203,8 +223,8 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
     );
   }
 
-  const currentViews = postViews.get(selectedPost.id) || selectedPost.views;
-  const extendedPost = selectedPost as ExtendedPost;
+  const currentViews = postViews.get(post.id) || post.views;
+  const extendedPost = post as ExtendedPost;
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -220,21 +240,21 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
           {/* 게시글 헤더 */}
           <div className="flex items-center gap-3 mb-4">
             <span className={`px-3 py-1 rounded font-bold ${
-              selectedPost.type === '공지' ? 'bg-red-100 text-red-600' :
-              selectedPost.type === '질문' ? 'bg-blue-100 text-blue-600' :
+              post.type === 'NOTICE' ? 'bg-red-100 text-red-600' :
+              post.type === 'QUESTION' ? 'bg-blue-100 text-blue-600' :
               'bg-green-100 text-green-600'
             }`}>
-              {selectedPost.type}
+              {POST_TYPE_LABELS[post.type]}
             </span>
           </div>
 
-          <h1 className="text-4xl font-bold mb-6">{selectedPost.title}</h1>
+          <h1 className="text-4xl font-bold mb-6">{post.title}</h1>
 
           <div className="flex items-center justify-between pb-6 mb-6 border-b border-gray-200">
             <div className="flex items-center gap-4">
-              <span className="font-semibold">{selectedPost.author}</span>
+              <span className="font-semibold">{post.author}</span>
               <span className="text-gray-500">•</span>
-              <span className="text-gray-500">{selectedPost.date}</span>
+              <span className="text-gray-500">{post.date}</span>
               <span className="text-gray-500">•</span>
               <span className="flex items-center gap-1 text-gray-500">
                 <Eye size={16} />
@@ -247,7 +267,7 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
               <div className="flex gap-2">
                 {canEditPost() && (
                   <button
-                    onClick={() => onNavigateToEdit(selectedPost)}
+                    onClick={() => onNavigateToEdit(post)}
                     className="flex items-center gap-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     <Edit size={16} />
@@ -270,7 +290,7 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
           {/* 게시글 내용 */}
           <div className="prose max-w-none mb-8">
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {selectedPost.content || '게시글 내용이 여기에 표시됩니다.'}
+              {post.content || '게시글 내용이 여기에 표시됩니다.'}
             </p>
           </div>
 

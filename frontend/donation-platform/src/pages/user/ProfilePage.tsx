@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Heart,
   Calendar,
@@ -22,11 +23,9 @@ interface ProfilePageProps {
   donationHistory: DonationHistory[];
   favoriteProjects: Project[];
   piggyBanks: PiggyBank[];
-  setCurrentPage: (page: any) => void;
   favoriteProjectIds: Set<number>;
   setFavoriteProjectIds: (ids: Set<number>) => void;
   setSelectedProject: (project: Project) => void;
-  setActiveTab: (tab: any) => void;
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = ({
@@ -36,12 +35,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   donationHistory,
   favoriteProjects,
   piggyBanks,
-  setCurrentPage,
   favoriteProjectIds,
   setFavoriteProjectIds,
   setSelectedProject,
-  setActiveTab,
 }) => {
+  const navigate = useNavigate();
   const [selectedMenu, setSelectedMenu] = useState<'main' | 'profile-edit' | 'donation-history' | 'favorite-projects' | 'piggy-bank'>('main');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [editedProfile, setEditedProfile] = useState<UserProfile>(userProfile);
@@ -183,12 +181,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   // 마이페이지 메인
   const MyPageMain = () => (
     <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-[1400px] mx-auto px-8 py-12">
-        <h1 className="text-5xl font-bold mb-12">마이페이지</h1>
+      <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 md:mb-8 lg:mb-12">마이페이지</h1>
 
-        <div className="grid grid-cols-4 gap-8">
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h3 className="text-xl font-bold mb-6">프로필</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
+          <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6">
+            <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6">프로필</h3>
             <div className="space-y-2">
               <button
                 onClick={() => setSelectedMenu('profile-edit')}
@@ -227,7 +225,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 <h3 className="text-xl font-bold mb-6">내 프로젝트</h3>
                 <div className="space-y-2">
                   <button
-                    onClick={() => setCurrentPage('create-project')}
+                    onClick={() => navigate('/projects/create')}
                     className="w-full py-3 text-left hover:bg-gray-50 rounded-lg px-4 font-semibold"
                   >
                     프로젝트 등록
@@ -243,35 +241,35 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             )}
           </div>
 
-          <div className="col-span-3 space-y-8">
-            <div className="bg-white border border-gray-200 rounded-xl p-8">
-              <h2 className="text-3xl font-bold mb-6">나의 기부 현황</h2>
-              <div className="grid grid-cols-3 gap-6">
-                <div className="p-6 bg-red-50 rounded-xl">
-                  <p className="text-sm text-gray-600 mb-2">총 기부 금액</p>
-                  <p className="text-3xl font-bold">{formatAmount(donationHistory.reduce((sum, d) => sum + d.amount, 0))}원</p>
+          <div className="lg:col-span-3 space-y-6 md:space-y-8">
+            <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 lg:p-8">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">나의 기부 현황</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+                <div className="p-4 md:p-6 bg-red-50 rounded-xl">
+                  <p className="text-xs md:text-sm text-gray-600 mb-2">총 기부 금액</p>
+                  <p className="text-2xl md:text-3xl font-bold">{formatAmount(donationHistory.reduce((sum, d) => sum + d.amount, 0))}원</p>
                 </div>
-                <div className="p-6 bg-blue-50 rounded-xl">
-                  <p className="text-sm text-gray-600 mb-2">참여 프로젝트</p>
-                  <p className="text-3xl font-bold">{donationHistory.length}개</p>
+                <div className="p-4 md:p-6 bg-blue-50 rounded-xl">
+                  <p className="text-xs md:text-sm text-gray-600 mb-2">참여 프로젝트</p>
+                  <p className="text-2xl md:text-3xl font-bold">{donationHistory.length}개</p>
                 </div>
-                <div className="p-6 bg-green-50 rounded-xl">
-                  <p className="text-sm text-gray-600 mb-2">관심 프로젝트</p>
-                  <p className="text-3xl font-bold">{favoriteProjects.length}개</p>
+                <div className="p-4 md:p-6 bg-green-50 rounded-xl">
+                  <p className="text-xs md:text-sm text-gray-600 mb-2">관심 프로젝트</p>
+                  <p className="text-2xl md:text-3xl font-bold">{favoriteProjects.length}개</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-8">
-              <h2 className="text-3xl font-bold mb-6">최근 기부 내역</h2>
-              <div className="space-y-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 lg:p-8">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">최근 기부 내역</h2>
+              <div className="space-y-3 md:space-y-4">
                 {donationHistory.slice(0, 3).map(donation => (
-                  <div key={donation.id} className="flex justify-between p-6 bg-gray-50 rounded-xl">
+                  <div key={donation.id} className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-4 p-4 md:p-6 bg-gray-50 rounded-xl">
                     <div>
-                      <p className="font-bold text-lg mb-1">{donation.projectTitle}</p>
-                      <p className="text-sm text-gray-500">{donation.date}</p>
+                      <p className="font-bold text-base md:text-lg mb-1">{donation.projectTitle}</p>
+                      <p className="text-xs md:text-sm text-gray-500">{donation.date}</p>
                     </div>
-                    <p className="font-bold text-2xl">{formatAmount(donation.amount)}원</p>
+                    <p className="font-bold text-xl md:text-2xl text-left sm:text-right">{formatAmount(donation.amount)}원</p>
                   </div>
                 ))}
               </div>
@@ -411,33 +409,33 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   // 관심 프로젝트 페이지
   const FavoriteProjectsPage = () => (
     <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-5xl mx-auto px-8 py-12">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
         <button
           onClick={() => setSelectedMenu('main')}
-          className="mb-8 text-gray-600 hover:text-gray-900 font-semibold"
+          className="mb-6 md:mb-8 text-gray-600 hover:text-gray-900 font-semibold text-sm md:text-base"
         >
           ← 마이페이지로
         </button>
 
-        <div className="bg-white rounded-2xl p-8 border border-gray-200">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold">관심 프로젝트</h2>
-            <span className="text-gray-600">{favoriteProjects.length}개 프로젝트</span>
+        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 border border-gray-200">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-2">
+            <h2 className="text-2xl md:text-3xl font-bold">관심 프로젝트</h2>
+            <span className="text-sm md:text-base text-gray-600">{favoriteProjects.length}개 프로젝트</span>
           </div>
 
           {favoriteProjects.length === 0 ? (
-            <div className="text-center py-20">
-              <Heart className="mx-auto text-gray-300 mb-4" size={64} />
-              <p className="text-gray-500 text-lg mb-4">관심 프로젝트가 없습니다.</p>
+            <div className="text-center py-12 md:py-20">
+              <Heart className="mx-auto text-gray-300 mb-4" size={48} />
+              <p className="text-gray-500 text-base md:text-lg mb-4">관심 프로젝트가 없습니다.</p>
               <button
-                onClick={() => setCurrentPage('projects')}
-                className="px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600"
+                onClick={() => navigate('/projects')}
+                className="px-5 md:px-6 py-2.5 md:py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 text-sm md:text-base"
               >
                 프로젝트 둘러보기
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {favoriteProjects.map(project => {
                 const progress = calculatePercentage(project.currentAmount, project.targetAmount);
                 return (
@@ -463,8 +461,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                       className="cursor-pointer"
                       onClick={() => {
                         setSelectedProject(project);
-                        setActiveTab('intro');
-                        setCurrentPage('detail');
+                        navigate(`/projects/${project.id}`);
                       }}
                     >
                       <div className="h-48 bg-gradient-to-br from-red-100 to-pink-100 flex items-center justify-center text-7xl">
