@@ -40,6 +40,9 @@ dependencies {
 
     // 웹 프로젝트인 경우, 아래 의존성도 함께 추가
     implementation 'org.springframework.boot:spring-boot-starter-web'
+
+	//argon2id 해시 암호화
+    implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
 }
 
 tasks.named('test') {
