@@ -2,20 +2,18 @@
 *.pem
 *.key
 *.ppk
-
 #환경변수
 .env
 .env.local
-
-#OD
+#OS
 .DS_Store
 Thumbs.db
-
 #IDE
 .idea/
 *.iml
-
-# Node modules (추가!)
+# Node modules
 **/node_modules/
 **/dist/
 **/build/
+# Claude
+.claude/
