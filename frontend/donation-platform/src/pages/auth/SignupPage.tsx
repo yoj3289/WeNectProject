@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Upload } from 'lucide-react';
 import type { PageType, UserType } from '../../types';
 
+// 추가
+import { checkEmailDuplicate as checkEmailApi, signup as signupApi } from '../../api/authAPI';
+
 interface SignupPageProps {
   setCurrentPage: (page: PageType) => void;
   setIsLoggedIn: (isLoggedIn: boolean) => void;
@@ -25,7 +28,9 @@ const SignupPage: React.FC<SignupPageProps> = ({
   const [signupRepName, setSignupRepName] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
-  const checkEmailDuplicate = (email: string) => {
+
+  //이메일 검증 잘되면 지워도 됨
+  /*const checkEmailDuplicate = (email: string) => {
     // 이메일 형식 검증
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -51,7 +56,36 @@ const SignupPage: React.FC<SignupPageProps> = ({
     } else {
       alert('사용 가능한 이메일입니다.');
     }
+  };*/
+
+
+  // 함수 수정
+  const checkEmailDuplicate = async (email: string) => {
+    // 이메일 형식 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      alert('올바른 이메일 형식이 아닙니다.');
+      return;
+    }
+
+    try {
+      // 실제 API 호출
+      const isAvailable = await checkEmailApi(email);
+
+      setIsEmailChecked(true);
+      setIsEmailAvailable(isAvailable);
+
+      if (isAvailable) {
+        alert('사용 가능한 이메일입니다.');
+      } else {
+        alert('이미 사용 중인 이메일입니다.');
+      }
+    } catch (error) {
+      alert('이메일 중복 확인 중 오류가 발생했습니다.');
+      console.error(error);
+    }
   };
+
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -75,7 +109,9 @@ const SignupPage: React.FC<SignupPageProps> = ({
     alert(`파일이 업로드되었습니다: ${file.name}`);
   };
 
-  const handleSignup = () => {
+
+  //기관 가입 안끝나서 일단 냅둠
+  /*const handleSignup = () => {
     // 이메일 중복 확인 여부
     if (!isEmailChecked) {
       alert('이메일 중복 확인을 해주세요.');
@@ -127,6 +163,82 @@ const SignupPage: React.FC<SignupPageProps> = ({
     setUploadedFile(null);
     setIsEmailChecked(false);
     setIsEmailAvailable(false);
+  };*/
+
+
+  const handleSignup = async () => {
+    // 이메일 중복 확인 여부
+    if (!isEmailChecked) {
+      alert('이메일 중복 확인을 해주세요.');
+      return;
+    }
+
+    if (!isEmailAvailable) {
+      alert('사용할 수 없는 이메일입니다.');
+      return;
+    }
+
+    // 비밀번호 검증
+    if (signupPassword.length < 8) {
+      alert('비밀번호는 8자 이상이어야 합니다.');
+      return;
+    }
+
+    const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+    if (!specialCharRegex.test(signupPassword)) {
+      alert('비밀번호는 특수문자를 포함해야 합니다.');
+      return;
+    }
+
+    if (signupPassword !== signupPasswordConfirm) {
+      alert('비밀번호가 일치하지 않습니다.');
+      return;
+    }
+
+    // 기관 회원인 경우 서류 확인
+    if (signupType === 'organization' && !uploadedFile) {
+      alert('기관 인증서류를 업로드해주세요.');
+      return;
+    }
+
+    try {
+      // 실제 API 호출
+      const response = await signupApi({
+        email: signupEmail,
+        password: signupPassword,
+        userName: signupName,
+        phone: signupPhone,
+        userType: signupType.toUpperCase() as 'INDIVIDUAL' | 'ORGANIZATION'
+      });
+
+      if (response.success) {
+        alert('회원가입이 완료되었습니다!');
+        setIsLoggedIn(true);
+        setUserType(signupType);
+        setCurrentPage('home');
+
+        // 입력 필드 초기화
+        setSignupEmail('');
+        setSignupPassword('');
+        setSignupPasswordConfirm('');
+        setSignupName('');
+        setSignupPhone('');
+        setSignupBusinessNumber('');
+        setSignupRepName('');
+        setUploadedFile(null);
+        setIsEmailChecked(false);
+        setIsEmailAvailable(false);
+      }
+    } catch (error: any) {
+      if (error.errorCode === 'DUPLICATE_EMAIL') {
+        alert('이미 사용 중인 이메일입니다.');
+      } else if (error.message) {
+        alert(error.message);
+      } else {
+        alert('회원가입 중 오류가 발생했습니다.');
+      }
+      console.error(error);
+    }
   };
 
   return (
@@ -147,21 +259,19 @@ const SignupPage: React.FC<SignupPageProps> = ({
                 setSignupType('individual');
                 setUploadedFile(null);
               }}
-              className={`flex-1 py-4 rounded-lg font-bold text-lg transition-all ${
-                signupType === 'individual'
-                  ? 'bg-red-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className={`flex-1 py-4 rounded-lg font-bold text-lg transition-all ${signupType === 'individual'
+                ? 'bg-red-500 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
             >
               일반 회원
             </button>
             <button
               onClick={() => setSignupType('organization')}
-              className={`flex-1 py-4 rounded-lg font-bold text-lg transition-all ${
-                signupType === 'organization'
-                  ? 'bg-red-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className={`flex-1 py-4 rounded-lg font-bold text-lg transition-all ${signupType === 'organization'
+                ? 'bg-red-500 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
             >
               기관 회원
             </button>
