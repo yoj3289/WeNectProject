@@ -43,6 +43,11 @@ dependencies {
 
 	//argon2id 해시 암호화
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
+
+	// JWT 라이브러리 추가 (로그인에 사용)
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
 }
 
 tasks.named('test') {

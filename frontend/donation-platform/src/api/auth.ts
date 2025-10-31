@@ -150,8 +150,14 @@ export interface ApiErrorResponse {
  * 회원가입
  */
 export const signup = async (data: SignupRequest): Promise<AuthResponse> => {
-  const response = await apiClient.post<ApiResponse<AuthResponse>>('/auth/signup', data);
-  return response.data;  // ApiResponse의 data 필드 추출
+  // userType을 대문자로 변환
+  const requestData = {
+    ...data,
+    userType: data.userType.toUpperCase() as 'INDIVIDUAL' | 'ORGANIZATION' | 'ADMIN'
+  };
+  
+  const response = await apiClient.post<ApiResponse<AuthResponse>>('/auth/signup', requestData);
+  return response.data;
 };
 
 /**

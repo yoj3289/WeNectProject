@@ -1,6 +1,8 @@
 package com.wenect.donation_paltform.controller;
 
 import com.wenect.donation_paltform.dto.ApiResponse;
+import com.wenect.donation_paltform.dto.LoginRequestDto;
+import com.wenect.donation_paltform.dto.LoginResponseDto;
 import com.wenect.donation_paltform.dto.SignupRequestDto;
 import com.wenect.donation_paltform.dto.SignupResponseDto;
 import com.wenect.donation_paltform.service.AuthService;
@@ -38,6 +40,18 @@ public class AuthController {
             !isDuplicate,  // 사용 가능하면 true
             isDuplicate ? "이미 사용 중인 이메일입니다" : "사용 가능한 이메일입니다"
         );
+        
+        return ResponseEntity.ok(response);
+    }
+
+    // 로그인 API 추가
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<LoginResponseDto>> login(
+            @Valid @RequestBody LoginRequestDto dto
+    ) {
+        LoginResponseDto responseDto = authService.login(dto);
+        ApiResponse<LoginResponseDto> response = 
+            ApiResponse.success(responseDto, "로그인 성공");
         
         return ResponseEntity.ok(response);
     }

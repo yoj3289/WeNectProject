@@ -11,22 +11,35 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         // Argon2id 사용
         return Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
     }
-    
+
+    /*
+     * @Bean
+     * public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+     * http
+     * .csrf(csrf -> csrf.disable())
+     * .authorizeHttpRequests(auth -> auth
+     * .requestMatchers("/api/auth/**").permitAll()
+     * .anyRequest().authenticated()
+     * );
+     * 
+     * return http.build();
+     * }
+     */
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
-                .anyRequest().authenticated()
-            );
-        
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll() // ← /api/auth/login도 포함됨
+                        .anyRequest().authenticated());
+
         return http.build();
     }
 }
