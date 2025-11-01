@@ -120,6 +120,53 @@ const SignupPage: React.FC = () => {
     return true;
   };
 
+
+  // 회원가입 방법 변경 시도(기관회원가입 오류로 인함 251101)
+  // const handleSignup = async () => {
+  //   if (!validateForm()) {
+  //     return;
+  //   }
+
+  //   try {
+  //     setErrorMessage('');
+
+  //     // 회원가입 요청 데이터 생성
+  //     const signupData = {
+  //       email: signupEmail,
+  //       password: signupPassword,
+  //       userName: signupName,
+  //       phone: signupPhone,
+  //       userType: signupType,
+  //       ...(signupType === 'organization' && {
+  //         organizationName: signupName,
+  //         businessNumber: signupBusinessNumber,
+  //         representativeName: signupRepName,
+  //       }),
+  //     };
+
+  //     await signup(signupData);
+
+  //     // 회원가입 성공
+  //     alert('회원가입이 완료되었습니다!');
+  //     navigate('/login');
+
+  //     // 입력 필드 초기화
+  //     setSignupEmail('');
+  //     setSignupPassword('');
+  //     setSignupPasswordConfirm('');
+  //     setSignupName('');
+  //     setSignupPhone('');
+  //     setSignupBusinessNumber('');
+  //     setSignupRepName('');
+  //     setUploadedFile(null);
+  //     setIsEmailChecked(false);
+  //     setIsEmailAvailable(false);
+  //   } catch (error: any) {
+  //     const message = error.response?.data?.message || '회원가입에 실패했습니다.';
+  //     setErrorMessage(message);
+  //   }
+  // };
+
   const handleSignup = async () => {
     if (!validateForm()) {
       return;
@@ -128,13 +175,16 @@ const SignupPage: React.FC = () => {
     try {
       setErrorMessage('');
 
-      // 회원가입 요청 데이터 생성
+      // FormData로 변환
+      const formData = new FormData();
+
+      // JSON 데이터
       const signupData = {
         email: signupEmail,
         password: signupPassword,
         userName: signupName,
         phone: signupPhone,
-        userType: signupType,
+        userType: signupType.toUpperCase(),
         ...(signupType === 'organization' && {
           organizationName: signupName,
           businessNumber: signupBusinessNumber,
@@ -142,11 +192,22 @@ const SignupPage: React.FC = () => {
         }),
       };
 
-      await signup(signupData);
+      // data 파트 (JSON)
+      formData.append('data', new Blob([JSON.stringify(signupData)], {
+        type: 'application/json'
+      }));
+
+      // file 파트 (기관 회원인 경우)
+      if (uploadedFile && signupType === 'organization') {
+        formData.append('file', uploadedFile);
+      }
+
+      // FormData 전송
+      await signup(formData);
 
       // 회원가입 성공
       alert('회원가입이 완료되었습니다!');
-      navigate('/login');
+      navigate('/');  // 자동 로그인되므로 홈으로
 
       // 입력 필드 초기화
       setSignupEmail('');
@@ -193,22 +254,20 @@ const SignupPage: React.FC = () => {
                 setUploadedFile(null);
               }}
               disabled={isSigningUp}
-              className={`flex-1 py-4 rounded-lg font-bold text-lg transition-all disabled:cursor-not-allowed ${
-                signupType === 'individual'
+              className={`flex-1 py-4 rounded-lg font-bold text-lg transition-all disabled:cursor-not-allowed ${signupType === 'individual'
                   ? 'bg-red-500 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+                }`}
             >
               일반 회원
             </button>
             <button
               onClick={() => setSignupType('organization')}
               disabled={isSigningUp}
-              className={`flex-1 py-4 rounded-lg font-bold text-lg transition-all disabled:cursor-not-allowed ${
-                signupType === 'organization'
+              className={`flex-1 py-4 rounded-lg font-bold text-lg transition-all disabled:cursor-not-allowed ${signupType === 'organization'
                   ? 'bg-red-500 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+                }`}
             >
               기관 회원
             </button>

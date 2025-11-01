@@ -149,8 +149,18 @@ export interface ApiErrorResponse {
 /**
  * 회원가입
  */
-export const signup = async (data: SignupRequest): Promise<AuthResponse> => {
-  // userType을 대문자로 변환
+export const signup = async (data: SignupRequest | FormData): Promise<AuthResponse> => {
+  // FormData인 경우 그대로 전송
+  if (data instanceof FormData) {
+    const response = await apiClient.post<ApiResponse<AuthResponse>>('/auth/signup', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+  
+  // 일반 객체인 경우 (일반 회원)
   const requestData = {
     ...data,
     userType: data.userType.toUpperCase() as 'INDIVIDUAL' | 'ORGANIZATION' | 'ADMIN'
