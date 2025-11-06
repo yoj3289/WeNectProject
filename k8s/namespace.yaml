@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: wenect
+  labels:
+    name: wenect
+    environment: production

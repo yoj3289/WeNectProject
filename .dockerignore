@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+LICENSE
+DEPLOYMENT.md
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
+
+# Testing
+coverage
+*.test
+
+# Build artifacts (will be built in Docker)
+**/node_modules
+**/dist
+**/build
+**/.gradle
+**/target
+
+# Environment files
+.env
+.env.local
+.env.*
+!.env.example
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Kubernetes
+k8s/
+
+# CI/CD
+Jenkinsfile
+.github/
+.gitlab-ci.yml

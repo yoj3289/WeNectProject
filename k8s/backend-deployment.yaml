@@ -1,0 +1,134 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: wenect
+  labels:
+    app: backend
+spec:
+  replicas: 2  # 고가용성을 위해 2개의 레플리카
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: your-docker-registry/wenect-backend:latest  # Jenkins에서 빌드된 이미지
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        # ConfigMap에서 가져오는 환경변수
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: wenect-config
+              key: SPRING_PROFILES_ACTIVE
+        - name: SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: wenect-config
+              key: SERVER_PORT
+
+        # Database connection
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:mysql://$(DB_HOST):$(DB_PORT)/$(DB_NAME)?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: wenect-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: wenect-config
+              key: DB_PORT
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: wenect-config
+              key: DB_NAME
+
+        # Secret에서 가져오는 민감한 정보
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: wenect-secret
+              key: DB_USERNAME
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: wenect-secret
+              key: DB_PASSWORD
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: wenect-secret
+              key: JWT_SECRET
+
+        # JPA configuration
+        - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+          valueFrom:
+            configMapKeyRef:
+              name: wenect-config
+              key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        - name: SPRING_JPA_SHOW_SQL
+          valueFrom:
+            configMapKeyRef:
+              name: wenect-config
+              key: SPRING_JPA_SHOW_SQL
+
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+      # MySQL이 준비될 때까지 대기
+      initContainers:
+      - name: wait-for-mysql
+        image: busybox:1.36
+        command: ['sh', '-c', 'until nc -z mysql-service 3306; do echo waiting for mysql; sleep 2; done;']
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: wenect
+  labels:
+    app: backend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: backend
