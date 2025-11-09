@@ -6,8 +6,8 @@ metadata:
   annotations:
     # Nginx Ingress Controller 사용 시
     kubernetes.io/ingress.class: "nginx"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    # 도메인 없이 IP로 접근하므로 SSL 리다이렉트 비활성화
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
 
     # CORS 설정
     nginx.ingress.kubernetes.io/enable-cors: "true"
@@ -23,18 +23,10 @@ metadata:
     # Rate limiting (선택사항)
     nginx.ingress.kubernetes.io/limit-rps: "100"
 
-    # Let's Encrypt SSL 인증서 자동 발급 (cert-manager 사용 시)
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-
 spec:
-  tls:
-  - hosts:
-    - wenect.yourdomain.com  # 실제 도메인으로 변경
-    secretName: wenect-tls-secret
-
+  # 도메인 없이 IP로 접근 - TLS 섹션 제거
   rules:
-  - host: wenect.yourdomain.com  # 실제 도메인으로 변경
-    http:
+  - http:  # host 필드 없음 - 모든 IP로 접근 가능
       paths:
       # Backend API 라우팅
       - path: /api
@@ -46,29 +38,6 @@ spec:
               number: 8080
 
       # Frontend 라우팅 (기본)
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: frontend-service
-            port:
-              number: 80
-
----
-# HTTP를 HTTPS로 리다이렉트하는 Ingress (선택사항)
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: wenect-ingress-http-redirect
-  namespace: wenect
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-spec:
-  rules:
-  - host: wenect.yourdomain.com  # 실제 도메인으로 변경
-    http:
-      paths:
       - path: /
         pathType: Prefix
         backend:

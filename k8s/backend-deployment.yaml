@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: your-docker-registry/wenect-backend:latest  # Jenkins에서 빌드된 이미지
+        image: ap-chuncheon-1.ocir.io/axabwwl6wx8h/wenect-backend:latest  # Jenkins에서 빌드된 이미지
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
