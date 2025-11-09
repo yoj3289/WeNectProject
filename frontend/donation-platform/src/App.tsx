@@ -673,6 +673,7 @@ import SignupPage from './pages/auth/SignupPage';
 import ProjectListPage from './pages/project/ProjectListPage';
 import ProjectDetailPage from './pages/project/ProjectDetailPage';
 import ProjectCreatePage from './pages/project/ProjectCreatePage';
+import { useParams } from 'react-router-dom';
 import BoardPage from './pages/community/BoardPage';
 import PostDetailPage from './pages/community/PostDetailPage';
 import EditPostPage from './pages/community/EditPostPage';
@@ -706,7 +707,7 @@ const queryClient = new QueryClient({
 const DonationPlatform: React.FC = () => {
   // ✅ useAuth로 실제 로그인 상태 가져오기
   const { isLoggedIn, user, logout } = useAuth();
-  
+
   // userType은 user 객체에서 가져오기 (기본값은 'individual')
   const userType: UserType = user?.userType || 'individual';
 
@@ -714,6 +715,26 @@ const DonationPlatform: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null);
+
+  // URL 파라미터에서 ID를 추출하는 Wrapper 컴포넌트
+  const ProjectDetailPageWrapper: React.FC<{
+    isLoggedIn: boolean;
+    favoriteProjectIds: Set<number>;
+    onShowDonationModal: () => void;
+  }> = ({ isLoggedIn, favoriteProjectIds, onShowDonationModal }) => {
+    const { id } = useParams<{ id: string }>();
+    const projectId = Number(id);
+
+    return (
+      <ProjectDetailPage
+        projectId={projectId}
+        isLoggedIn={isLoggedIn}
+        favoriteProjectIds={favoriteProjectIds}
+        onNavigateToLogin={() => {}}
+        onShowDonationModal={onShowDonationModal}
+      />
+    );
+  };
 
   // Project & Donation states
   const [favoriteProjectIds, setFavoriteProjectIds] = useState<Set<number>>(new Set([1, 2, 5]));
@@ -1227,11 +1248,9 @@ const DonationPlatform: React.FC = () => {
                 />
               } />
               <Route path="/projects/:id" element={
-                <ProjectDetailPage
-                  projectId={selectedProject?.id || 0}
+                <ProjectDetailPageWrapper
                   isLoggedIn={isLoggedIn}
                   favoriteProjectIds={favoriteProjectIds}
-                  onNavigateToLogin={() => {}}
                   onShowDonationModal={() => setShowDonationModal(true)}
                 />
               } />

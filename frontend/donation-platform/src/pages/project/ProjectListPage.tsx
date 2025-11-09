@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Heart, FileText, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2, AlertCircle } from 'lucide-react';
 import { useProjects, useToggleFavoriteProject } from '../../hooks/useProjects';
 import type { Project } from '../../types';
@@ -16,6 +17,7 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
   onProjectSelect,
   onNavigateToLogin
 }) => {
+  const navigate = useNavigate();
   // State
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [sortOption, setSortOption] = useState<string>('최신순');
@@ -70,7 +72,7 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
   };
 
   const handleProjectClick = (project: Project) => {
-    onProjectSelect(project);
+    navigate(`/projects/${project.id}`);
   };
 
   const handleCategoryReset = () => {

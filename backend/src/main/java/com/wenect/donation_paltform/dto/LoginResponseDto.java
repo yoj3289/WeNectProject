@@ -34,7 +34,7 @@ public class LoginResponseDto {
                         .userId(user.getUserId())
                         .email(user.getEmail())
                         .userName(user.getUserName())
-                        .userType(user.getUserType().name())
+                        .userType(user.getUserType().name().toLowerCase()) // 소문자로 변환
                         .phone(user.getPhone())
                         .build())
                 .build();

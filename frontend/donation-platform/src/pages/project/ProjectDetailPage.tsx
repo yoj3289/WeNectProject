@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
+import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProjectDetail, useToggleFavoriteProject } from '../../hooks/useProjects';
 import { useDonors } from '../../hooks/useDonations';
 import type { TabType } from '../../types';
@@ -24,6 +24,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   // State
   const [activeTab, setActiveTab] = useState<TabType>('intro');
   const [showAnonymousDonors, setShowAnonymousDonors] = useState(true);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // API: 프로젝트 상세 정보 조회
   const { data: project, isLoading: isLoadingProject, isError: isErrorProject, error: projectError } = useProjectDetail(projectId);
@@ -387,12 +388,70 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
           {/* 메인 컨텐츠 */}
           <div className="lg:col-span-2 space-y-4 md:space-y-6">
-            {/* 프로젝트 이미지 */}
-            <div className={`bg-gradient-to-br ${categoryInfo.bgColor} rounded-xl md:rounded-2xl p-8 md:p-12 lg:p-16 flex items-center justify-center`}>
-              <div className="text-gray-400">
-                {categoryInfo.icon}
+            {/* 프로젝트 이미지 슬라이드 */}
+            {project.images && project.images.length > 0 ? (
+              <div className="relative bg-black rounded-xl md:rounded-2xl overflow-hidden group">
+                {/* 메인 이미지 */}
+                <div className="aspect-video bg-gray-900 flex items-center justify-center">
+                  <img
+                    src={`http://localhost:8080${project.images[currentImageIndex].imageUrl}`}
+                    alt={`${project.title} - 이미지 ${currentImageIndex + 1}`}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+
+                {/* 이전/다음 버튼 */}
+                {project.images.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setCurrentImageIndex((prev) =>
+                        prev === 0 ? project.images.length - 1 : prev - 1
+                      )}
+                      className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 md:p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <button
+                      onClick={() => setCurrentImageIndex((prev) =>
+                        prev === project.images.length - 1 ? 0 : prev + 1
+                      )}
+                      className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 md:p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <ChevronRight size={24} />
+                    </button>
+                  </>
+                )}
+
+                {/* 이미지 인디케이터 */}
+                {project.images.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    {project.images.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentImageIndex(index)}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          index === currentImageIndex
+                            ? 'bg-white w-8'
+                            : 'bg-white/50 hover:bg-white/75'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* 이미지 카운터 */}
+                <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                  {currentImageIndex + 1} / {project.images.length}
+                </div>
               </div>
-            </div>
+            ) : (
+              // 이미지가 없을 때 기본 카테고리 아이콘 표시
+              <div className={`bg-gradient-to-br ${categoryInfo.bgColor} rounded-xl md:rounded-2xl p-8 md:p-12 lg:p-16 flex items-center justify-center`}>
+                <div className="text-gray-400">
+                  {categoryInfo.icon}
+                </div>
+              </div>
+            )}
 
             {/* 프로젝트 상세 카드 (제목 + 탭) */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

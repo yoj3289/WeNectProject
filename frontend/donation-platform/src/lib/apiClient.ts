@@ -96,7 +96,16 @@ class ApiClient {
    * POST 요청
    */
   async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await this.axiosInstance.post(url, data, config);
+    // FormData인 경우 Content-Type을 multipart/form-data로 설정
+    const isFormData = data instanceof FormData;
+    const headers = isFormData
+      ? { 'Content-Type': 'multipart/form-data' }
+      : config?.headers || {};
+
+    const response: AxiosResponse<T> = await this.axiosInstance.post(url, data, {
+      ...config,
+      headers,
+    });
     return response.data;
   }
 
