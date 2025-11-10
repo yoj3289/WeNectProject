@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import PiggyBankPage from './PiggyBankPage';
 import DonationHistoryPage from './DonationHistoryPage';
+import { useAuthStore } from '../../stores/authStore';
 import type {
   UserType,
   UserProfile,
@@ -40,9 +41,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   setSelectedProject,
 }) => {
   const navigate = useNavigate();
+  const { updateUser } = useAuthStore();
   const [selectedMenu, setSelectedMenu] = useState<'main' | 'profile-edit' | 'donation-history' | 'favorite-projects' | 'piggy-bank'>('main');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [editedProfile, setEditedProfile] = useState<UserProfile>(userProfile);
 
   // Helper Functions
   const formatAmount = (amount: number): string => {
@@ -95,13 +96,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     if (window.confirm('정산을 요청하시겠습니까?')) {
       alert('정산 요청이 완료되었습니다. 관리자 승인 후 처리됩니다.');
     }
-  };
-
-  // 프로필 업데이트 함수
-  const handleUpdateProfile = (updatedProfile: UserProfile) => {
-    setUserProfile(updatedProfile);
-    alert('프로필이 업데이트되었습니다.');
-    setSelectedMenu('main');
   };
 
   // 비밀번호 변경 함수
@@ -280,131 +274,172 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     </div>
   );
 
-  // 프로필 수정 페이지
+  // 프로필 수정 페이지 (PasswordChangeModal과 동일한 패턴 - 개별 state 사용)
   const ProfileEditPage = () => {
+    // ✅ 각 필드마다 독립적인 primitive state 사용 (부모 state에 의존하지 않음)
+    const [name, setName] = useState(userProfile.name);
+    const [email, setEmail] = useState(userProfile.email);
+    const [phone, setPhone] = useState(userProfile.phone);
+    const [donation, setDonation] = useState(userProfile.notificationSettings.donation);
+    const [project, setProject] = useState(userProfile.notificationSettings.project);
+    const [comment, setComment] = useState(userProfile.notificationSettings.comment);
+    const [newsletter, setNewsletter] = useState(userProfile.notificationSettings.newsletter);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSave = async () => {
+      setIsLoading(true);
+
+      try {
+        // TODO: 실제 API 호출로 변경 필요
+        // await updateProfile({ email, userName: name, phone });
+        // await updateNotificationSettings({ ... });
+
+        // 1. App.tsx의 userProfile state 업데이트
+        const updatedProfile: UserProfile = {
+          name,
+          email,
+          phone,
+          notificationSettings: {
+            donation,
+            project,
+            comment,
+            newsletter,
+          },
+        };
+        setUserProfile(updatedProfile);
+
+        // 2. Zustand store의 user 객체도 업데이트 (우측 상단 이름 반영)
+        updateUser({
+          userName: name,
+          email: email,
+          phone: phone,
+        });
+
+        alert('프로필이 수정되었습니다.');
+        setSelectedMenu('main');
+      } catch (error) {
+        console.error('프로필 수정 실패:', error);
+        alert('프로필 수정에 실패했습니다.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     return (
-      <div className="bg-gray-50 min-h-screen py-16">
-        <div className="max-w-3xl mx-auto px-8">
+      <div className="bg-gray-50 min-h-screen">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
           <button
             onClick={() => setSelectedMenu('main')}
-            className="mb-8 text-gray-600 hover:text-gray-900 font-semibold"
+            className="mb-6 md:mb-8 text-gray-600 hover:text-gray-900 font-semibold text-sm md:text-base"
           >
             ← 마이페이지로
           </button>
 
-          <div className="bg-white rounded-2xl p-12 border border-gray-200">
-            <h1 className="text-4xl font-bold mb-10">프로필 수정</h1>
+          <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 border border-gray-200">
+            <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">프로필 수정</h2>
 
-            <div className="space-y-6">
+            <div className="space-y-6 md:space-y-8">
+              {/* 기본 정보 */}
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">이름</label>
-                <input
-                  type="text"
-                  value={editedProfile.name}
-                  onChange={(e) => setEditedProfile({...editedProfile, name: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">이메일</label>
-                <input
-                  type="email"
-                  value={editedProfile.email}
-                  onChange={(e) => setEditedProfile({...editedProfile, email: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">전화번호</label>
-                <input
-                  type="tel"
-                  value={editedProfile.phone}
-                  onChange={(e) => setEditedProfile({...editedProfile, phone: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500"
-                />
-              </div>
-
-              <div className="pt-6 border-t border-gray-200">
-                <h2 className="text-2xl font-bold mb-6">알림 설정</h2>
-                <div className="space-y-4">
-                  <label className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer">
-                    <span className="font-semibold">기부 관련 알림</span>
+                <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6">기본 정보</h3>
+                <div className="space-y-4 md:space-y-6">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">이름</label>
                     <input
-                      type="checkbox"
-                      checked={editedProfile.notificationSettings.donation}
-                      onChange={(e) => setEditedProfile({
-                        ...editedProfile,
-                        notificationSettings: {
-                          ...editedProfile.notificationSettings,
-                          donation: e.target.checked
-                        }
-                      })}
-                      className="w-5 h-5"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500"
                     />
-                  </label>
-                  <label className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer">
-                    <span className="font-semibold">프로젝트 관련 알림</span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">이메일</label>
                     <input
-                      type="checkbox"
-                      checked={editedProfile.notificationSettings.project}
-                      onChange={(e) => setEditedProfile({
-                        ...editedProfile,
-                        notificationSettings: {
-                          ...editedProfile.notificationSettings,
-                          project: e.target.checked
-                        }
-                      })}
-                      className="w-5 h-5"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500"
                     />
-                  </label>
-                  <label className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer">
-                    <span className="font-semibold">댓글 알림</span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">전화번호</label>
                     <input
-                      type="checkbox"
-                      checked={editedProfile.notificationSettings.comment}
-                      onChange={(e) => setEditedProfile({
-                        ...editedProfile,
-                        notificationSettings: {
-                          ...editedProfile.notificationSettings,
-                          comment: e.target.checked
-                        }
-                      })}
-                      className="w-5 h-5"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500"
+                      placeholder="010-0000-0000"
                     />
-                  </label>
-                  <label className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer">
-                    <span className="font-semibold">뉴스레터 수신</span>
-                    <input
-                      type="checkbox"
-                      checked={editedProfile.notificationSettings.newsletter}
-                      onChange={(e) => setEditedProfile({
-                        ...editedProfile,
-                        notificationSettings: {
-                          ...editedProfile.notificationSettings,
-                          newsletter: e.target.checked
-                        }
-                      })}
-                      className="w-5 h-5"
-                    />
-                  </label>
+                  </div>
                 </div>
               </div>
 
-              <button
-                onClick={() => handleUpdateProfile(editedProfile)}
-                className="w-full py-4 bg-red-500 text-white rounded-lg font-bold text-lg hover:bg-red-600 transition-all"
-              >
-                저장하기
-              </button>
+              {/* 알림 설정 */}
+              <div className="pt-6 md:pt-8 border-t border-gray-200">
+                <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6">알림 설정</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <span className="font-semibold">기부 관련 알림</span>
+                    <input
+                      type="checkbox"
+                      checked={donation}
+                      onChange={(e) => setDonation(e.target.checked)}
+                      className="w-5 h-5 text-red-500 rounded focus:ring-red-500"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <span className="font-semibold">프로젝트 관련 알림</span>
+                    <input
+                      type="checkbox"
+                      checked={project}
+                      onChange={(e) => setProject(e.target.checked)}
+                      className="w-5 h-5 text-red-500 rounded focus:ring-red-500"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <span className="font-semibold">댓글 알림</span>
+                    <input
+                      type="checkbox"
+                      checked={comment}
+                      onChange={(e) => setComment(e.target.checked)}
+                      className="w-5 h-5 text-red-500 rounded focus:ring-red-500"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <span className="font-semibold">뉴스레터 수신</span>
+                    <input
+                      type="checkbox"
+                      checked={newsletter}
+                      onChange={(e) => setNewsletter(e.target.checked)}
+                      className="w-5 h-5 text-red-500 rounded focus:ring-red-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 저장 버튼 */}
+              <div className="flex gap-3 md:gap-4 pt-6 md:pt-8">
+                <button
+                  onClick={() => setSelectedMenu('main')}
+                  disabled={isLoading}
+                  className="flex-1 py-3 md:py-4 border border-gray-300 text-gray-700 rounded-lg font-bold text-base md:text-lg hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isLoading}
+                  className="flex-1 py-3 md:py-4 bg-red-500 text-white rounded-lg font-bold text-base md:text-lg hover:bg-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? '저장 중...' : '저장하기'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
     );
   };
-
 
   // 관심 프로젝트 페이지
   const FavoriteProjectsPage = () => (

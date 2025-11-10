@@ -2,11 +2,15 @@ import { apiClient } from '../lib/apiClient';
 
 // ==================== 요청 타입 ====================
 export interface UpdateProfileRequest {
-  userName?: string;
-  phone?: string;
-  address?: string;
-  birthDate?: string;
-  profileImageUrl?: string;
+  email: string;
+  userName: string;
+  phone: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
 export interface UpdateNotificationSettingsRequest {
@@ -22,13 +26,9 @@ export interface UserProfileResponse {
   userId: number;
   email: string;
   userName: string;
-  phone?: string;
+  phone: string;
   userType: string;
-  address?: string;
-  birthDate?: string;
-  profileImageUrl?: string;
   createdAt: string;
-  lastLoginAt?: string;
 }
 
 export interface NotificationSettingsResponse {
@@ -45,14 +45,21 @@ export interface NotificationSettingsResponse {
  * 내 프로필 조회
  */
 export const getMyProfile = async (): Promise<UserProfileResponse> => {
-  return apiClient.get<UserProfileResponse>('/users/profile');
+  return apiClient.get<UserProfileResponse>('/users/me');
 };
 
 /**
  * 프로필 수정
  */
 export const updateProfile = async (data: UpdateProfileRequest): Promise<UserProfileResponse> => {
-  return apiClient.put<UserProfileResponse>('/users/profile', data);
+  return apiClient.put<UserProfileResponse>('/users/me', data);
+};
+
+/**
+ * 비밀번호 변경
+ */
+export const changePassword = async (data: ChangePasswordRequest): Promise<void> => {
+  return apiClient.put<void>('/users/me/password', data);
 };
 
 /**

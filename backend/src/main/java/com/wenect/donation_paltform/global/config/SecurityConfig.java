@@ -26,7 +26,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:5175",
+            "http://localhost:5176",
+            "http://localhost:5177"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
@@ -47,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/donations/**").permitAll()
                         .requestMatchers("/api/statistics/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll() // 업로드된 파일 접근 허용
+                        .requestMatchers("/api/users/me/**").authenticated() // 사용자 프로필 API는 인증 필요
                         .anyRequest().authenticated());
 
         return http.build();

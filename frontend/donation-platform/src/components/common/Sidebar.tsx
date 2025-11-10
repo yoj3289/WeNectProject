@@ -6,7 +6,8 @@ import {
   Users,
   DollarSign,
   BarChart3,
-  Settings
+  Settings,
+  Building2
 } from 'lucide-react';
 import type { UserType } from '../../types';
 
@@ -54,6 +55,7 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
 }) => {
   const menuItems: AdminMenuItem[] = [
     { id: 'dashboard', icon: LayoutDashboard, label: '대시보드' },
+    { id: 'organizations', icon: Building2, label: '기관 승인' },
     { id: 'projects', icon: FolderCheck, label: '프로젝트 승인' },
     { id: 'users', icon: Users, label: '사용자 관리' },
     { id: 'settlements', icon: DollarSign, label: '정산 관리' },
