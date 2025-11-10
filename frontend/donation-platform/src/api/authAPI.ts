@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-//포트번호는 본인한테 맞는걸로 수정
-const API_BASE_URL = 'http://localhost:포트번호/api/auth';
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'}/auth`;
 
 export interface SignupRequest {
   email: string;
