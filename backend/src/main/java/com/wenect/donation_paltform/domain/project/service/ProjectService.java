@@ -61,19 +61,19 @@ public class ProjectService {
     private String getCategoryName(Integer categoryId) {
         switch (categoryId) {
             case 1:
-                return "아동복지";
+                return "Child Welfare";
             case 2:
-                return "노인복지";
+                return "Elder Care";
             case 3:
-                return "장애인복지";
+                return "Disability Support";
             case 4:
-                return "동물보호";
+                return "Animal Protection";
             case 5:
-                return "환경보호";
+                return "Environment";
             case 6:
-                return "교육";
+                return "Education";
             default:
-                return "기타";
+                return "Others";
         }
     }
 

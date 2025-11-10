@@ -16,7 +16,7 @@ public class ProjectDocument {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "document_id")
+    @Column(name = "doc_id")
     private Long documentId;
 
     @Column(name = "project_id", nullable = false)
@@ -32,7 +32,7 @@ public class ProjectDocument {
     private Long fileSize;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "document_type", nullable = false, length = 20)
+    @Column(name = "doc_type", nullable = false, length = 20)
     private DocumentType documentType;
 
     @Column(name = "uploaded_at", nullable = false, updatable = false)

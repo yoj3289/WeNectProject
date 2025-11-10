@@ -58,6 +58,22 @@ export const POST_TYPE_LABELS: Record<PostType, string> = {
   GENERAL: '일반'
 };
 
+// 카테고리 영어 -> 한글 매핑
+export const CATEGORY_LABELS: Record<string, string> = {
+  'Child Welfare': '아동복지',
+  'Elder Care': '노인복지',
+  'Disability Support': '장애인복지',
+  'Animal Protection': '동물보호',
+  'Environment': '환경보호',
+  'Education': '교육',
+  'Others': '기타'
+};
+
+// 카테고리 변환 함수
+export const getCategoryLabel = (category: string): string => {
+  return CATEGORY_LABELS[category] || category;
+};
+
 export interface Comment {
   id: number;
   author: string;

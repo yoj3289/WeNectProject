@@ -4,6 +4,7 @@ import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, A
 import { useProjectDetail, useToggleFavoriteProject } from '../../hooks/useProjects';
 import { useDonors } from '../../hooks/useDonations';
 import type { TabType } from '../../types';
+import { getCategoryLabel } from '../../types';
 
 interface ProjectDetailPageProps {
   projectId: number;
@@ -136,7 +137,8 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
   const progress = calculatePercentage(project.currentAmount, project.targetAmount);
   const isFavorite = favoriteProjectIds.has(project.id);
-  const categoryInfo = getCategoryIcon(project.category);
+  const categoryKo = getCategoryLabel(project.category); // 영어 -> 한글 변환
+  const categoryInfo = getCategoryIcon(categoryKo);
 
   // 응원 메시지가 있는 기부자만 필터링
   const donorsWithMessages = donors.filter(d => d.message);
@@ -459,7 +461,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               <div className="p-4 md:p-6 lg:p-8 border-b border-gray-200">
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <span className="px-2 md:px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs md:text-sm font-semibold">
-                    {project.category}
+                    {categoryKo}
                   </span>
                   <span className="px-2 md:px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs md:text-sm font-semibold">
                     D-{project.dday}

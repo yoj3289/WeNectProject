@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Heart, FileText, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2, AlertCircle } from 'lucide-react';
 import { useProjects, useToggleFavoriteProject } from '../../hooks/useProjects';
 import type { Project } from '../../types';
+import { getCategoryLabel } from '../../types';
 
 interface ProjectListPageProps {
   isLoggedIn: boolean;
@@ -201,7 +202,8 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
             {displayProjects.map(project => {
               const progress = calculatePercentage(project.currentAmount, project.targetAmount);
               const isFavorite = favoriteProjectIds.has(project.id);
-              const categoryInfo = getCategoryIcon(project.category);
+              const categoryKo = getCategoryLabel(project.category); // 영어 -> 한글 변환
+              const categoryInfo = getCategoryIcon(categoryKo);
 
               return (
                 <div

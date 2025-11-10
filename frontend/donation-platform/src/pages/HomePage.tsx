@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Users, CheckCircle, Eye, Award, Heart, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2 } from 'lucide-react';
 import type { UserType } from '../types';
+import { getCategoryLabel } from '../types';
 import { usePopularProjects } from '../hooks/useProjects';
 import { useRecentDonations } from '../hooks/useDonations';
 import { useStatisticsSummary } from '../hooks/useStatistics';
@@ -150,7 +151,8 @@ const HomePage: React.FC<HomePageProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {projects.slice(0, 4).map(project => {
               const progress = calculatePercentage(project.currentAmount, project.targetAmount);
-              const categoryInfo = getCategoryIcon(project.category);
+              const categoryKo = getCategoryLabel(project.category); // 영어 -> 한글 변환
+              const categoryInfo = getCategoryIcon(categoryKo);
               return (
                 <div
                   key={project.id}
@@ -161,7 +163,7 @@ const HomePage: React.FC<HomePageProps> = ({
                     {categoryInfo.icon}
                   </div>
                   <div className="p-4 md:p-5">
-                    <div className="text-xs md:text-sm text-red-500 font-semibold mb-2">{project.category}</div>
+                    <div className="text-xs md:text-sm text-red-500 font-semibold mb-2">{categoryKo}</div>
                     <h4 className="text-base md:text-lg font-bold mb-3 line-clamp-2">{project.title}</h4>
 
                     <div className="mb-4">
