@@ -88,7 +88,23 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   };
 
   const addTable = () => {
-    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    const rows = window.prompt('행(row) 개수를 입력하세요:', '3');
+    const cols = window.prompt('열(column) 개수를 입력하세요:', '3');
+
+    if (rows && cols) {
+      const rowCount = parseInt(rows);
+      const colCount = parseInt(cols);
+
+      if (rowCount > 0 && rowCount <= 20 && colCount > 0 && colCount <= 20) {
+        editor.chain().focus().insertTable({
+          rows: rowCount,
+          cols: colCount,
+          withHeaderRow: true
+        }).run();
+      } else {
+        alert('행과 열은 1~20 사이의 숫자여야 합니다.');
+      }
+    }
   };
 
   return (
@@ -111,15 +127,33 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           >
             <option value="default">기본 폰트</option>
             <option value="'Malgun Gothic', '맑은 고딕', sans-serif">맑은 고딕</option>
-            <option value="'Noto Sans KR', sans-serif">Noto Sans</option>
+            <option value="'Noto Sans KR', sans-serif">Noto Sans KR</option>
             <option value="'Nanum Gothic', '나눔고딕', sans-serif">나눔고딕</option>
             <option value="'Nanum Myeongjo', '나눔명조', serif">나눔명조</option>
+            <option value="'Nanum Gothic Coding', sans-serif">나눔고딕코딩</option>
+            <option value="'Nanum Brush Script', cursive">나눔손글씨 붓</option>
+            <option value="'Nanum Pen Script', cursive">나눔손글씨 펜</option>
+            <option value="'Black Han Sans', sans-serif">Black Han Sans</option>
+            <option value="'Jua', sans-serif">주아체</option>
+            <option value="'Do Hyeon', sans-serif">도현체</option>
+            <option value="'Sunflower', sans-serif">Sunflower</option>
+            <option value="'Cute Font', cursive">Cute Font</option>
+            <option value="'Single Day', cursive">Single Day</option>
+            <option value="'Gaegu', cursive">개구쟁이체</option>
+            <option value="'Gamja Flower', cursive">감자꽃체</option>
+            <option value="'Hi Melody', cursive">Hi Melody</option>
+            <option value="'Poor Story', cursive">Poor Story</option>
+            <option value="'Yeon Sung', cursive">연성체</option>
+            <option value="'Stylish', sans-serif">Stylish</option>
             <option value="'Batang', '바탕', serif">바탕</option>
             <option value="'Dotum', '돋움', sans-serif">돋움</option>
             <option value="'Gulim', '굴림', sans-serif">굴림</option>
+            <option value="'Gungsuh', '궁서', serif">궁서</option>
             <option value="Arial, sans-serif">Arial</option>
             <option value="'Times New Roman', serif">Times New Roman</option>
             <option value="Georgia, serif">Georgia</option>
+            <option value="'Courier New', monospace">Courier New</option>
+            <option value="Verdana, sans-serif">Verdana</option>
           </select>
         </div>
 
@@ -128,7 +162,17 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <select
             onChange={(e) => {
               const size = e.target.value;
-              if (size === 'default') {
+              if (size === 'custom') {
+                const customSize = window.prompt('폰트 크기를 입력하세요 (8~100):', '16');
+                if (customSize) {
+                  const sizeNum = parseInt(customSize);
+                  if (sizeNum >= 8 && sizeNum <= 100) {
+                    editor.chain().focus().setFontSize(`${sizeNum}px`).run();
+                  } else {
+                    alert('폰트 크기는 8~100 사이여야 합니다.');
+                  }
+                }
+              } else if (size === 'default') {
                 editor.chain().focus().unsetFontSize().run();
               } else {
                 editor.chain().focus().setFontSize(size).run();
@@ -138,15 +182,20 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             title="글씨 크기"
           >
             <option value="default">크기</option>
+            <option value="10px">10px</option>
             <option value="12px">12px</option>
             <option value="14px">14px</option>
-            <option value="16px">16px</option>
+            <option value="16px">16px (기본)</option>
             <option value="18px">18px</option>
             <option value="20px">20px</option>
             <option value="24px">24px</option>
             <option value="28px">28px</option>
             <option value="32px">32px</option>
             <option value="36px">36px</option>
+            <option value="48px">48px</option>
+            <option value="60px">60px</option>
+            <option value="72px">72px</option>
+            <option value="custom">직접 입력...</option>
           </select>
         </div>
 
@@ -277,35 +326,125 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </div>
 
         {/* 색상 */}
-        <div className="flex gap-1 border-r border-gray-300 pr-2">
+        <div className="flex gap-1 border-r border-gray-300 pr-2 flex-wrap max-w-[400px]">
           <button
             type="button"
             onClick={() => setColor('#000000')}
-            className="w-8 h-8 rounded border border-gray-400"
+            className="w-6 h-6 rounded border border-gray-400"
             style={{ backgroundColor: '#000000' }}
             title="검정"
           />
           <button
             type="button"
+            onClick={() => setColor('#FFFFFF')}
+            className="w-6 h-6 rounded border border-gray-400"
+            style={{ backgroundColor: '#FFFFFF' }}
+            title="흰색"
+          />
+          <button
+            type="button"
             onClick={() => setColor('#EF4444')}
-            className="w-8 h-8 rounded border border-gray-400"
+            className="w-6 h-6 rounded border border-gray-400"
             style={{ backgroundColor: '#EF4444' }}
             title="빨강"
           />
           <button
             type="button"
+            onClick={() => setColor('#F97316')}
+            className="w-6 h-6 rounded border border-gray-400"
+            style={{ backgroundColor: '#F97316' }}
+            title="주황"
+          />
+          <button
+            type="button"
+            onClick={() => setColor('#FACC15')}
+            className="w-6 h-6 rounded border border-gray-400"
+            style={{ backgroundColor: '#FACC15' }}
+            title="노랑"
+          />
+          <button
+            type="button"
+            onClick={() => setColor('#84CC16')}
+            className="w-6 h-6 rounded border border-gray-400"
+            style={{ backgroundColor: '#84CC16' }}
+            title="연두"
+          />
+          <button
+            type="button"
+            onClick={() => setColor('#10B981')}
+            className="w-6 h-6 rounded border border-gray-400"
+            style={{ backgroundColor: '#10B981' }}
+            title="초록"
+          />
+          <button
+            type="button"
+            onClick={() => setColor('#06B6D4')}
+            className="w-6 h-6 rounded border border-gray-400"
+            style={{ backgroundColor: '#06B6D4' }}
+            title="청록"
+          />
+          <button
+            type="button"
             onClick={() => setColor('#3B82F6')}
-            className="w-8 h-8 rounded border border-gray-400"
+            className="w-6 h-6 rounded border border-gray-400"
             style={{ backgroundColor: '#3B82F6' }}
             title="파랑"
           />
           <button
             type="button"
-            onClick={() => setColor('#10B981')}
-            className="w-8 h-8 rounded border border-gray-400"
-            style={{ backgroundColor: '#10B981' }}
-            title="초록"
+            onClick={() => setColor('#6366F1')}
+            className="w-6 h-6 rounded border border-gray-400"
+            style={{ backgroundColor: '#6366F1' }}
+            title="남색"
           />
+          <button
+            type="button"
+            onClick={() => setColor('#8B5CF6')}
+            className="w-6 h-6 rounded border border-gray-400"
+            style={{ backgroundColor: '#8B5CF6' }}
+            title="보라"
+          />
+          <button
+            type="button"
+            onClick={() => setColor('#D946EF')}
+            className="w-6 h-6 rounded border border-gray-400"
+            style={{ backgroundColor: '#D946EF' }}
+            title="자주"
+          />
+          <button
+            type="button"
+            onClick={() => setColor('#EC4899')}
+            className="w-6 h-6 rounded border border-gray-400"
+            style={{ backgroundColor: '#EC4899' }}
+            title="분홍"
+          />
+          <button
+            type="button"
+            onClick={() => setColor('#6B7280')}
+            className="w-6 h-6 rounded border border-gray-400"
+            style={{ backgroundColor: '#6B7280' }}
+            title="회색"
+          />
+          <button
+            type="button"
+            onClick={() => setColor('#A16207')}
+            className="w-6 h-6 rounded border border-gray-400"
+            style={{ backgroundColor: '#A16207' }}
+            title="갈색"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              const color = window.prompt('색상 코드를 입력하세요 (예: #FF5733):', '#000000');
+              if (color) {
+                setColor(color);
+              }
+            }}
+            className="w-6 h-6 rounded border border-gray-400 flex items-center justify-center text-xs font-bold bg-white"
+            title="직접 입력"
+          >
+            +
+          </button>
         </div>
 
         {/* 링크 & 테이블 */}
