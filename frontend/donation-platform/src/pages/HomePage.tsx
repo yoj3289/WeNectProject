@@ -80,13 +80,9 @@ const HomePage: React.FC<HomePageProps> = ({
                       <Shield className="text-green-300" size={16} />
                       <span className="text-xs md:text-sm text-white/80 font-semibold">검증된 프로젝트</span>
                     </div>
-                    {statsLoading ? (
-                      <div className="h-12 bg-white/30 rounded animate-pulse mb-1"></div>
-                    ) : (
-                      <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1">
-                        {stats?.totalProjects.toLocaleString() || '0'}
-                      </div>
-                    )}
+                    <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1">
+                      {stats?.totalProjects.toLocaleString() || '0'}
+                    </div>
                     <div className="text-sm md:text-base text-white/90">진행중인 프로젝트</div>
                   </div>
                 </div>
@@ -100,13 +96,9 @@ const HomePage: React.FC<HomePageProps> = ({
                       <CheckCircle className="text-blue-300" size={16} />
                       <span className="text-xs md:text-sm text-white/80 font-semibold">신뢰하는 기부자</span>
                     </div>
-                    {statsLoading ? (
-                      <div className="h-12 bg-white/30 rounded animate-pulse mb-1"></div>
-                    ) : (
-                      <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1">
-                        {stats?.totalDonors.toLocaleString() || '0'}
-                      </div>
-                    )}
+                    <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1">
+                      {stats?.totalDonors.toLocaleString() || '0'}
+                    </div>
                     <div className="text-sm md:text-base text-white/90">참여 기부자</div>
                   </div>
                 </div>
@@ -120,13 +112,11 @@ const HomePage: React.FC<HomePageProps> = ({
                       <Eye className="text-yellow-300" size={16} />
                       <span className="text-xs md:text-sm text-white/80 font-semibold">투명하게 공개된 금액</span>
                     </div>
-                    {statsLoading ? (
-                      <div className="h-14 bg-white/30 rounded animate-pulse mb-1"></div>
-                    ) : (
-                      <div className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-1">
-                        {stats ? `${Math.floor(stats.totalDonationAmount / 100000000)}억원` : '0원'}
-                      </div>
-                    )}
+                    <div className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-1">
+                      {stats && stats.totalDonationAmount > 0
+                        ? `${Math.floor(stats.totalDonationAmount / 100000000)}억원`
+                        : '0원'}
+                    </div>
                     <div className="text-sm md:text-base text-white/90">누적 기부금액 • 실시간 추적 가능</div>
                   </div>
                 </div>

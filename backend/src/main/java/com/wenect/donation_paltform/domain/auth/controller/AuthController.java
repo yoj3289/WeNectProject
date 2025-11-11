@@ -74,4 +74,13 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    // 로그아웃 API
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout() {
+        // JWT 토큰 방식이므로 서버에서는 별도 처리 불필요
+        // 클라이언트에서 토큰 삭제로 로그아웃 처리
+        ApiResponse<Void> response = ApiResponse.success(null, "로그아웃 성공");
+        return ResponseEntity.ok(response);
+    }
+
 }
