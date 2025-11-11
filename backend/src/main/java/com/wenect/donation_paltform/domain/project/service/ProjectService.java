@@ -125,6 +125,7 @@ public class ProjectService {
                         .fileName(imageFile.getOriginalFilename())
                         .fileSize(imageFile.getSize())
                         .displayOrder(i)
+                        .isThumbnail(i == 0)
                         .build();
 
                 projectImageRepository.save(projectImage);
@@ -201,10 +202,63 @@ public class ProjectService {
      */
     @Transactional(readOnly = true)
     public List<ProjectResponse> getAllProjects() {
-        List<Project> projects = projectRepository.findAll().stream()
-                .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt())) // 최신순 정렬
-                .collect(Collectors.toList());
+        return searchProjects(null, null, "latest");
+    }
 
+    /**
+     * 프로젝트 검색 (카테고리, 키워드, 정렬)
+     */
+    @Transactional(readOnly = true)
+    public List<ProjectResponse> searchProjects(String category, String keyword, String sortBy) {
+        List<Project> projects;
+
+        // 카테고리 ID 변환
+        Integer categoryId = null;
+        if (category != null && !category.trim().isEmpty()) {
+            categoryId = getCategoryId(category);
+        }
+
+        // 검색 조건에 따라 Repository 메서드 호출
+        if (categoryId != null && keyword != null && !keyword.trim().isEmpty()) {
+            // 카테고리 + 키워드
+            projects = projectRepository.findByStatusAndCategoryIdAndTitleContainingIgnoreCase(
+                    Project.ProjectStatus.ACTIVE, categoryId, keyword);
+        } else if (categoryId != null) {
+            // 카테고리만
+            projects = projectRepository.findByStatusAndCategoryId(
+                    Project.ProjectStatus.ACTIVE, categoryId);
+        } else if (keyword != null && !keyword.trim().isEmpty()) {
+            // 키워드만
+            projects = projectRepository.findByStatusAndTitleContainingIgnoreCase(
+                    Project.ProjectStatus.ACTIVE, keyword);
+        } else {
+            // 전체 (ACTIVE 상태만)
+            projects = projectRepository.findByStatus(Project.ProjectStatus.ACTIVE);
+        }
+
+        // 정렬
+        if ("deadline".equals(sortBy)) {
+            // 마감임박순 (endDate 오름차순)
+            projects = projects.stream()
+                    .sorted((p1, p2) -> p1.getEndDate().compareTo(p2.getEndDate()))
+                    .collect(Collectors.toList());
+        } else if ("fundingRate".equals(sortBy)) {
+            // 모금률순 (currentAmount / targetAmount 내림차순)
+            projects = projects.stream()
+                    .sorted((p1, p2) -> {
+                        double rate1 = p1.getCurrentAmount().divide(p1.getTargetAmount(), 4, BigDecimal.ROUND_HALF_UP).doubleValue();
+                        double rate2 = p2.getCurrentAmount().divide(p2.getTargetAmount(), 4, BigDecimal.ROUND_HALF_UP).doubleValue();
+                        return Double.compare(rate2, rate1);
+                    })
+                    .collect(Collectors.toList());
+        } else {
+            // 최신순 (기본)
+            projects = projects.stream()
+                    .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()))
+                    .collect(Collectors.toList());
+        }
+
+        // DTO 변환
         return projects.stream()
                 .map(project -> {
                     List<String> imageUrls = projectImageRepository.findByProjectIdOrderByDisplayOrder(project.getProjectId())

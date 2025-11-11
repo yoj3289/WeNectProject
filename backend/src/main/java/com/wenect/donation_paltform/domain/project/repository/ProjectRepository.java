@@ -17,4 +17,17 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     // 카테고리별 프로젝트 조회
     List<Project> findByCategoryId(Integer categoryId);
+
+    // 제목으로 검색 (대소문자 무시, 부분 일치)
+    List<Project> findByTitleContainingIgnoreCase(String keyword);
+
+    // 상태와 제목으로 검색
+    List<Project> findByStatusAndTitleContainingIgnoreCase(Project.ProjectStatus status, String keyword);
+
+    // 상태와 카테고리로 검색
+    List<Project> findByStatusAndCategoryId(Project.ProjectStatus status, Integer categoryId);
+
+    // 상태, 카테고리, 제목으로 검색
+    List<Project> findByStatusAndCategoryIdAndTitleContainingIgnoreCase(
+            Project.ProjectStatus status, Integer categoryId, String keyword);
 }

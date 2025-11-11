@@ -185,9 +185,22 @@ const HomePage: React.FC<HomePageProps> = ({
                   className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
                   onClick={() => navigate(`/projects/${project.id}`)}
                 >
-                  <div className={`h-40 md:h-48 bg-gradient-to-br ${categoryInfo.bgColor} flex items-center justify-center text-gray-400`}>
-                    {categoryInfo.icon}
-                  </div>
+                  {project.image ? (
+                    <div className="h-40 md:h-48 bg-gray-900 overflow-hidden flex items-center justify-center">
+                      <img
+                        src={`http://localhost:8080${project.image}`}
+                        alt={project.title}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className={`h-40 md:h-48 bg-gradient-to-br ${categoryInfo.bgColor} flex items-center justify-center text-gray-400`}>
+                      {categoryInfo.icon}
+                    </div>
+                  )}
                   <div className="p-4 md:p-5">
                     <div className="text-xs md:text-sm text-red-500 font-semibold mb-2">{categoryKo}</div>
                     <h4 className="text-base md:text-lg font-bold mb-3 line-clamp-2">{project.title}</h4>

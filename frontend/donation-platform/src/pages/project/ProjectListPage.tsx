@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Heart, FileText, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2, AlertCircle } from 'lucide-react';
 import { useProjects, useToggleFavoriteProject, useUserFavoriteProjects } from '../../hooks/useProjects';
@@ -22,13 +22,23 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
   // State
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [sortOption, setSortOption] = useState<string>('최신순');
-  const [searchKeyword, setSearchKeyword] = useState<string>('');
+  const [searchKeyword, setSearchKeyword] = useState<string>(''); // 사용자 입력
+  const [debouncedSearchKeyword, setDebouncedSearchKeyword] = useState<string>(''); // API 호출용
+
+  // Debounce: 사용자 입력 500ms 후 검색 실행
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchKeyword(searchKeyword);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchKeyword]);
 
   // API: 프로젝트 목록 조회
   const { data: projects, isLoading, isError, error, refetch } = useProjects({
     status: 'approved',
     category: selectedCategory === '전체' ? undefined : selectedCategory,
-    search: searchKeyword.trim() || undefined,
+    search: debouncedSearchKeyword.trim() || undefined,
     sortBy: sortOption === '최신순' ? 'latest' : sortOption === '마감임박순' ? 'deadline' : 'fundingRate',
   });
 
@@ -135,8 +145,12 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
               placeholder="프로젝트 검색..."
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
-              className="w-full pl-10 md:pl-12 pr-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 text-sm md:text-base"
+              className="w-full pl-10 md:pl-12 pr-12 py-3 md:py-4 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 text-sm md:text-base"
             />
+            {/* 검색 중 로딩 표시 */}
+            {isLoading && searchKeyword !== debouncedSearchKeyword && (
+              <Loader2 className="absolute right-3 md:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 animate-spin" size={18} />
+            )}
           </div>
 
           {/* 카테고리 필터 */}
@@ -233,9 +247,23 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
                     className="cursor-pointer"
                     onClick={() => handleProjectClick(project)}
                   >
-                    <div className={`h-40 md:h-48 bg-gradient-to-br ${categoryInfo.bgColor} flex items-center justify-center text-gray-400`}>
-                      {categoryInfo.icon}
-                    </div>
+                    {project.image ? (
+                      <div className="h-40 md:h-48 bg-gray-900 overflow-hidden flex items-center justify-center">
+                        <img
+                          src={`http://localhost:8080${project.image}`}
+                          alt={project.title}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            // 이미지 로드 실패 시 숨김
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className={`h-40 md:h-48 bg-gradient-to-br ${categoryInfo.bgColor} flex items-center justify-center text-gray-400`}>
+                        {categoryInfo.icon}
+                      </div>
+                    )}
                     <div className="p-4 md:p-5">
                       <div className="text-xs md:text-sm text-red-500 font-semibold mb-2">{categoryKo}</div>
                       <h4 className="text-base md:text-lg font-bold mb-3 line-clamp-2">{project.title}</h4>

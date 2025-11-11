@@ -90,11 +90,19 @@ public class ProjectController {
     }
 
     /**
-     * 전체 프로젝트 목록 조회
+     * 전체 프로젝트 목록 조회 (검색, 필터링, 정렬 지원)
+     *
+     * @param category 카테고리 (선택, 예: "아동복지", "환경보호")
+     * @param search 검색 키워드 (선택, 프로젝트 제목에서 검색)
+     * @param sortBy 정렬 기준 (선택, latest/deadline/fundingRate, 기본값: latest)
      */
     @GetMapping
-    public ResponseEntity<PageResponse<ProjectResponse>> getAllProjects() {
-        List<ProjectResponse> responses = projectService.getAllProjects();
+    public ResponseEntity<PageResponse<ProjectResponse>> getAllProjects(
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "sortBy", defaultValue = "latest") String sortBy) {
+
+        List<ProjectResponse> responses = projectService.searchProjects(category, search, sortBy);
         PageResponse<ProjectResponse> pageResponse = PageResponse.of(responses);
         return ResponseEntity.ok(pageResponse);
     }
