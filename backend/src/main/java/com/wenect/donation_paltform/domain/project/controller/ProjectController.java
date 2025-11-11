@@ -80,7 +80,7 @@ public class ProjectController {
      * 프로젝트 상세 조회
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ProjectDetailResponse> getProject(@PathVariable Long id) {
+    public ResponseEntity<ProjectDetailResponse> getProject(@PathVariable("id") Long id) {
         try {
             ProjectDetailResponse response = projectService.getProjectDetail(id);
             return ResponseEntity.ok(response);
@@ -104,7 +104,7 @@ public class ProjectController {
      */
     @GetMapping("/popular")
     public ResponseEntity<List<ProjectResponse>> getPopularProjects(
-            @RequestParam(defaultValue = "4") int limit) {
+            @RequestParam(value = "limit", defaultValue = "4") int limit) {
         List<ProjectResponse> responses = projectService.getPopularProjects(limit);
         return ResponseEntity.ok(responses);
     }
@@ -114,8 +114,8 @@ public class ProjectController {
      */
     @GetMapping("/{id}/donors")
     public ResponseEntity<List<Object>> getProjectDonors(
-            @PathVariable Long id,
-            @RequestParam(defaultValue = "true") boolean showAnonymous) {
+            @PathVariable("id") Long id,
+            @RequestParam(value = "showAnonymous", defaultValue = "true") boolean showAnonymous) {
         // TODO: 실제 기부자 목록 조회 구현
         // 현재는 빈 배열 반환
         return ResponseEntity.ok(List.of());

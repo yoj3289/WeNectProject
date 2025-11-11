@@ -781,6 +781,26 @@ const DonationPlatform: React.FC = () => {
     notificationSettings: { donation: true, project: true, comment: true, newsletter: false }
   });
 
+  // user가 변경될 때마다 userProfile 업데이트
+  React.useEffect(() => {
+    if (user) {
+      setUserProfile(prev => ({
+        ...prev,
+        name: user.userName,
+        email: user.email,
+        phone: user.phone || '',
+      }));
+    } else {
+      // 로그아웃 시 게스트로 재설정
+      setUserProfile({
+        name: '게스트',
+        email: '',
+        phone: '',
+        notificationSettings: { donation: true, project: true, comment: true, newsletter: false }
+      });
+    }
+  }, [user]);
+
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: 1,
@@ -1374,6 +1394,22 @@ const DonationPlatform: React.FC = () => {
 
 // QueryClientProvider로 감싸서 export
 const App: React.FC = () => {
+  // 앱 시작 시 Zustand에서 토큰을 가져와 apiClient에 설정
+  React.useEffect(() => {
+    const initAuth = async () => {
+      // Zustand persist에서 복원된 토큰 가져오기
+      const { useAuthStore } = await import('./stores/authStore');
+      const { apiClient } = await import('./lib/apiClient');
+      const token = useAuthStore.getState().token;
+
+      if (token) {
+        apiClient.setToken(token);
+      }
+    };
+
+    initAuth();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <DonationPlatform />

@@ -41,14 +41,15 @@ class ApiClient {
         if (error.response?.status === 401) {
           // 토큰 만료 또는 인증 실패
           this.clearToken();
+          // Zustand 스토어도 초기화 (순환 참조 방지를 위해 동적 import)
+          import('../stores/authStore').then(({ useAuthStore }) => {
+            useAuthStore.getState().logout();
+          });
           window.location.href = '/login';
         }
         return Promise.reject(error);
       }
     );
-
-    // 로컬 스토리지에서 토큰 복원
-    this.loadToken();
   }
 
   /**
@@ -56,7 +57,6 @@ class ApiClient {
    */
   setToken(token: string): void {
     this.token = token;
-    localStorage.setItem('authToken', token);
   }
 
   /**
@@ -71,17 +71,6 @@ class ApiClient {
    */
   clearToken(): void {
     this.token = null;
-    localStorage.removeItem('authToken');
-  }
-
-  /**
-   * 로컬 스토리지에서 토큰 로드
-   */
-  private loadToken(): void {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      this.token = token;
-    }
   }
 
   /**
