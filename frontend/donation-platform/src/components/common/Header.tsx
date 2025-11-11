@@ -51,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({
           onClick={() => navigate('/')}
         >
           <Heart className="text-red-500" size={32} fill="currentColor" />
-          <span className="text-2xl font-bold">위넥트 테스트 버전</span>
+          <span className="text-2xl font-bold">위넥트</span>
         </div>
 
         {/* 네비게이션 메뉴 */}

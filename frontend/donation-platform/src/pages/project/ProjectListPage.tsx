@@ -230,7 +230,7 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
                       {categoryInfo.icon}
                     </div>
                     <div className="p-4 md:p-5">
-                      <div className="text-xs md:text-sm text-red-500 font-semibold mb-2">{project.category}</div>
+                      <div className="text-xs md:text-sm text-red-500 font-semibold mb-2">{categoryKo}</div>
                       <h4 className="text-base md:text-lg font-bold mb-3 line-clamp-2">{project.title}</h4>
 
                       <div className="mb-4">

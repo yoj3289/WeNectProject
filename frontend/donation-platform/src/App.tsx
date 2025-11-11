@@ -657,7 +657,7 @@
 
 
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // ✅ useAuth import 추가!
@@ -733,6 +733,19 @@ const DonationPlatform: React.FC = () => {
         favoriteProjectIds={favoriteProjectIds}
         onNavigateToLogin={() => {}}
         onShowDonationModal={onShowDonationModal}
+      />
+    );
+  };
+
+  // 프로젝트 등록 페이지 Wrapper 컴포넌트
+  const ProjectCreatePageWrapper: React.FC = () => {
+    const navigate = useNavigate();
+
+    return (
+      <ProjectCreatePage
+        onSubmit={() => {
+          navigate('/');
+        }}
       />
     );
   };
@@ -1305,13 +1318,7 @@ const DonationPlatform: React.FC = () => {
                   onShowDonationModal={() => setShowDonationModal(true)}
                 />
               } />
-              <Route path="/projects/create" element={
-                <ProjectCreatePage
-                  onSubmit={() => {
-                    alert('프로젝트 신청이 완료되었습니다. 관리자 승인 후 게시됩니다.');
-                  }}
-                />
-              } />
+              <Route path="/projects/create" element={<ProjectCreatePageWrapper />} />
               <Route path="/community" element={
                 <BoardPage
                   isLoggedIn={isLoggedIn}
