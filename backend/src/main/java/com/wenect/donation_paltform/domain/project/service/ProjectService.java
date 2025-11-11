@@ -32,6 +32,7 @@ public class ProjectService {
     private final ProjectDocumentRepository projectDocumentRepository;
     private final OrganizationRepository organizationRepository;
     private final com.wenect.donation_paltform.global.service.FileStorageService fileStorageService;
+    private final com.wenect.donation_paltform.domain.favorite.service.FavoriteProjectService favoriteProjectService;
 
     /**
      * 카테고리명 -> category_id 변환 (하드코딩)
@@ -218,18 +219,24 @@ public class ProjectService {
     }
 
     /**
-     * 인기 프로젝트 조회 (기부자 수 기준 정렬)
+     * 인기 프로젝트 조회 (관심 등록 수 기준 정렬)
      */
     @Transactional(readOnly = true)
     public List<ProjectResponse> getPopularProjects(int limit) {
-        List<Project> projects = projectRepository.findAll().stream()
-                .filter(p -> p.getStatus() == Project.ProjectStatus.ACTIVE)
-                .sorted((p1, p2) -> p2.getDonorCount().compareTo(p1.getDonorCount()))
-                .limit(limit)
-                .collect(Collectors.toList());
+        // 1. 관심 등록 수가 많은 프로젝트 ID 목록 조회
+        List<Long> topProjectIds = favoriteProjectService.getTopProjectIdsByFavoriteCount(limit);
 
-        return projects.stream()
-                .map(project -> {
+        // 2. 프로젝트 정보 조회 및 DTO 변환
+        return topProjectIds.stream()
+                .map(projectId -> {
+                    Project project = projectRepository.findById(projectId)
+                            .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다"));
+
+                    // ACTIVE 상태인 프로젝트만 반환
+                    if (project.getStatus() != Project.ProjectStatus.ACTIVE) {
+                        return null;
+                    }
+
                     List<String> imageUrls = projectImageRepository.findByProjectIdOrderByDisplayOrder(project.getProjectId())
                             .stream()
                             .map(ProjectImage::getFilePath)
@@ -238,6 +245,8 @@ public class ProjectService {
                     String categoryName = getCategoryName(project.getCategoryId());
                     return ProjectResponse.from(project, categoryName, imageUrls);
                 })
+                .filter(response -> response != null) // null 제거
+                .limit(limit) // ACTIVE가 아닌 프로젝트를 제외한 후 다시 limit 적용
                 .collect(Collectors.toList());
     }
 }

@@ -202,5 +202,12 @@ export const getCategory = async (id: number): Promise<CategoryResponse> => {
  * 관심 프로젝트 토글 (찜하기/찜해제)
  */
 export const toggleFavoriteProject = async (projectId: number): Promise<void> => {
-  return apiClient.post<void>(`/projects/${projectId}/favorite`);
+  return apiClient.post<void>(`/favorites/projects/${projectId}`);
+};
+
+/**
+ * 사용자의 관심 프로젝트 목록 조회
+ */
+export const getUserFavoriteProjects = async (): Promise<number[]> => {
+  return apiClient.get<number[]>(`/favorites/projects`);
 };

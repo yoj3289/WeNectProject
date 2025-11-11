@@ -1,5 +1,7 @@
 package com.wenect.donation_paltform.global.config;
 
+import com.wenect.donation_paltform.global.filter.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -7,6 +9,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -15,7 +18,10 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -53,8 +59,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/donations/**").permitAll()
                         .requestMatchers("/api/statistics/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll() // 업로드된 파일 접근 허용
+                        .requestMatchers("/api/favorites/**").authenticated() // 관심 프로젝트 API는 인증 필요
                         .requestMatchers("/api/users/me/**").authenticated() // 사용자 프로필 API는 인증 필요
-                        .anyRequest().authenticated());
+                        .anyRequest().authenticated())
+                // JWT 인증 필터 추가 (UsernamePasswordAuthenticationFilter 전에 실행)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

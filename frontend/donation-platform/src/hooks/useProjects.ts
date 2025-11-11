@@ -166,6 +166,19 @@ export function useToggleFavoriteProject() {
       // 관심 프로젝트 목록 무효화
       queryClient.invalidateQueries({ queryKey: ['favorite-projects'] });
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['popular-projects'] });
     },
+  });
+}
+
+/**
+ * 사용자의 관심 프로젝트 목록 조회
+ */
+export function useUserFavoriteProjects(enabled: boolean = true) {
+  return useQuery({
+    queryKey: ['favorite-projects'],
+    queryFn: () => projectsApi.getUserFavoriteProjects(),
+    enabled, // 로그인 상태에서만 실행
+    retry: false, // 인증 실패 시 재시도 안함
   });
 }

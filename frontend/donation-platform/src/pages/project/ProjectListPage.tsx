@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Heart, FileText, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2, AlertCircle } from 'lucide-react';
-import { useProjects, useToggleFavoriteProject } from '../../hooks/useProjects';
+import { useProjects, useToggleFavoriteProject, useUserFavoriteProjects } from '../../hooks/useProjects';
 import type { Project } from '../../types';
 import { getCategoryLabel } from '../../types';
 
@@ -34,6 +34,12 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
 
   // API: 관심 프로젝트 토글
   const toggleFavoriteMutation = useToggleFavoriteProject();
+
+  // API: 사용자의 관심 프로젝트 목록 조회 (로그인한 경우에만)
+  const { data: userFavorites } = useUserFavoriteProjects(isLoggedIn);
+
+  // 실제 서버에서 가져온 관심 프로젝트 목록을 Set으로 변환
+  const actualFavoriteIds = new Set(Array.isArray(userFavorites) ? userFavorites : []);
 
   // Helper Functions
   const formatAmount = (amount: number): string => {
@@ -201,7 +207,8 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {displayProjects.map(project => {
               const progress = calculatePercentage(project.currentAmount, project.targetAmount);
-              const isFavorite = favoriteProjectIds.has(project.id);
+              // 서버에서 가져온 실제 관심 프로젝트 목록 사용 (로그인 시에만)
+              const isFavorite = isLoggedIn ? actualFavoriteIds.has(project.id) : false;
               const categoryKo = getCategoryLabel(project.category); // 영어 -> 한글 변환
               const categoryInfo = getCategoryIcon(categoryKo);
 
