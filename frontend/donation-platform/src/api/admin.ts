@@ -18,6 +18,23 @@ export interface AdminUserFilters {
   size?: number;
 }
 
+export interface OrganizationApprovalFilters {
+  status?: 'all' | 'pending' | 'approved' | 'rejected';
+  keyword?: string;
+  page?: number;
+  size?: number;
+}
+
+export interface ApproveOrganizationRequest {
+  userId: number;
+  approvalNote?: string;
+}
+
+export interface RejectOrganizationRequest {
+  userId: number;
+  rejectionReason: string;
+}
+
 export interface AdminSettlementFilters {
   status?: 'all' | 'pending' | 'approved' | 'completed' | 'rejected';
   keyword?: string;
@@ -80,6 +97,22 @@ export interface AdminUserResponse {
   status: string;
   registeredDate: string;
   lastLogin: string;
+}
+
+export interface OrganizationApprovalResponse {
+  id: number;
+  userId: number;
+  userName: string;
+  email: string;
+  phone: string;
+  organizationName: string;
+  businessNumber: string;
+  representativeName: string;
+  documents: string[];
+  status: 'pending' | 'approved' | 'rejected';
+  appliedDate: string;
+  processedDate?: string;
+  rejectionReason?: string;
 }
 
 export interface MetricsResponse {
@@ -225,4 +258,35 @@ export const getCategoryDistribution = async (): Promise<
   Array<{ name: string; percent: number; color: string }>
 > => {
   return apiClient.get('/admin/metrics/category-distribution');
+};
+
+/**
+ * 기관 회원가입 승인 대기 목록
+ */
+export const getOrganizationApprovals = async (
+  filters: OrganizationApprovalFilters = {}
+): Promise<{ content: OrganizationApprovalResponse[]; totalPages: number; currentPage: number }> => {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      params.append(key, String(value));
+    }
+  });
+
+  return apiClient.get(`/admin/organizations/approvals?${params.toString()}`);
+};
+
+/**
+ * 기관 회원가입 승인
+ */
+export const approveOrganization = async (data: ApproveOrganizationRequest): Promise<void> => {
+  return apiClient.put<void>(`/admin/organizations/${data.userId}/approve`, data);
+};
+
+/**
+ * 기관 회원가입 거절
+ */
+export const rejectOrganization = async (data: RejectOrganizationRequest): Promise<void> => {
+  return apiClient.put<void>(`/admin/organizations/${data.userId}/reject`, data);
 };

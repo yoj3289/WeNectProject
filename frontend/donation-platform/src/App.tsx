@@ -682,6 +682,7 @@ import DashboardPage from './pages/admin/DashboardPage';
 import UserManagementPage from './pages/admin/UserManagementPage';
 import ProjectManagementPage from './pages/admin/ProjectManagementPage';
 import SettlementManagementPage from './pages/admin/SettlementManagementPage';
+import OrganizationApprovalPage from './pages/admin/OrganizationApprovalPage';
 import NotificationPage from './pages/notification/NotificationPage';
 
 // Component imports
@@ -772,25 +773,13 @@ const DonationPlatform: React.FC = () => {
     { id: 3, name: '이영희', email: 'user2@example.com', type: '일반', status: 'inactive', registeredDate: '2024-01-20', lastLogin: '2024-02-28 18:45' }
   ]);
 
-  // ✅ userProfile을 user 객체에서 가져오도록 수정
+  // ✅ userProfile을 user 객체에서 직접 파생 (useMemo로 불필요한 재생성 방지)
   const [userProfile, setUserProfile] = useState<UserProfile>({
     name: user?.userName || '게스트',
     email: user?.email || '',
     phone: user?.phone || '',
     notificationSettings: { donation: true, project: true, comment: true, newsletter: false }
   });
-
-  // ✅ user가 변경될 때마다 userProfile 업데이트
-  React.useEffect(() => {
-    if (user) {
-      setUserProfile({
-        name: user.userName,
-        email: user.email,
-        phone: user.phone || '',
-        notificationSettings: { donation: true, project: true, comment: true, newsletter: false }
-      });
-    }
-  }, [user]);
 
   const [notifications, setNotifications] = useState<Notification[]>([
     {
@@ -1070,6 +1059,48 @@ const DonationPlatform: React.FC = () => {
               } />
               <Route path="users" element={
                 <UserManagementPage
+                  sidebarOpen={sidebarOpen}
+                  setSidebarOpen={setSidebarOpen}
+                  activeMenu={activeMenu}
+                  setActiveMenu={setActiveMenu}
+                  projectFilter={projectFilter}
+                  setProjectFilter={setProjectFilter}
+                  projectCategoryFilter={projectCategoryFilter}
+                  setProjectCategoryFilter={setProjectCategoryFilter}
+                  projectSearchTerm={projectSearchTerm}
+                  setProjectSearchTerm={setProjectSearchTerm}
+                  userTypeFilter={userTypeFilter}
+                  setUserTypeFilter={setUserTypeFilter}
+                  userStatusFilter={userStatusFilter}
+                  setUserStatusFilter={setUserStatusFilter}
+                  userSearchTerm={userSearchTerm}
+                  setUserSearchTerm={setUserSearchTerm}
+                  settlementFilter={settlementFilter}
+                  setSettlementFilter={setSettlementFilter}
+                  settlementSearchTerm={settlementSearchTerm}
+                  setSettlementSearchTerm={setSettlementSearchTerm}
+                  selectedProjects={selectedProjects}
+                  setSelectedProjects={setSelectedProjects}
+                  selectedUsers={selectedUsers}
+                  setSelectedUsers={setSelectedUsers}
+                  selectedSettlements={selectedSettlements}
+                  setSelectedSettlements={setSelectedSettlements}
+                  selectedProject={selectedProject}
+                  setSelectedProject={setSelectedProject}
+                  selectedUser={selectedUser}
+                  setSelectedUser={setSelectedUser}
+                  selectedSettlement={selectedSettlement}
+                  setSelectedSettlement={setSelectedSettlement}
+                  showProjectModal={showProjectModal}
+                  setShowProjectModal={setShowProjectModal}
+                  showUserModal={showUserModal}
+                  setShowUserModal={setShowUserModal}
+                  showSettlementModal={showSettlementModal}
+                  setShowSettlementModal={setShowSettlementModal}
+                />
+              } />
+              <Route path="organizations" element={
+                <OrganizationApprovalPage
                   sidebarOpen={sidebarOpen}
                   setSidebarOpen={setSidebarOpen}
                   activeMenu={activeMenu}

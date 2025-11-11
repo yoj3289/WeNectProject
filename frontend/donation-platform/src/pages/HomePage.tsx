@@ -36,24 +36,13 @@ const HomePage: React.FC<HomePageProps> = ({
     return iconMap[category] || { icon: <Heart size={80} />, bgColor: 'from-gray-100 to-gray-200' };
   };
 
-  // 로딩 중일 때
-  if (projectsLoading || donationsLoading || statsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-red-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">로딩 중...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div>
-      {/* Hero Section */}
+      {/* Hero Section - 정적 콘텐츠 */}
       <section className="bg-gradient-to-r from-red-500 to-pink-600 text-white">
         <div className="max-w-[1400px] mx-auto px-4 py-8 md:px-6 md:py-16 lg:px-8 lg:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-7 gap-6 md:gap-8 lg:gap-12 items-center">
+            {/* 정적 텍스트 및 버튼 - 즉시 렌더링 */}
             <div className="lg:col-span-2 text-center lg:text-left">
               <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 md:mb-6 leading-tight">
                 함께 만드는<br />따뜻한 세상
@@ -79,7 +68,7 @@ const HomePage: React.FC<HomePageProps> = ({
               </div>
             </div>
 
-            {/* Statistics Section - API 데이터 사용 */}
+            {/* 동적 통계 섹션 - 스켈레톤 UI */}
             <div className="lg:col-span-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-white/30 relative overflow-hidden">
@@ -91,9 +80,13 @@ const HomePage: React.FC<HomePageProps> = ({
                       <Shield className="text-green-300" size={16} />
                       <span className="text-xs md:text-sm text-white/80 font-semibold">검증된 프로젝트</span>
                     </div>
-                    <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1">
-                      {stats?.totalProjects.toLocaleString() || '0'}
-                    </div>
+                    {statsLoading ? (
+                      <div className="h-12 bg-white/30 rounded animate-pulse mb-1"></div>
+                    ) : (
+                      <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1">
+                        {stats?.totalProjects.toLocaleString() || '0'}
+                      </div>
+                    )}
                     <div className="text-sm md:text-base text-white/90">진행중인 프로젝트</div>
                   </div>
                 </div>
@@ -107,9 +100,13 @@ const HomePage: React.FC<HomePageProps> = ({
                       <CheckCircle className="text-blue-300" size={16} />
                       <span className="text-xs md:text-sm text-white/80 font-semibold">신뢰하는 기부자</span>
                     </div>
-                    <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1">
-                      {stats?.totalDonors.toLocaleString() || '0'}
-                    </div>
+                    {statsLoading ? (
+                      <div className="h-12 bg-white/30 rounded animate-pulse mb-1"></div>
+                    ) : (
+                      <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1">
+                        {stats?.totalDonors.toLocaleString() || '0'}
+                      </div>
+                    )}
                     <div className="text-sm md:text-base text-white/90">참여 기부자</div>
                   </div>
                 </div>
@@ -123,9 +120,13 @@ const HomePage: React.FC<HomePageProps> = ({
                       <Eye className="text-yellow-300" size={16} />
                       <span className="text-xs md:text-sm text-white/80 font-semibold">투명하게 공개된 금액</span>
                     </div>
-                    <div className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-1">
-                      {stats ? `${Math.floor(stats.totalDonationAmount / 100000000)}억원` : '0원'}
-                    </div>
+                    {statsLoading ? (
+                      <div className="h-14 bg-white/30 rounded animate-pulse mb-1"></div>
+                    ) : (
+                      <div className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-1">
+                        {stats ? `${Math.floor(stats.totalDonationAmount / 100000000)}억원` : '0원'}
+                      </div>
+                    )}
                     <div className="text-sm md:text-base text-white/90">누적 기부금액 • 실시간 추적 가능</div>
                   </div>
                 </div>
@@ -135,8 +136,9 @@ const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* Popular Projects Section - API 데이터 사용 */}
+      {/* Popular Projects Section - 스켈레톤 UI */}
       <section className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12 lg:py-16">
+        {/* 정적 헤더 - 즉시 렌더링 */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 md:mb-10 gap-4">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold">지금 주목받는 프로젝트</h2>
           <button
@@ -147,7 +149,31 @@ const HomePage: React.FC<HomePageProps> = ({
           </button>
         </div>
 
-        {projects && projects.length > 0 ? (
+        {/* 동적 프로젝트 목록 - 스켈레톤 UI */}
+        {projectsLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+            {[...Array(4)].map((_, idx) => (
+              <div key={idx} className="border border-gray-200 rounded-xl overflow-hidden">
+                <div className="h-40 md:h-48 bg-gray-200 animate-pulse"></div>
+                <div className="p-4 md:p-5">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse mb-2 w-16"></div>
+                  <div className="h-6 bg-gray-200 rounded animate-pulse mb-3"></div>
+                  <div className="mb-4">
+                    <div className="flex justify-between mb-2">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2"></div>
+                  </div>
+                  <div className="flex justify-between">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : projects && projects.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {projects.slice(0, 4).map(project => {
               const progress = calculatePercentage(project.currentAmount, project.targetAmount);
@@ -201,12 +227,33 @@ const HomePage: React.FC<HomePageProps> = ({
         )}
       </section>
 
-      {/* Recent Donations Section - API 데이터 사용 */}
+      {/* Recent Donations Section - 스켈레톤 UI */}
       <section className="bg-gray-50 py-8 md:py-12 lg:py-16">
         <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
+          {/* 정적 헤더 - 즉시 렌더링 */}
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-6 md:mb-10">실시간 기부 현황</h2>
+
+          {/* 동적 기부 내역 - 스켈레톤 UI */}
           <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 border border-gray-200">
-            {recentDonations && recentDonations.length > 0 ? (
+            {donationsLoading ? (
+              <div className="space-y-3 md:space-y-4">
+                {[...Array(4)].map((_, idx) => (
+                  <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 p-4 md:p-5 bg-gray-50 rounded-xl">
+                    <div className="flex items-center gap-3 md:gap-4 w-full sm:w-auto">
+                      <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-200 rounded-full animate-pulse flex-shrink-0"></div>
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-40"></div>
+                        <div className="h-3 bg-gray-200 rounded animate-pulse w-32"></div>
+                      </div>
+                    </div>
+                    <div className="text-left sm:text-right w-full sm:w-auto flex-shrink-0 space-y-2">
+                      <div className="h-5 bg-gray-200 rounded animate-pulse w-24 ml-auto"></div>
+                      <div className="h-3 bg-gray-200 rounded animate-pulse w-20 ml-auto"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : recentDonations && recentDonations.length > 0 ? (
               <div className="space-y-3 md:space-y-4">
                 {recentDonations.map((donation, idx) => (
                   <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 p-4 md:p-5 bg-gray-50 rounded-xl">
