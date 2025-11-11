@@ -9,6 +9,7 @@ interface User {
   userType: UserType;
   phone?: string;
   profileImageUrl?: string;
+  organizationName?: string; // 기관명 (기관 사용자인 경우)
 }
 
 interface AuthState {
