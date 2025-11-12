@@ -684,6 +684,9 @@ import ProjectManagementPage from './pages/admin/ProjectManagementPage';
 import SettlementManagementPage from './pages/admin/SettlementManagementPage';
 import OrganizationApprovalPage from './pages/admin/OrganizationApprovalPage';
 import NotificationPage from './pages/notification/NotificationPage';
+import PaymentSuccessPage from './pages/payment/PaymentSuccessPage';
+import PaymentCancelPage from './pages/payment/PaymentCancelPage';
+import PaymentFailPage from './pages/payment/PaymentFailPage';
 
 // Component imports
 import DonationModal from './components/donation/DonationModal';
@@ -1282,6 +1285,12 @@ const DonationPlatform: React.FC = () => {
           />
         } />
 
+        {/* Payment Pages - 레이아웃 없음 */}
+        <Route path="/payment/success" element={<PaymentSuccessPage />} />
+        <Route path="/payment/access" element={<PaymentSuccessPage />} /> {/* 카카오페이 테스트 환경 임시 경로 */}
+        <Route path="/payment/cancel" element={<PaymentCancelPage />} />
+        <Route path="/payment/fail" element={<PaymentFailPage />} />
+
         {/* Main Routes - MainLayout으로 감싸기 */}
         <Route path="/*" element={
           <MainLayout
@@ -1389,12 +1398,13 @@ const DonationPlatform: React.FC = () => {
       </Routes>
 
       {/* Global Modals */}
-      <DonationModal
-        selectedProject={selectedProject}
-        showDonationModal={showDonationModal}
-        setShowDonationModal={setShowDonationModal}
-        formatAmount={formatAmount}
-      />
+      {showDonationModal && selectedProject && (
+        <DonationModal
+          projectId={selectedProject.id}
+          projectTitle={selectedProject.title}
+          onClose={() => setShowDonationModal(false)}
+        />
+      )}
     </BrowserRouter>
   );
 };

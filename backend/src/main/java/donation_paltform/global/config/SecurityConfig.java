@@ -33,6 +33,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:3000",  // React 앱
             "http://localhost:5173",
             "http://localhost:5174",
             "http://localhost:5175",
@@ -57,6 +58,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/projects/**").permitAll()
                         .requestMatchers("/api/donations/**").permitAll()
+                        .requestMatchers("/api/payments/**").permitAll() // 결제 API는 인증 불필요
                         .requestMatchers("/api/statistics/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll() // 업로드된 파일 접근 허용
                         .requestMatchers("/api/favorites/**").authenticated() // 관심 프로젝트 API는 인증 필요

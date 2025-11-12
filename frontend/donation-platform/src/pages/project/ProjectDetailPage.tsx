@@ -5,6 +5,7 @@ import { useProjectDetail, useToggleFavoriteProject, useUserFavoriteProjects } f
 import { useDonors } from '../../hooks/useDonations';
 import type { TabType } from '../../types';
 import { getCategoryLabel } from '../../types';
+import DonationModal from '../../components/donation/DonationModal';
 import '../../components/editor/editor.css';
 
 interface ProjectDetailPageProps {
@@ -27,6 +28,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>('intro');
   const [showAnonymousDonors, setShowAnonymousDonors] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showDonationModal, setShowDonationModal] = useState(false);
 
   // API: 프로젝트 상세 정보 조회
   const { data: project, isLoading: isLoadingProject, isError: isErrorProject, error: projectError } = useProjectDetail(projectId);
@@ -103,11 +105,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   };
 
   const handleDonateClick = () => {
-    if (!isLoggedIn) {
-      onNavigateToLogin();
-    } else {
-      onShowDonationModal();
-    }
+    setShowDonationModal(true);
   };
 
   // 로딩 상태
@@ -595,6 +593,15 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 기부하기 모달 */}
+      {showDonationModal && (
+        <DonationModal
+          projectId={project.id}
+          projectTitle={project.title}
+          onClose={() => setShowDonationModal(false)}
+        />
+      )}
     </div>
   );
 };
