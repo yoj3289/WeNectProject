@@ -1,0 +1,24 @@
+# Kakao Pay API 설정 템플릿
+# 이 파일을 복사하여 application-pay.yml 파일을 생성하고 실제 값을 입력하세요
+
+kakaopay:
+  # 카카오 개발자 센터에서 발급받은 Admin Key
+  # https://developers.kakao.com/
+  secret-key: YOUR_SECRET_KEY_HERE
+
+  # 가맹점 코드
+  # 테스트: TC0ONETIME (테스트용 고정값)
+  # 운영: 카카오페이에서 발급받은 실제 CID
+  cid: TC0ONETIME
+
+  # 카카오페이 API 엔드포인트 (변경 불필요)
+  ready-url: https://open-api.kakaopay.com/online/v1/payment/ready
+  approve-url: https://open-api.kakaopay.com/online/v1/payment/approve
+  cancel-api-url: https://open-api.kakaopay.com/online/v1/payment/cancel
+
+  # 결제 후 리다이렉트 URL (프론트엔드 URL로 수정)
+  # 로컬 개발: http://localhost:3000
+  # 운영: https://yourdomain.com
+  approval-url: http://localhost:3000/payment/success
+  cancel-url: http://localhost:3000/payment/cancel
+  fail-url: http://localhost:3000/payment/fail

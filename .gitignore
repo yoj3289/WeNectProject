@@ -5,6 +5,9 @@
 #환경변수
 .env
 .env.local
+#카카오페이 설정 (민감정보)
+**/application-pay.yml
+**/application-pay-prod.yml
 #OS
 .DS_Store
 Thumbs.db
