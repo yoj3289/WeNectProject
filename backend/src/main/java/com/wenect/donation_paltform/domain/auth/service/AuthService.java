@@ -149,13 +149,21 @@ public class AuthService {
             throw new IllegalStateException("비활성화된 계정입니다");
         }
 
-        // 4. JWT 토큰 생성
+        // 4. 기관명 조회 (기관 사용자인 경우)
+        String organizationName = null;
+        if (user.getUserType() == User.UserType.ORGANIZATION) {
+            organizationName = organizationRepository.findByUser_UserId(user.getUserId())
+                    .map(Organization::getOrgName)
+                    .orElse(null);
+        }
+
+        // 5. JWT 토큰 생성
         String token = jwtTokenProvider.createToken(
                 user.getUserId(),
                 user.getEmail(),
                 user.getUserType().name());
 
-        // 5. 응답 DTO 반환
-        return LoginResponseDto.of(token, user);
+        // 6. 응답 DTO 반환
+        return LoginResponseDto.of(token, user, organizationName);
     }
 }

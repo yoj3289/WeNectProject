@@ -1,7 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, X, Image as ImageIcon, Bold, Italic, List, AlignLeft, FileText, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, FileText, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { useCreateProject } from '../../hooks/useProjects';
+import { useAuthStore } from '../../stores/authStore';
+import RichTextEditor from '../../components/editor/RichTextEditor';
+import '../../components/editor/editor.css';
 
 interface CreateProjectPageProps {
   onSubmit: () => void;
@@ -11,10 +14,19 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
   onSubmit
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+
   // 기본 정보
   const [projectTitle, setProjectTitle] = useState('');
   const [projectCategory, setProjectCategory] = useState('');
   const [organizationName, setOrganizationName] = useState('');
+
+  // 로그인한 사용자의 기관명을 자동으로 설정
+  useEffect(() => {
+    if (user?.organizationName) {
+      setOrganizationName(user.organizationName);
+    }
+  }, [user]);
 
   // 목표 & 일정
   const [targetAmount, setTargetAmount] = useState('');
@@ -23,9 +35,6 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
 
   // 상세 설명 (리치 텍스트)
   const [description, setDescription] = useState('');
-  const [isBold, setIsBold] = useState(false);
-  const [isItalic, setIsItalic] = useState(false);
-  const editorRef = useRef<HTMLDivElement>(null);
 
   // 이미지
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
@@ -81,28 +90,6 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
 
     setPlanDocument(file);
     setErrorMessage('');
-  };
-
-  // 리치 텍스트 에디터 - 볼드 토글
-  const toggleBold = () => {
-    document.execCommand('bold');
-    setIsBold(!isBold);
-  };
-
-  // 리치 텍스트 에디터 - 이탤릭 토글
-  const toggleItalic = () => {
-    document.execCommand('italic');
-    setIsItalic(!isItalic);
-  };
-
-  // 리치 텍스트 에디터 - 리스트 추가
-  const insertList = () => {
-    document.execCommand('insertUnorderedList');
-  };
-
-  // 리치 텍스트 에디터 - 제목 스타일
-  const applyHeading = () => {
-    document.execCommand('formatBlock', false, 'h3');
   };
 
   // 다음 단계
@@ -228,10 +215,9 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
               <input
                 type="text"
                 value={organizationName}
-                onChange={(e) => setOrganizationName(e.target.value)}
-                placeholder="희망재단"
-                disabled={createProjectMutation.isPending}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                readOnly
+                placeholder="로그인한 기관명이 자동으로 표시됩니다"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
               />
             </div>
           </div>
@@ -295,69 +281,11 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
               <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
                 프로젝트 상세 설명 <span className="text-red-500">*</span>
               </label>
-
-              {/* 리치 텍스트 에디터 툴바 */}
-              <div className="flex items-center gap-2 p-2 bg-gray-100 border border-gray-300 rounded-t-lg">
-                <button
-                  type="button"
-                  onClick={toggleBold}
-                  disabled={createProjectMutation.isPending}
-                  className={`p-2 rounded hover:bg-gray-200 disabled:cursor-not-allowed ${isBold ? 'bg-gray-300' : ''}`}
-                  title="굵게"
-                >
-                  <Bold size={18} />
-                </button>
-                <button
-                  type="button"
-                  onClick={toggleItalic}
-                  disabled={createProjectMutation.isPending}
-                  className={`p-2 rounded hover:bg-gray-200 disabled:cursor-not-allowed ${isItalic ? 'bg-gray-300' : ''}`}
-                  title="기울임"
-                >
-                  <Italic size={18} />
-                </button>
-                <div className="w-px h-6 bg-gray-300"></div>
-                <button
-                  type="button"
-                  onClick={applyHeading}
-                  disabled={createProjectMutation.isPending}
-                  className="p-2 rounded hover:bg-gray-200 disabled:cursor-not-allowed"
-                  title="제목"
-                >
-                  <AlignLeft size={18} />
-                </button>
-                <button
-                  type="button"
-                  onClick={insertList}
-                  disabled={createProjectMutation.isPending}
-                  className="p-2 rounded hover:bg-gray-200 disabled:cursor-not-allowed"
-                  title="목록"
-                >
-                  <List size={18} />
-                </button>
-                <div className="ml-auto text-xs text-gray-500">
-                  {description.length} / 5000자
-                </div>
-              </div>
-
-              {/* 리치 텍스트 에디터 영역 */}
-              <div
-                ref={editorRef}
-                contentEditable={!createProjectMutation.isPending}
-                onInput={(e) => setDescription(e.currentTarget.textContent || '')}
-                className="w-full min-h-[300px] px-4 py-3 border border-gray-300 border-t-0 rounded-b-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
-                style={{
-                  whiteSpace: 'pre-wrap',
-                  wordWrap: 'break-word'
-                }}
-                data-placeholder="프로젝트의 목적, 기대 효과, 사용 계획 등을 자세히 작성해주세요..."
+              <RichTextEditor
+                content={description}
+                onChange={setDescription}
+                placeholder="프로젝트의 목적, 기대 효과, 사용 계획 등을 자세히 작성해주세요..."
               />
-              <style>{`
-                [contentEditable][data-placeholder]:empty:before {
-                  content: attr(data-placeholder);
-                  color: #9ca3af;
-                }
-              `}</style>
             </div>
 
             {/* 대표 이미지 업로드 */}

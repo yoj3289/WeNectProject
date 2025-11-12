@@ -25,9 +25,10 @@ public class LoginResponseDto {
         private String userName;
         private String userType;
         private String phone;
+        private String organizationName; // 기관명 (기관 사용자인 경우)
     }
     
-    public static LoginResponseDto of(String token, User user) {
+    public static LoginResponseDto of(String token, User user, String organizationName) {
         return LoginResponseDto.builder()
                 .token(token)
                 .user(UserInfo.builder()
@@ -36,6 +37,7 @@ public class LoginResponseDto {
                         .userName(user.getUserName())
                         .userType(user.getUserType().name().toLowerCase()) // 소문자로 변환
                         .phone(user.getPhone())
+                        .organizationName(organizationName)
                         .build())
                 .build();
     }

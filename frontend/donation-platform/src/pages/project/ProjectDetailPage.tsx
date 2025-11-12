@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useProjectDetail, useToggleFavoriteProject } from '../../hooks/useProjects';
+import { useProjectDetail, useToggleFavoriteProject, useUserFavoriteProjects } from '../../hooks/useProjects';
 import { useDonors } from '../../hooks/useDonations';
 import type { TabType } from '../../types';
 import { getCategoryLabel } from '../../types';
+import '../../components/editor/editor.css';
 
 interface ProjectDetailPageProps {
   projectId: number;
@@ -35,6 +36,12 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
   // API: 관심 프로젝트 토글
   const toggleFavoriteMutation = useToggleFavoriteProject();
+
+  // API: 사용자의 관심 프로젝트 목록 조회 (로그인한 경우에만)
+  const { data: userFavorites } = useUserFavoriteProjects(isLoggedIn);
+
+  // 실제 서버에서 가져온 관심 프로젝트 목록을 Set으로 변환
+  const actualFavoriteIds = new Set(Array.isArray(userFavorites) ? userFavorites : []);
 
   // Helper Functions
   const formatAmount = (amount: number): string => {
@@ -136,7 +143,8 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   }
 
   const progress = calculatePercentage(project.currentAmount, project.targetAmount);
-  const isFavorite = favoriteProjectIds.has(project.id);
+  // 서버에서 가져온 실제 관심 프로젝트 목록 사용 (로그인 시에만)
+  const isFavorite = isLoggedIn ? actualFavoriteIds.has(project.id) : false;
   const categoryKo = getCategoryLabel(project.category); // 영어 -> 한글 변환
   const categoryInfo = getCategoryIcon(categoryKo);
 
@@ -149,22 +157,10 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
       case 'intro':
         return (
           <div className="prose max-w-none">
-            <p className="text-gray-700 text-lg leading-relaxed mb-6">
-              {project.description}
-            </p>
-            <h3 className="text-2xl font-bold mb-4">프로젝트 상세 내용</h3>
-            <p className="text-gray-700 leading-relaxed mb-6">
-              이 프로젝트는 우리 사회의 소외된 이웃들에게 실질적인 도움을 제공하기 위해 기획되었습니다.
-              여러분의 소중한 기부금은 투명하게 관리되며, 정산 과정을 통해
-              필요한 곳에 정확히 전달됩니다.
-            </p>
-            <h3 className="text-2xl font-bold mb-4">기대 효과</h3>
-            <ul className="list-disc list-inside space-y-2 text-gray-700">
-              <li>지역사회의 복지 향상</li>
-              <li>취약계층에 대한 실질적 지원</li>
-              <li>투명한 기부 문화 정착</li>
-              <li>지속가능한 나눔 생태계 구축</li>
-            </ul>
+            <div
+              className="text-gray-700 leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: project.description }}
+            />
           </div>
         );
       case 'progress':

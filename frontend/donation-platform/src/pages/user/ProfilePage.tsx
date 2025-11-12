@@ -4,11 +4,13 @@ import {
   Heart,
   Calendar,
   Download,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 import PiggyBankPage from './PiggyBankPage';
 import DonationHistoryPage from './DonationHistoryPage';
 import { useAuthStore } from '../../stores/authStore';
+import { useUserFavoriteProjects, useProjects, useToggleFavoriteProject } from '../../hooks/useProjects';
 import type {
   UserType,
   UserProfile,
@@ -34,16 +36,29 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   userProfile,
   setUserProfile,
   donationHistory,
-  favoriteProjects,
+  favoriteProjects: _ignoredFavoriteProjects, // ✅ 하드코딩된 prop 무시
   piggyBanks,
-  favoriteProjectIds,
+  favoriteProjectIds: _ignoredFavoriteProjectIds, // ✅ 하드코딩된 prop 무시
   setFavoriteProjectIds,
   setSelectedProject,
 }) => {
   const navigate = useNavigate();
-  const { updateUser } = useAuthStore();
+  const { updateUser, isLoggedIn } = useAuthStore();
   const [selectedMenu, setSelectedMenu] = useState<'main' | 'profile-edit' | 'donation-history' | 'favorite-projects' | 'piggy-bank'>('main');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+
+  // ✅ 실제 API로 관심 프로젝트 ID 조회
+  const { data: favoriteProjectIds = [], isLoading: isFavoriteIdsLoading } = useUserFavoriteProjects(isLoggedIn);
+
+  // ✅ 관심 프로젝트 ID 목록으로 프로젝트 전체 목록 조회 (필터링된 프로젝트만)
+  const { data: allProjectsData, isLoading: isProjectsLoading } = useProjects({});
+  const favoriteProjects = React.useMemo(() => {
+    if (!allProjectsData?.content) return [];
+    return allProjectsData.content.filter((p: Project) => favoriteProjectIds.includes(p.id));
+  }, [allProjectsData, favoriteProjectIds]);
+
+  // ✅ 관심 프로젝트 토글 mutation
+  const toggleFavoriteMutation = useToggleFavoriteProject();
 
   // Helper Functions
   const formatAmount = (amount: number): string => {
@@ -54,19 +69,21 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     return Math.round((current / target) * 100);
   };
 
-  // 관심 프로젝트 토글 함수
-  const toggleFavoriteProject = (projectId: number) => {
-    const newFavorites = new Set(favoriteProjectIds);
-
-    if (newFavorites.has(projectId)) {
-      newFavorites.delete(projectId);
-      alert('관심 프로젝트에서 제거되었습니다.');
-    } else {
-      newFavorites.add(projectId);
-      alert('관심 프로젝트에 추가되었습니다.');
+  // ✅ 관심 프로젝트 토글 함수 (실제 API 호출)
+  const toggleFavoriteProject = async (projectId: number) => {
+    if (!isLoggedIn) {
+      alert('로그인이 필요합니다.');
+      navigate('/login');
+      return;
     }
 
-    setFavoriteProjectIds(newFavorites);
+    try {
+      await toggleFavoriteMutation.mutateAsync(projectId);
+      // mutation의 onSuccess에서 자동으로 쿼리 무효화되어 UI 업데이트됨
+    } catch (error) {
+      console.error('관심 프로젝트 처리 실패:', error);
+      alert('관심 프로젝트 처리 중 오류가 발생했습니다.');
+    }
   };
 
   // 영수증 다운로드 함수
@@ -442,23 +459,30 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   };
 
   // 관심 프로젝트 페이지
-  const FavoriteProjectsPage = () => (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-5xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
-        <button
-          onClick={() => setSelectedMenu('main')}
-          className="mb-6 md:mb-8 text-gray-600 hover:text-gray-900 font-semibold text-sm md:text-base"
-        >
-          ← 마이페이지로
-        </button>
+  const FavoriteProjectsPage = () => {
+    const isLoading = isFavoriteIdsLoading || isProjectsLoading;
 
-        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 border border-gray-200">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-2">
-            <h2 className="text-2xl md:text-3xl font-bold">관심 프로젝트</h2>
-            <span className="text-sm md:text-base text-gray-600">{favoriteProjects.length}개 프로젝트</span>
-          </div>
+    return (
+      <div className="bg-gray-50 min-h-screen">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
+          <button
+            onClick={() => setSelectedMenu('main')}
+            className="mb-6 md:mb-8 text-gray-600 hover:text-gray-900 font-semibold text-sm md:text-base"
+          >
+            ← 마이페이지로
+          </button>
 
-          {favoriteProjects.length === 0 ? (
+          <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 border border-gray-200">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-2">
+              <h2 className="text-2xl md:text-3xl font-bold">관심 프로젝트</h2>
+              <span className="text-sm md:text-base text-gray-600">{favoriteProjects.length}개 프로젝트</span>
+            </div>
+
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12 md:py-20">
+                <Loader2 className="animate-spin text-red-500" size={40} />
+              </div>
+            ) : favoriteProjects.length === 0 ? (
             <div className="text-center py-12 md:py-20">
               <Heart className="mx-auto text-gray-300 mb-4" size={48} />
               <p className="text-gray-500 text-base md:text-lg mb-4">관심 프로젝트가 없습니다.</p>
@@ -529,11 +553,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 );
               })}
             </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // 렌더링
   return (
