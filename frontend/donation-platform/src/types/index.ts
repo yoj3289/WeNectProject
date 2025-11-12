@@ -17,6 +17,7 @@ export interface Project {
   organization: string;
   status: 'approved' | 'pending' | 'rejected';
   rejectionReason?: string;
+  userId: number; // 프로젝트 작성자 ID
 }
 
 // 기부 관련 타입

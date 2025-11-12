@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useProjectDetail, useToggleFavoriteProject, useUserFavoriteProjects } from '../../hooks/useProjects';
+import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { useProjectDetail, useToggleFavoriteProject, useUserFavoriteProjects, useDeleteProject } from '../../hooks/useProjects';
 import { useDonors } from '../../hooks/useDonations';
 import type { TabType } from '../../types';
 import { getCategoryLabel } from '../../types';
 import DonationModal from '../../components/donation/DonationModal';
+import { useAuthStore } from '../../stores/authStore';
 import '../../components/editor/editor.css';
 
 interface ProjectDetailPageProps {
@@ -24,11 +25,14 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   onShowDonationModal
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+
   // State
   const [activeTab, setActiveTab] = useState<TabType>('intro');
   const [showAnonymousDonors, setShowAnonymousDonors] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showDonationModal, setShowDonationModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // API: 프로젝트 상세 정보 조회
   const { data: project, isLoading: isLoadingProject, isError: isErrorProject, error: projectError } = useProjectDetail(projectId);
@@ -42,8 +46,14 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   // API: 사용자의 관심 프로젝트 목록 조회 (로그인한 경우에만)
   const { data: userFavorites } = useUserFavoriteProjects(isLoggedIn);
 
+  // API: 프로젝트 삭제
+  const deleteProjectMutation = useDeleteProject();
+
   // 실제 서버에서 가져온 관심 프로젝트 목록을 Set으로 변환
   const actualFavoriteIds = new Set(Array.isArray(userFavorites) ? userFavorites : []);
+
+  // 작성자 확인
+  const isAuthor = user && project && user.userId === project.userId;
 
   // Helper Functions
   const formatAmount = (amount: number): string => {
@@ -106,6 +116,23 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
   const handleDonateClick = () => {
     setShowDonationModal(true);
+  };
+
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteProjectMutation.mutateAsync(projectId);
+      alert('프로젝트가 성공적으로 삭제되었습니다.');
+      navigate('/projects'); // 프로젝트 목록 페이지로 이동
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || '프로젝트 삭제에 실패했습니다.';
+      alert(errorMessage);
+    } finally {
+      setShowDeleteModal(false);
+    }
   };
 
   // 로딩 상태
@@ -461,8 +488,24 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     D-{project.dday}
                   </span>
                 </div>
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 md:mb-3">{project.title}</h1>
-                <p className="text-base md:text-lg lg:text-xl text-gray-600">{project.organization.name}</p>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 md:mb-3">{project.title}</h1>
+                    <p className="text-base md:text-lg lg:text-xl text-gray-600">{project.organization.name}</p>
+                  </div>
+
+                  {/* 삭제 버튼 (작성자만 보임) */}
+                  {isAuthor && (
+                    <button
+                      onClick={handleDeleteClick}
+                      className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                      title="프로젝트 삭제"
+                    >
+                      <Trash2 size={18} />
+                      <span className="hidden sm:inline">삭제</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* 탭 네비게이션 */}
@@ -601,6 +644,51 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
           projectTitle={project.title}
           onClose={() => setShowDonationModal(false)}
         />
+      )}
+
+      {/* 삭제 확인 모달 */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-100 rounded-full">
+                <Trash2 className="w-6 h-6 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">프로젝트 삭제</h3>
+            </div>
+
+            <p className="text-gray-600 mb-6">
+              정말로 이 프로젝트를 삭제하시겠습니까?<br />
+              <span className="text-red-500 font-semibold">삭제된 프로젝트는 복구할 수 없습니다.</span><br />
+              <span className="text-sm text-gray-500 mt-2 block">
+                ※ 기부 내역은 보존됩니다.
+              </span>
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deleteProjectMutation.isPending}
+                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {deleteProjectMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    삭제 중...
+                  </>
+                ) : (
+                  '삭제'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

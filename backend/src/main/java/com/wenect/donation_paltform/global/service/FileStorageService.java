@@ -69,4 +69,28 @@ public class FileStorageService {
 
         return "/uploads/projects/documents/" + fileName;
     }
+
+    /**
+     * 파일 삭제
+     * @param filePath 삭제할 파일의 경로 (예: "/uploads/projects/images/123456_image.jpg")
+     */
+    public void deleteFile(String filePath) {
+        if (filePath == null || filePath.isEmpty()) {
+            return;
+        }
+
+        try {
+            // URL 경로를 실제 파일 시스템 경로로 변환
+            // "/uploads/projects/images/file.jpg" -> "uploads/projects/images/file.jpg"
+            String relativePath = filePath.startsWith("/") ? filePath.substring(1) : filePath;
+            Path path = Paths.get(relativePath);
+
+            if (Files.exists(path)) {
+                Files.delete(path);
+            }
+        } catch (IOException e) {
+            // 파일 삭제 실패는 로깅만 하고 예외를 던지지 않음
+            System.err.println("파일 삭제 실패: " + filePath + " - " + e.getMessage());
+        }
+    }
 }
