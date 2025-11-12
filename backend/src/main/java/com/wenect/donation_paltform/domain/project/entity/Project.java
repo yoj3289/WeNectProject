@@ -55,6 +55,10 @@ public class Project {
     @Builder.Default
     private ProjectStatus status = ProjectStatus.ACTIVE;
 
+    @Column(name = "is_plan_public", nullable = false)
+    @Builder.Default
+    private Boolean isPlanPublic = false;
+
     // TODO: 나중에 DB에 컬럼 추가 후 주석 해제
     // @Column(name = "rejection_reason", columnDefinition = "TEXT")
     // private String rejectionReason;
