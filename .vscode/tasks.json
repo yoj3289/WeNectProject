@@ -1,0 +1,61 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Backend (Spring Boot)",
+            "type": "shell",
+            "command": "cd backend && ./gradlew bootRun",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "."
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "Starting",
+                    "endsPattern": "Started DonationPaltformApplication"
+                }
+            }
+        },
+        {
+            "label": "Run Frontend (React)",
+            "type": "shell",
+            "command": "cd frontend/donation-platform && npm run dev -- --port 3000",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "."
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "VITE",
+                    "endsPattern": "Local:.*http://localhost:3000"
+                }
+            }
+        },
+        {
+            "label": "Run Backend + Frontend",
+            "dependsOn": [
+                "Run Backend (Spring Boot)",
+                "Run Frontend (React)"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always"
+            }
+        }
+    ]
+}

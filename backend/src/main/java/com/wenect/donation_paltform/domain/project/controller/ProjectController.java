@@ -1,7 +1,10 @@
 package com.wenect.donation_paltform.domain.project.controller;
 
 import com.wenect.donation_paltform.global.common.ApiResponse;
+import com.wenect.donation_paltform.domain.donation.dto.DonationResponse;
+import com.wenect.donation_paltform.domain.donation.service.DonationService;
 import com.wenect.donation_paltform.domain.project.dto.CreateProjectRequest;
+import com.wenect.donation_paltform.domain.project.dto.DonorResponseDto;
 import com.wenect.donation_paltform.global.common.PageResponse;
 import com.wenect.donation_paltform.domain.project.dto.ProjectDetailResponse;
 import com.wenect.donation_paltform.domain.project.dto.ProjectResponse;
@@ -22,6 +25,7 @@ import java.util.List;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final DonationService donationService;
     private final JwtTokenProvider jwtTokenProvider;
 
     /**
@@ -121,12 +125,25 @@ public class ProjectController {
      * 프로젝트 기부자 목록 조회
      */
     @GetMapping("/{id}/donors")
-    public ResponseEntity<List<Object>> getProjectDonors(
+    public ResponseEntity<List<DonorResponseDto>> getProjectDonors(
             @PathVariable("id") Long id,
             @RequestParam(value = "showAnonymous", defaultValue = "true") boolean showAnonymous) {
-        // TODO: 실제 기부자 목록 조회 구현
-        // 현재는 빈 배열 반환
-        return ResponseEntity.ok(List.of());
+        List<DonationResponse> donations = donationService.getDonationsByProjectId(id);
+
+        // showAnonymous가 false면 익명 기부자 제외하고 DonorResponseDto로 변환
+        List<DonorResponseDto> donors = donations.stream()
+                .filter(d -> showAnonymous || !Boolean.TRUE.equals(d.getIsAnonymous()))
+                .map(d -> DonorResponseDto.builder()
+                        .id(d.getDonationId())
+                        .name(Boolean.TRUE.equals(d.getIsAnonymous()) ? "익명" : d.getDonorName())
+                        .amount(d.getAmount())
+                        .date(d.getCreatedAt() != null ? d.getCreatedAt().toString() : "")
+                        .isAnonymous(d.getIsAnonymous())
+                        .message(d.getMessage())
+                        .build())
+                .toList();
+
+        return ResponseEntity.ok(donors);
     }
 
     /**

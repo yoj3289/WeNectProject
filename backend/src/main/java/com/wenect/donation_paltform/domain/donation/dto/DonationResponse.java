@@ -1,5 +1,6 @@
 package com.wenect.donation_paltform.domain.donation.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wenect.donation_paltform.domain.donation.entity.Donation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,6 +36,12 @@ public class DonationResponse {
     private String message;
     private LocalDateTime approvedAt;
     private LocalDateTime createdAt;
+
+    // 프론트엔드 호환성: timestamp로도 노출
+    @JsonProperty("timestamp")
+    public LocalDateTime getTimestamp() {
+        return createdAt;
+    }
 
     /**
      * Entity를 DTO로 변환

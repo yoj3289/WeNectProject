@@ -144,12 +144,14 @@ public class DonationService {
     }
 
     /**
-     * 프로젝트별 기부 내역 목록 조회
+     * 프로젝트별 기부 내역 목록 조회 (완료된 기부만)
      */
     @Transactional(readOnly = true)
     public List<DonationResponse> getDonationsByProjectId(Long projectId) {
         List<Donation> donations = donationRepository.findByProjectIdOrderByCreatedAtDesc(projectId);
+        // COMPLETED 상태의 기부만 반환 (통계 일치를 위해)
         return donations.stream()
+                .filter(d -> d.getStatus() == Donation.DonationStatus.COMPLETED)
                 .map(DonationResponse::from)
                 .collect(Collectors.toList());
     }
@@ -184,5 +186,37 @@ public class DonationService {
     @Transactional
     public Donation saveDonation(Donation donation) {
         return donationRepository.save(donation);
+    }
+
+    /**
+     * 프로젝트 통계 재계산 (데이터 불일치 해결용)
+     * 완료된 기부 내역을 기준으로 프로젝트의 currentAmount와 donorCount를 재계산
+     */
+    @Transactional
+    public void recalculateProjectStats(Long projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+
+        // 완료된 기부 내역만 조회
+        List<Donation> completedDonations = donationRepository.findByProjectIdOrderByCreatedAtDesc(projectId)
+                .stream()
+                .filter(d -> d.getStatus() == Donation.DonationStatus.COMPLETED)
+                .collect(Collectors.toList());
+
+        // 총 기부액 계산
+        BigDecimal totalAmount = completedDonations.stream()
+                .map(Donation::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // 기부자 수 계산
+        int donorCount = completedDonations.size();
+
+        // 프로젝트 업데이트
+        project.setCurrentAmount(totalAmount);
+        project.setDonorCount(donorCount);
+        projectRepository.save(project);
+
+        log.info("프로젝트 통계 재계산 완료 - projectId: {}, currentAmount: {}, donorCount: {}",
+                projectId, totalAmount, donorCount);
     }
 }

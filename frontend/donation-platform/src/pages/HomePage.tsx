@@ -114,10 +114,10 @@ const HomePage: React.FC<HomePageProps> = ({
                     </div>
                     <div className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-1">
                       {stats && stats.totalDonationAmount > 0
-                        ? `${Math.floor(stats.totalDonationAmount / 100000000)}억원`
+                        ? `${Math.floor(stats.totalDonationAmount)}원`
                         : '0원'}
                     </div>
-                    <div className="text-sm md:text-base text-white/90">누적 기부금액 • 실시간 추적 가능</div>
+                    <div className="text-sm md:text-base text-white/90">누적 기부금액</div>
                   </div>
                 </div>
               </div>

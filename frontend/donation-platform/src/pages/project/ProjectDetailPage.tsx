@@ -230,14 +230,14 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               <>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="p-6 bg-gradient-to-br from-red-50 to-pink-50 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-2">총 기부자 수</p>
+                    <p className="text-sm text-gray-600 mb-2">기부자 수</p>
                     <p className="text-3xl font-bold text-red-600">{donors.length}명</p>
                   </div>
                   <div className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-2">평균 기부액</p>
+                    <p className="text-sm text-gray-600 mb-2">총 기부액</p>
                     <p className="text-3xl font-bold text-blue-600">
                       {donors.length > 0
-                        ? formatAmount(Math.round(donors.reduce((sum, d) => sum + d.amount, 0) / donors.length))
+                        ? formatAmount(donors.reduce((sum, d) => sum + d.amount, 0))
                         : 0}원
                     </p>
                   </div>

@@ -61,4 +61,18 @@ public class DonationController {
         List<DonationResponse> donations = donationService.getRecentDonations(limit);
         return ResponseEntity.ok(donations);
     }
+
+    /**
+     * 프로젝트 통계 재계산 (관리자용 / 데이터 불일치 해결)
+     */
+    @PostMapping("/project/{projectId}/recalculate")
+    public ResponseEntity<String> recalculateProjectStats(@PathVariable Long projectId) {
+        log.info("프로젝트 통계 재계산 요청 - projectId: {}", projectId);
+        try {
+            donationService.recalculateProjectStats(projectId);
+            return ResponseEntity.ok("프로젝트 통계가 재계산되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

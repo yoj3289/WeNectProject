@@ -1,0 +1,55 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "DonationPaltformApplication",
+            "request": "launch",
+            "mainClass": "com.wenect.donation_paltform.DonationPaltformApplication",
+            "projectName": "donation-paltform-backend"
+        },
+        {
+            "type": "java",
+            "name": "▶ Run Spring Boot (Backend Only)",
+            "request": "launch",
+            "mainClass": "com.wenect.donation_paltform.DonationPaltformApplication",
+            "projectName": "donation-platform",
+            "cwd": "${workspaceFolder}/backend",
+            "args": "",
+            "vmArgs": "",
+            "env": {},
+            "console": "internalConsole"
+        },
+        {
+            "type": "node",
+            "name": "▶ Run React (Frontend Only)",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/frontend/donation-platform",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "dev",
+                "--",
+                "--port",
+                "3000"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "▶▶ Run Backend + Frontend (Full Stack)",
+            "configurations": [
+                "▶ Run Spring Boot (Backend Only)",
+                "▶ Run React (Frontend Only)"
+            ],
+            "presentation": {
+                "hidden": false,
+                "group": "",
+                "order": 1
+            },
+            "stopAll": true
+        }
+    ]
+}
