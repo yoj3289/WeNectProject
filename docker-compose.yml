@@ -62,6 +62,8 @@ services:
       - backend
     networks:
       - wenect-network
+    volumes:
+      - ./uploads:/usr/share/nginx/html/uploads  # 업로드 파일 서빙
 
 volumes:
   mysql-data:
