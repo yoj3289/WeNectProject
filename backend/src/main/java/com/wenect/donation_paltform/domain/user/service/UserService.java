@@ -1,21 +1,27 @@
 package com.wenect.donation_paltform.domain.user.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wenect.donation_paltform.domain.auth.entity.User;
 import com.wenect.donation_paltform.domain.auth.repository.UserRepository;
 import com.wenect.donation_paltform.domain.user.dto.ChangePasswordRequest;
+import com.wenect.donation_paltform.domain.user.dto.NotificationSettingsDto;
 import com.wenect.donation_paltform.domain.user.dto.UpdateProfileRequest;
 import com.wenect.donation_paltform.domain.user.dto.UserProfileResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ObjectMapper objectMapper;
 
     /**
      * 사용자 프로필 조회
@@ -85,5 +91,47 @@ public class UserService {
         // 비밀번호 변경
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
+    }
+
+    /**
+     * 알림 설정 조회
+     */
+    @Transactional(readOnly = true)
+    public NotificationSettingsDto getNotificationSettings(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+
+        // 알림 설정이 없으면 기본값 반환
+        if (user.getNotificationSettings() == null || user.getNotificationSettings().isEmpty()) {
+            return NotificationSettingsDto.builder().build();
+        }
+
+        try {
+            return objectMapper.readValue(user.getNotificationSettings(), NotificationSettingsDto.class);
+        } catch (JsonProcessingException e) {
+            log.error("알림 설정 파싱 실패 - userId: {}", userId, e);
+            return NotificationSettingsDto.builder().build();
+        }
+    }
+
+    /**
+     * 알림 설정 업데이트
+     */
+    @Transactional
+    public NotificationSettingsDto updateNotificationSettings(Long userId, NotificationSettingsDto settings) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+
+        try {
+            String settingsJson = objectMapper.writeValueAsString(settings);
+            user.setNotificationSettings(settingsJson);
+            userRepository.save(user);
+
+            log.info("알림 설정 업데이트 완료 - userId: {}", userId);
+            return settings;
+        } catch (JsonProcessingException e) {
+            log.error("알림 설정 저장 실패 - userId: {}", userId, e);
+            throw new RuntimeException("알림 설정 저장 중 오류가 발생했습니다", e);
+        }
     }
 }

@@ -4,6 +4,7 @@ import com.wenect.donation_paltform.domain.donation.dto.DonationRequest;
 import com.wenect.donation_paltform.domain.donation.dto.DonationResponse;
 import com.wenect.donation_paltform.domain.donation.entity.Donation;
 import com.wenect.donation_paltform.domain.donation.repository.DonationRepository;
+import com.wenect.donation_paltform.domain.notification.service.NotificationService;
 import com.wenect.donation_paltform.domain.project.entity.Project;
 import com.wenect.donation_paltform.domain.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class DonationService {
 
     private final DonationRepository donationRepository;
     private final ProjectRepository projectRepository;
+    private final NotificationService notificationService;
 
     /**
      * 기부 내역 생성 (결제 준비 단계)
@@ -71,6 +73,10 @@ public class DonationService {
         Donation donation = donationRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("기부 내역을 찾을 수 없습니다."));
 
+        // 프로젝트 정보 조회 (알림에 사용)
+        Project project = projectRepository.findById(donation.getProjectId())
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+
         // 기부 내역 업데이트
         donation.setStatus(Donation.DonationStatus.COMPLETED);
         donation.setPaymentTid(tid);
@@ -81,6 +87,24 @@ public class DonationService {
 
         // 프로젝트 모금액 및 기부자 수 업데이트
         updateProjectDonationStats(donation.getProjectId(), donation.getAmount());
+
+        // 회원 기부인 경우 알림 생성 (비회원은 userId가 null)
+        if (donation.getUserId() != null) {
+            try {
+                notificationService.createDonationNotification(
+                        donation.getUserId(),
+                        project.getTitle(),
+                        project.getProjectId(),
+                        donation.getAmount().longValue()
+                );
+                log.info("기부 완료 알림 생성 - userId: {}, projectId: {}",
+                        donation.getUserId(), project.getProjectId());
+            } catch (Exception e) {
+                // 알림 생성 실패는 기부 승인 프로세스에 영향을 주지 않음
+                log.error("알림 생성 실패 - userId: {}, projectId: {}",
+                        donation.getUserId(), project.getProjectId(), e);
+            }
+        }
 
         log.info("기부 승인 완료 - donationId: {}, amount: {}", donation.getDonationId(), donation.getAmount());
     }

@@ -683,7 +683,7 @@ import UserManagementPage from './pages/admin/UserManagementPage';
 import ProjectManagementPage from './pages/admin/ProjectManagementPage';
 import SettlementManagementPage from './pages/admin/SettlementManagementPage';
 import OrganizationApprovalPage from './pages/admin/OrganizationApprovalPage';
-import NotificationPage from './pages/notification/NotificationPage';
+import NotificationPageWithAPI from './pages/notification/NotificationPageWithAPI';
 import PaymentSuccessPage from './pages/payment/PaymentSuccessPage';
 import PaymentCancelPage from './pages/payment/PaymentCancelPage';
 import PaymentFailPage from './pages/payment/PaymentFailPage';
@@ -1270,20 +1270,8 @@ const DonationPlatform: React.FC = () => {
           </AdminLayout>
         } />
 
-        {/* Notification Page - 레이아웃 없음 */}
-        <Route path="/notifications" element={
-          <NotificationPage
-            notifications={notifications}
-            onMarkAsRead={handleMarkAsRead}
-            onMarkAllAsRead={handleMarkAllAsRead}
-            onDelete={handleDeleteNotification}
-            onArchive={handleArchiveNotification}
-            notificationSettings={notificationSettings}
-            onUpdateSettings={(settings) => setNotificationSettings(settings as typeof notificationSettings)}
-            onShowConsentModal={() => alert('수신 동의 관리 모달을 표시합니다.')}
-            onShowHistoryModal={() => alert('발송 내역 모달을 표시합니다.')}
-          />
-        } />
+        {/* Notification Page - 레이아웃 없음, API 사용 */}
+        <Route path="/notifications" element={<NotificationPageWithAPI />} />
 
         {/* Payment Pages - 레이아웃 없음 */}
         <Route path="/payment/success" element={<PaymentSuccessPage />} />
@@ -1296,14 +1284,8 @@ const DonationPlatform: React.FC = () => {
           <MainLayout
             isLoggedIn={isLoggedIn}
             userType={userType}
-            notifications={notifications}
             userProfile={userProfile}
             handleLogout={handleLogout}
-            onMarkAsRead={handleMarkAsRead}
-            onMarkAllAsRead={handleMarkAllAsRead}
-            onDeleteNotification={handleDeleteNotification}
-            notificationSettings={notificationSettings}
-            onUpdateNotificationSettings={(settings) => setNotificationSettings(settings as typeof notificationSettings)}
           >
             <Routes>
               <Route path="/" element={

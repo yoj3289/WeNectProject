@@ -42,7 +42,13 @@ public class User {
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    
+
+    /**
+     * 알림 설정 (JSON 형식)
+     */
+    @Column(name = "notification_settings", columnDefinition = "TEXT")
+    private String notificationSettings;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

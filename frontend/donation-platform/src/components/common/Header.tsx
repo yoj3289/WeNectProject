@@ -2,38 +2,28 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Heart, Bell, User, LogOut } from 'lucide-react';
 import NotificationDropdown from './NotificationDropdown';
-import type { UserType, Notification, UserProfile } from '../../types';
+import type { UserType, UserProfile } from '../../types';
+import { useUnreadCount } from '../../hooks/useNotifications';
 
 interface HeaderProps {
   isLoggedIn: boolean;
   userType: UserType;
-  notifications: Notification[];
   userProfile: UserProfile;
   handleLogout: () => void;
-  onMarkAsRead: (id: number) => void;
-  onMarkAllAsRead: () => void;
-  onDeleteNotification: (id: number) => void;
-
-  //아래 두줄 각각 sms: boolean; 추가
-  notificationSettings: Record<string, { enabled: boolean; email: boolean; sms: boolean; push: boolean }>;
-  onUpdateNotificationSettings: (settings: Record<string, { enabled: boolean; email: boolean; sms: boolean; push: boolean }>) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
   isLoggedIn,
   userType,
-  notifications,
   userProfile,
   handleLogout,
-  onMarkAsRead,
-  onMarkAllAsRead,
-  onDeleteNotification,
-  notificationSettings,
-  onUpdateNotificationSettings,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+
+  // 실제 API에서 읽지 않은 알림 개수 가져오기
+  const { data: unreadData } = useUnreadCount();
 
   // 251027추가
   const handleShowConsentModal = () => {
@@ -89,24 +79,16 @@ const Header: React.FC<HeaderProps> = ({
                   className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
                 >
                   <Bell size={24} />
-                  {notifications.filter(n => !n.isRead && !n.isArchived).length > 0 && (
+                  {unreadData && unreadData.count > 0 && (
                     <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {notifications.filter(n => !n.isRead && !n.isArchived).length}
+                      {unreadData.count}
                     </span>
                   )}
                 </button>
                 <NotificationDropdown
-                  notifications={notifications}
                   isOpen={isNotificationOpen}
                   onClose={() => setIsNotificationOpen(false)}
-                  onMarkAsRead={onMarkAsRead}
-                  onMarkAllAsRead={onMarkAllAsRead}
-                  onDelete={onDeleteNotification}
                   onOpenFullPage={() => navigate('/notifications')}
-                  notificationSettings={notificationSettings}
-                  onUpdateSettings={onUpdateNotificationSettings}
-
-                  //251027추가
                   onShowConsentModal={handleShowConsentModal}
                 />
               </div>

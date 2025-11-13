@@ -1,6 +1,7 @@
 package com.wenect.donation_paltform.domain.user.controller;
 
 import com.wenect.donation_paltform.domain.user.dto.ChangePasswordRequest;
+import com.wenect.donation_paltform.domain.user.dto.NotificationSettingsDto;
 import com.wenect.donation_paltform.domain.user.dto.UpdateProfileRequest;
 import com.wenect.donation_paltform.domain.user.dto.UserProfileResponse;
 import com.wenect.donation_paltform.domain.user.service.UserService;
@@ -61,6 +62,33 @@ public class UserController {
 
         return ResponseEntity.ok(
                 ApiResponse.success(null, "비밀번호 변경 성공"));
+    }
+
+    /**
+     * 알림 설정 조회
+     */
+    @GetMapping("/notification-settings")
+    public ResponseEntity<NotificationSettingsDto> getNotificationSettings(
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        Long userId = extractUserIdFromToken(authorizationHeader);
+        NotificationSettingsDto settings = userService.getNotificationSettings(userId);
+
+        return ResponseEntity.ok(settings);
+    }
+
+    /**
+     * 알림 설정 업데이트
+     */
+    @PutMapping("/notification-settings")
+    public ResponseEntity<NotificationSettingsDto> updateNotificationSettings(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestBody NotificationSettingsDto settings) {
+
+        Long userId = extractUserIdFromToken(authorizationHeader);
+        NotificationSettingsDto updatedSettings = userService.updateNotificationSettings(userId, settings);
+
+        return ResponseEntity.ok(updatedSettings);
     }
 
     /**

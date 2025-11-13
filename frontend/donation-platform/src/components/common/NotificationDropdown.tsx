@@ -1,33 +1,46 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, X, CheckCheck, Heart, MessageCircle, TrendingUp, Calendar, DollarSign, AlertCircle, Settings, Trash2, ChevronRight, Star, ExternalLink, Mail, Smartphone, Monitor } from 'lucide-react';
 import type { Notification } from '../../types';
+import { useMyNotifications, useMarkAsRead, useMarkAllAsRead, useDeleteNotification } from '../../hooks/useNotifications';
+import type { NotificationResponse } from '../../api/notifications';
 
 interface NotificationDropdownProps {
-  notifications: Notification[];
   isOpen: boolean;
   onClose: () => void;
-  onMarkAsRead: (id: number) => void;
-  onMarkAllAsRead: () => void;
-  onDelete: (id: number) => void;
   onOpenFullPage: () => void;
-  notificationSettings: Record<string, { enabled: boolean; email: boolean; sms: boolean; push: boolean }>;
-  onUpdateSettings: (settings: Record<string, { enabled: boolean; email: boolean; sms: boolean; push: boolean }>) => void;
   onShowConsentModal: () => void;
 }
 
 const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
-  notifications,
   isOpen,
   onClose,
-  onMarkAsRead,
-  onMarkAllAsRead,
-  onDelete,
   onOpenFullPage,
-  notificationSettings,
-  onUpdateSettings,
   onShowConsentModal
 }) => {
-  const [showSettings, setShowSettings] = useState(false);
+  const navigate = useNavigate();
+
+  // 실제 API에서 알림 목록 가져오기
+  const { data: notificationsData, isLoading } = useMyNotifications();
+  const markAsReadMutation = useMarkAsRead();
+  const markAllAsReadMutation = useMarkAllAsRead();
+  const deleteNotificationMutation = useDeleteNotification();
+
+  // API 응답을 컴포넌트 형식으로 변환
+  const convertToNotification = (apiNotif: NotificationResponse): Notification => ({
+    id: apiNotif.notificationId,
+    type: apiNotif.type as any,
+    category: apiNotif.category as any,
+    title: apiNotif.title,
+    message: apiNotif.message,
+    timestamp: new Date(apiNotif.createdAt),
+    isRead: apiNotif.isRead,
+    isArchived: false, // API에서는 아직 지원하지 않음
+    link: apiNotif.link,
+    metadata: apiNotif.metadata,
+  });
+
+  const notifications: Notification[] = notificationsData?.map(convertToNotification) || [];
 
   const getTimeAgo = (timestamp: Date) => {
     const now = new Date();
@@ -77,10 +90,13 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   };
 
   const handleNotificationClick = (notification: Notification) => {
-    onMarkAsRead(notification.id);
+    // 알림을 읽음 처리
+    markAsReadMutation.mutate(notification.id);
+
+    // 링크가 있으면 해당 페이지로 이동
     if (notification.link) {
-      console.log('Navigate to:', notification.link);
-      alert(`페이지로 이동: ${notification.link}`);
+      onClose(); // 드롭다운 닫기
+      navigate(notification.link);
     }
   };
 
@@ -114,72 +130,25 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
                 <button
-                  onClick={onMarkAllAsRead}
+                  onClick={() => markAllAsReadMutation.mutate()}
                   className="text-white/90 hover:text-white text-sm font-medium flex items-center gap-1"
                 >
                   <CheckCheck size={16} />
                   모두 읽음
                 </button>
               )}
-              <button
-                onClick={() => setShowSettings(!showSettings)}
-                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-              >
-                <Settings size={18} className="text-white" />
-              </button>
             </div>
           </div>
         </div>
 
-        {/* 알림 설정 패널 */}
-        {showSettings && (
-          <div className="p-4 bg-gray-50 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-bold text-sm text-gray-700">알림 설정</h4>
-              <button
-                onClick={onShowConsentModal}
-                className="text-xs text-red-600 hover:text-red-700 font-medium"
-              >
-                수신 동의 관리
-              </button>
-            </div>
-            <div className="space-y-2">
-              {[
-                { key: 'donation', label: '기부 알림' },
-                { key: 'comment', label: '댓글/답글 알림' },
-                { key: 'project', label: '프로젝트 알림' },
-                { key: 'settlement', label: '정산 알림' },
-                { key: 'deadline', label: '마감 임박 알림' }
-              ].map(setting => (
-                <label key={setting.key} className="flex items-center justify-between cursor-pointer p-2 hover:bg-white rounded-lg">
-                  <span className="text-sm text-gray-700">{setting.label}</span>
-                  <input
-                    type="checkbox"
-                    checked={notificationSettings[setting.key]?.enabled}
-                    onChange={() => onUpdateSettings({
-                      ...notificationSettings,
-                      [setting.key]: {
-                        ...notificationSettings[setting.key],
-                        enabled: !notificationSettings[setting.key]?.enabled
-                      }
-                    })}
-                    className="w-4 h-4 text-red-500 rounded focus:ring-2 focus:ring-red-500"
-                  />
-                </label>
-              ))}
-            </div>
-            <button
-              onClick={requestPushPermission}
-              className="w-full mt-3 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm font-medium"
-            >
-              푸시 알림 권한 요청
-            </button>
-          </div>
-        )}
-
         {/* 알림 목록 */}
         <div className="max-h-96 overflow-y-auto">
-          {visibleNotifications.length === 0 ? (
+          {isLoading ? (
+            <div className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto mb-3"></div>
+              <p className="text-gray-500">알림을 불러오는 중...</p>
+            </div>
+          ) : visibleNotifications.length === 0 ? (
             <div className="p-8 text-center">
               <Bell className="mx-auto mb-3 text-gray-300" size={48} />
               <p className="text-gray-500">알림이 없습니다</p>
@@ -228,7 +197,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onDelete(notification.id);
+                                deleteNotificationMutation.mutate(notification.id);
                               }}
                               className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all"
                             >

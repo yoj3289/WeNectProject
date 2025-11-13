@@ -1,32 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Search, CheckCheck, Archive, Trash2, Heart, MessageCircle, TrendingUp, Calendar, DollarSign, AlertCircle, X as XIcon, Settings, ArrowLeft, Star, ExternalLink, Mail, Smartphone, Monitor, FileText, Filter } from 'lucide-react';
-import type { Notification } from '../../types';
+import { Bell, Search, CheckCheck, Archive, Trash2, Heart, MessageCircle, TrendingUp, Calendar, DollarSign, AlertCircle, X as XIcon, Settings, ArrowLeft, Star, ExternalLink, Loader2 } from 'lucide-react';
+import { useMyNotifications, useMarkAsRead, useMarkAllAsRead, useDeleteNotification } from '../../hooks/useNotifications';
+import { useNotificationSettings, useUpdateNotificationSettings } from '../../hooks/useUsers';
+import type { NotificationResponse } from '../../api/notifications';
 
-interface NotificationPageProps {
-  notifications: Notification[];
-  onMarkAsRead: (id: number) => void;
-  onMarkAllAsRead: () => void;
-  onDelete: (id: number) => void;
-  onArchive: (id: number) => void;
-  notificationSettings: Record<string, { enabled: boolean; email: boolean; sms: boolean; push: boolean }>;
-  onUpdateSettings: (settings: Record<string, { enabled: boolean; email: boolean; sms: boolean; push: boolean }>) => void;
-  onShowConsentModal: () => void;
-  onShowHistoryModal: () => void;
-}
-
-const NotificationPage: React.FC<NotificationPageProps> = ({
-  notifications,
-  onMarkAsRead,
-  onMarkAllAsRead,
-  onDelete,
-  onArchive,
-  notificationSettings,
-  onUpdateSettings,
-  onShowConsentModal,
-  onShowHistoryModal
-}) => {
+const NotificationPageWithAPI: React.FC = () => {
   const navigate = useNavigate();
+
+  // API hooks
+  const { data: notificationsData, isLoading, error } = useMyNotifications();
+  const { data: settingsData } = useNotificationSettings();
+  const markAsReadMutation = useMarkAsRead();
+  const markAllAsReadMutation = useMarkAllAsRead();
+  const deleteNotificationMutation = useDeleteNotification();
+  const updateSettingsMutation = useUpdateNotificationSettings();
+
+  // UI states
   const [selectedTab, setSelectedTab] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,6 +24,20 @@ const NotificationPage: React.FC<NotificationPageProps> = ({
   const [selectedNotifications, setSelectedNotifications] = useState<Set<number>>(new Set());
   const [dateFilter, setDateFilter] = useState('all');
   const [groupByProject, setGroupByProject] = useState(false);
+
+  // API 데이터를 로컬 타입으로 변환
+  const notifications = notificationsData?.map(n => ({
+    id: n.notificationId,
+    type: n.type,
+    category: n.category,
+    title: n.title,
+    message: n.message,
+    timestamp: new Date(n.createdAt),
+    isRead: n.isRead,
+    isArchived: false, // 백엔드에 isArchived가 없으면 false로 처리
+    link: n.link,
+    metadata: n.metadata
+  })) || [];
 
   const getTimeAgo = (timestamp: Date) => {
     const now = new Date();
@@ -153,7 +157,7 @@ const NotificationPage: React.FC<NotificationPageProps> = ({
       if (!groups[projectName]) groups[projectName] = [];
       groups[projectName].push(notif);
       return groups;
-    }, {} as Record<string, Notification[]>)
+    }, {} as Record<string, typeof filteredNotifications>)
     : { '전체': filteredNotifications };
 
   const unreadCount = notifications.filter(n => !n.isRead && !n.isArchived).length;
@@ -169,29 +173,30 @@ const NotificationPage: React.FC<NotificationPageProps> = ({
   };
 
   const deleteSelected = () => {
-    selectedNotifications.forEach(id => onDelete(id));
+    selectedNotifications.forEach(id => {
+      deleteNotificationMutation.mutate(id);
+    });
     setSelectedNotifications(new Set());
   };
 
-  const handleNotificationClick = (notification: Notification) => {
-    onMarkAsRead(notification.id);
+  const handleNotificationClick = (notification: typeof notifications[0]) => {
+    markAsReadMutation.mutate(notification.id);
     if (notification.link) {
       console.log('Navigate to:', notification.link);
       navigate(notification.link);
     }
   };
 
-  const requestPushPermission = async () => {
-    if ('Notification' in window) {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        alert('푸시 알림이 허용되었습니다!');
-      } else {
-        alert('푸시 알림이 차단되었습니다.');
-      }
-    } else {
-      alert('이 브라우저는 푸시 알림을 지원하지 않습니다.');
-    }
+  const handleMarkAsRead = (id: number) => {
+    markAsReadMutation.mutate(id);
+  };
+
+  const handleMarkAllAsRead = () => {
+    markAllAsReadMutation.mutate();
+  };
+
+  const handleDelete = (id: number) => {
+    deleteNotificationMutation.mutate(id);
   };
 
   const categories = [
@@ -201,6 +206,35 @@ const NotificationPage: React.FC<NotificationPageProps> = ({
     { id: 'project', label: '프로젝트', icon: <CheckCheck size={16} /> },
     { id: 'settlement', label: '정산', icon: <DollarSign size={16} /> }
   ];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-red-500 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">알림을 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-gray-900 font-bold mb-2">알림을 불러올 수 없습니다</p>
+          <p className="text-gray-600">로그인이 필요하거나 오류가 발생했습니다.</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="mt-4 px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+          >
+            로그인하기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -226,12 +260,6 @@ const NotificationPage: React.FC<NotificationPageProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button
-                onClick={onShowHistoryModal}
-                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors text-sm font-medium"
-              >
-                발송 내역
-              </button>
               <button
                 onClick={() => setShowSettings(!showSettings)}
                 className="p-3 hover:bg-white/20 rounded-xl transition-colors"
@@ -366,7 +394,7 @@ const NotificationPage: React.FC<NotificationPageProps> = ({
                 </div>
                 {unreadCount > 0 && (
                   <button
-                    onClick={onMarkAllAsRead}
+                    onClick={handleMarkAllAsRead}
                     className="px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors flex items-center gap-2"
                   >
                     <CheckCheck size={16} />
@@ -375,94 +403,6 @@ const NotificationPage: React.FC<NotificationPageProps> = ({
                 )}
               </div>
             </div>
-
-            {/* 알림 설정 패널 */}
-            {showSettings && (
-              <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold">알림 설정</h3>
-                  <button
-                    onClick={onShowConsentModal}
-                    className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm font-medium"
-                  >
-                    수신 동의 관리
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  {Object.entries(notificationSettings).map(([key, settings]) => (
-                    <div key={key} className="border-b border-gray-200 pb-4 last:border-0">
-                      <div className="flex items-center justify-between mb-3">
-                        <label className="flex items-center gap-2 font-medium text-gray-900">
-                          <input
-                            type="checkbox"
-                            checked={settings.enabled}
-                            onChange={() => onUpdateSettings({
-                              ...notificationSettings,
-                              [key]: { ...settings, enabled: !settings.enabled }
-                            })}
-                            className="w-5 h-5 text-red-500 rounded focus:ring-2 focus:ring-red-500"
-                          />
-                          {key === 'donation' && '기부 알림'}
-                          {key === 'comment' && '댓글/답글 알림'}
-                          {key === 'project' && '프로젝트 알림'}
-                          {key === 'settlement' && '정산 알림'}
-                          {key === 'deadline' && '마감 임박 알림'}
-                        </label>
-                      </div>
-                      {settings.enabled && (
-                        <div className="ml-7 flex gap-6 text-sm">
-                          <label className="flex items-center gap-2 text-gray-600">
-                            <input
-                              type="checkbox"
-                              checked={settings.email}
-                              onChange={() => onUpdateSettings({
-                                ...notificationSettings,
-                                [key]: { ...settings, email: !settings.email }
-                              })}
-                              className="w-4 h-4 text-red-500 rounded"
-                            />
-                            <Mail size={16} />
-                            이메일
-                          </label>
-                          <label className="flex items-center gap-2 text-gray-600">
-                            <input
-                              type="checkbox"
-                              checked={settings.sms}
-                              onChange={() => onUpdateSettings({
-                                ...notificationSettings,
-                                [key]: { ...settings, sms: !settings.sms }
-                              })}
-                              className="w-4 h-4 text-red-500 rounded"
-                            />
-                            <Smartphone size={16} />
-                            SMS
-                          </label>
-                          <label className="flex items-center gap-2 text-gray-600">
-                            <input
-                              type="checkbox"
-                              checked={settings.push}
-                              onChange={() => onUpdateSettings({
-                                ...notificationSettings,
-                                [key]: { ...settings, push: !settings.push }
-                              })}
-                              className="w-4 h-4 text-red-500 rounded"
-                            />
-                            <Monitor size={16} />
-                            푸시
-                          </label>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={requestPushPermission}
-                  className="w-full mt-4 px-4 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium"
-                >
-                  푸시 알림 권한 요청
-                </button>
-              </div>
-            )}
 
             {/* 알림 목록 */}
             {filteredNotifications.length === 0 ? (
@@ -552,20 +492,14 @@ const NotificationPage: React.FC<NotificationPageProps> = ({
                                       )}
                                       {!notification.isRead && (
                                         <button
-                                          onClick={() => onMarkAsRead(notification.id)}
+                                          onClick={() => handleMarkAsRead(notification.id)}
                                           className="px-3 py-1.5 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium"
                                         >
                                           읽음 표시
                                         </button>
                                       )}
                                       <button
-                                        onClick={() => onArchive(notification.id)}
-                                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                                      >
-                                        <Archive size={16} className="text-gray-500" />
-                                      </button>
-                                      <button
-                                        onClick={() => onDelete(notification.id)}
+                                        onClick={() => handleDelete(notification.id)}
                                         className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                                       >
                                         <Trash2 size={16} className="text-gray-500" />
@@ -590,4 +524,4 @@ const NotificationPage: React.FC<NotificationPageProps> = ({
   );
 };
 
-export default NotificationPage;
+export default NotificationPageWithAPI;
