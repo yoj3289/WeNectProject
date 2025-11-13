@@ -32,6 +32,9 @@ public class Donation {
     @Column(name = "payment_id")
     private Long paymentId;  // 결제 정보 ID (payments 테이블 참조)
 
+    @Column(name = "selected_option_id")
+    private Long selectedOptionId;  // 선택한 기부 옵션 ID (donation_options 테이블 참조)
+
     @Column(name = "donor_name", nullable = false, length = 100)
     private String donorName;  // 기부자 이름
 

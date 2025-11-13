@@ -35,6 +35,7 @@ public class ProjectService {
     private final OrganizationRepository organizationRepository;
     private final com.wenect.donation_paltform.global.service.FileStorageService fileStorageService;
     private final com.wenect.donation_paltform.domain.favorite.service.FavoriteProjectService favoriteProjectService;
+    private final DonationOptionService donationOptionService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -112,6 +113,8 @@ public class ProjectService {
                 .startDate(LocalDate.parse(request.getStartDate()))
                 .endDate(LocalDate.parse(request.getEndDate()))
                 .status(Project.ProjectStatus.ACTIVE) // 즉시 활성화
+                .budgetPlan(request.getBudgetPlan())
+                .isPlanPublic(request.getIsPlanPublic() != null ? request.getIsPlanPublic() : true)
                 .build();
 
         // 4. 프로젝트 저장
@@ -142,6 +145,10 @@ public class ProjectService {
         if (planDocument != null && !planDocument.isEmpty()) {
             String documentPath = fileStorageService.saveProjectDocument(planDocument);
 
+            // Project 엔티티에 planDocumentUrl 설정
+            savedProject.setPlanDocumentUrl(documentPath);
+            projectRepository.save(savedProject);
+
             ProjectDocument projectDocument = ProjectDocument.builder()
                     .projectId(savedProject.getProjectId())
                     .fileName(planDocument.getOriginalFilename())
@@ -153,7 +160,12 @@ public class ProjectService {
             projectDocumentRepository.save(projectDocument);
         }
 
-        // 7. DTO 변환 및 반환
+        // 7. 기부 옵션 저장
+        if (request.getDonationOptions() != null && !request.getDonationOptions().isEmpty()) {
+            donationOptionService.createOptions(savedProject.getProjectId(), request.getDonationOptions());
+        }
+
+        // 8. DTO 변환 및 반환
         String categoryName = getCategoryName(categoryId);
         return ProjectResponse.from(savedProject, categoryName, imageUrls);
     }

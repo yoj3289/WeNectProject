@@ -1,7 +1,19 @@
 // 공통 타입 정의
 export type PageType = 'home' | 'login' | 'projects' | 'detail' | 'signup' | 'create-project' | 'edit-project' | 'community' | 'mypage' | 'profile-edit' | 'admin' | 'admin-users' | 'post-detail' | 'create-post' | 'edit-post' | 'settlement' | 'notifications' | 'donation-history' | 'favorite-projects' | 'piggy-bank' | 'project-approval';
 export type UserType = 'individual' | 'organization' | 'admin';
-export type TabType = 'intro' | 'progress' | 'donors' | 'messages';
+export type TabType = 'intro' | 'budget' | 'progress' | 'donors' | 'messages';
+
+// 기부 옵션 타입
+export interface DonationOption {
+  optionId?: number;
+  projectId?: number;
+  optionName: string;
+  optionDescription?: string;
+  amount: number;
+  iconEmoji?: string;
+  displayOrder?: number;
+  isActive?: boolean;
+}
 
 // 프로젝트 관련 타입
 export interface Project {
@@ -18,6 +30,10 @@ export interface Project {
   status: 'approved' | 'pending' | 'rejected';
   rejectionReason?: string;
   userId: number; // 프로젝트 작성자 ID
+  budgetPlan?: string;              // 기부금 사용계획
+  planDocumentUrl?: string;         // 사용계획서 파일 URL
+  isPlanPublic?: boolean;           // 계획서 공개 여부
+  donationOptions?: DonationOption[]; // 기부 옵션 목록
 }
 
 // 기부 관련 타입
@@ -35,6 +51,8 @@ export interface DonationHistory {
   date: string;
   receiptNumber: string;
   status: 'completed' | 'pending';
+  selectedOptionId?: number;         // 선택한 옵션 ID
+  selectedOptionName?: string;       // 선택한 옵션명
 }
 
 // 저금통 관련 타입
