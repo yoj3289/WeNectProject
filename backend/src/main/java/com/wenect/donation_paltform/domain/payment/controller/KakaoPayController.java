@@ -21,7 +21,6 @@ import java.util.Map;
 @RequestMapping("/api/payments/kakao")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "http://localhost:3000")
 public class KakaoPayController {
 
     private final KakaoPayService kakaoPayService;

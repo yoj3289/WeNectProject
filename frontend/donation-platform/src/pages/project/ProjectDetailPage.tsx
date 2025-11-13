@@ -115,6 +115,11 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   };
 
   const handleDonateClick = () => {
+    if (!isLoggedIn) {
+      alert('로그인이 필요한 서비스입니다.\n로그인 후 기부해주세요.');
+      navigate('/login');
+      return;
+    }
     setShowDonationModal(true);
   };
 
