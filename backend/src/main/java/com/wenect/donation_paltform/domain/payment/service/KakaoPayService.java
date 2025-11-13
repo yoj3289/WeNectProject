@@ -29,8 +29,8 @@ public class KakaoPayService {
      * 1단계: 결제 준비 (Ready)
      * 사용자에게 결제 URL을 제공
      */
-    public KakaoPayReadyResponse readyPayment(String itemName, int totalAmount, String userId, String orderId) {
-        log.info("카카오페이 결제 준비 요청 - 상품: {}, 금액: {}, orderId: {}", itemName, totalAmount, orderId);
+    public KakaoPayReadyResponse readyPayment(String itemName, int totalAmount, String userId, String orderId, Long projectId) {
+        log.info("카카오페이 결제 준비 요청 - 상품: {}, 금액: {}, orderId: {}, projectId: {}", itemName, totalAmount, orderId, projectId);
 
         // 블로그 권장: Map 사용 (MultiValueMap 사용 시 대괄호[] 문제 발생)
         Map<String, Object> parameters = new HashMap<>();
@@ -41,9 +41,9 @@ public class KakaoPayService {
         parameters.put("quantity", 1);
         parameters.put("total_amount", totalAmount);
         parameters.put("tax_free_amount", 0);
-        parameters.put("approval_url", kakaoPayProperties.getApprovalUrl() + "?orderId=" + orderId);
-        parameters.put("cancel_url", kakaoPayProperties.getCancelUrl() + "?orderId=" + orderId);
-        parameters.put("fail_url", kakaoPayProperties.getFailUrl() + "?orderId=" + orderId);
+        parameters.put("approval_url", kakaoPayProperties.getApprovalUrl() + "?orderId=" + orderId + "&projectId=" + projectId);
+        parameters.put("cancel_url", kakaoPayProperties.getCancelUrl() + "?orderId=" + orderId + "&projectId=" + projectId);
+        parameters.put("fail_url", kakaoPayProperties.getFailUrl() + "?orderId=" + orderId + "&projectId=" + projectId);
 
         log.info("카카오페이 요청 파라미터: {}", parameters);
 

@@ -62,7 +62,7 @@ public class KakaoPayController {
                     itemName, totalAmount, userId, orderId);
 
             KakaoPayReadyResponse response = kakaoPayService.readyPayment(
-                    itemName, totalAmount, userId, orderId);
+                    itemName, totalAmount, userId, orderId, donationRequest.getProjectId());
 
             // 3. TID를 DB에 저장 (메모리 대신 DB 사용으로 재시작 후에도 유지)
             donation.setPaymentTid(response.getTid());

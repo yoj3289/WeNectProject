@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { useProjectDetail, useToggleFavoriteProject, useUserFavoriteProjects, useDeleteProject } from '../../hooks/useProjects';
 import { useDonors } from '../../hooks/useDonations';
@@ -26,6 +26,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 }) => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // State
   const [activeTab, setActiveTab] = useState<TabType>('intro');
@@ -54,6 +55,17 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
   // 작성자 확인
   const isAuthor = user && project && user.userId === project.userId;
+
+  // 로그인 후 기부 모달 자동 열기
+  useEffect(() => {
+    const openDonation = searchParams.get('openDonation');
+    if (openDonation === 'true' && isLoggedIn) {
+      setShowDonationModal(true);
+      // URL에서 openDonation 파라미터 제거
+      searchParams.delete('openDonation');
+      setSearchParams(searchParams);
+    }
+  }, [isLoggedIn, searchParams, setSearchParams]);
 
   // Helper Functions
   const formatAmount = (amount: number): string => {
@@ -117,7 +129,8 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   const handleDonateClick = () => {
     if (!isLoggedIn) {
       alert('로그인이 필요한 서비스입니다.\n로그인 후 기부해주세요.');
-      navigate('/login');
+      // 현재 프로젝트 페이지 URL과 기부 모달 열기 플래그를 redirect 파라미터로 전달
+      navigate(`/login?redirect=/projects/${projectId}&openDonation=true`);
       return;
     }
     setShowDonationModal(true);

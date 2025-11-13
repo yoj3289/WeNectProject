@@ -10,6 +10,7 @@ const PaymentSuccessPage: React.FC = () => {
 
   const pgToken = searchParams.get('pg_token');
   const orderId = searchParams.get('orderId');
+  const projectId = searchParams.get('projectId');
 
   useEffect(() => {
     const approvePayment = async () => {
@@ -94,6 +95,15 @@ const PaymentSuccessPage: React.FC = () => {
         </div>
 
         <div className="space-y-3">
+          {projectId && (
+            <button
+              onClick={() => navigate(`/projects/${projectId}`)}
+              className="w-full py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold rounded-lg hover:from-red-600 hover:to-pink-600 transition flex items-center justify-center gap-2"
+            >
+              <Heart size={20} />
+              기부한 프로젝트로 돌아가기
+            </button>
+          )}
           <button
             onClick={() => navigate('/projects')}
             className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition"

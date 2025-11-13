@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Heart, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -26,8 +27,19 @@ const LoginPage: React.FC = () => {
         rememberMe,
       });
 
-      // 로그인 성공 시 홈으로 이동
-      navigate('/');
+      // 로그인 성공 시 redirect URL이 있으면 해당 페이지로, 없으면 홈으로 이동
+      const redirect = searchParams.get('redirect');
+      const openDonation = searchParams.get('openDonation');
+
+      if (redirect) {
+        // redirect URL에 openDonation 파라미터 포함
+        const redirectUrl = openDonation === 'true'
+          ? `${redirect}?openDonation=true`
+          : redirect;
+        navigate(redirectUrl);
+      } else {
+        navigate('/');
+      }
 
       // 입력 필드 초기화
       setLoginEmail('');

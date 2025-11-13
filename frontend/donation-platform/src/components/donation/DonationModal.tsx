@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Heart, CreditCard, Wallet } from 'lucide-react';
 import axios from 'axios';
+import { useAuthStore } from '../../stores/authStore';
 
 interface DonationModalProps {
   projectId: number;
@@ -9,6 +10,8 @@ interface DonationModalProps {
 }
 
 const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, onClose }) => {
+  const { user } = useAuthStore();
+
   const [amount, setAmount] = useState<string>('');
   const [customAmount, setCustomAmount] = useState<string>('');
   const [donorName, setDonorName] = useState<string>('');
@@ -20,6 +23,15 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const predefinedAmounts = [5000, 10000, 30000, 50000, 100000];
+
+  // 로그인한 사용자 정보로 자동 채우기
+  useEffect(() => {
+    if (user) {
+      setDonorName(user.userName || '');
+      setDonorEmail(user.email || '');
+      setDonorPhone(user.phone || '');
+    }
+  }, [user]);
 
   const handleAmountSelect = (value: number) => {
     setAmount(value.toString());
