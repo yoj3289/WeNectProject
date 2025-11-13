@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -33,6 +35,9 @@ public class ProjectService {
     private final OrganizationRepository organizationRepository;
     private final com.wenect.donation_paltform.global.service.FileStorageService fileStorageService;
     private final com.wenect.donation_paltform.domain.favorite.service.FavoriteProjectService favoriteProjectService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     /**
      * 카테고리명 -> category_id 변환 (하드코딩)
@@ -302,5 +307,86 @@ public class ProjectService {
                 .filter(response -> response != null) // null 제거
                 .limit(limit) // ACTIVE가 아닌 프로젝트를 제외한 후 다시 limit 적용
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 프로젝트 삭제
+     *
+     * 삭제 로직:
+     * 1. 권한 확인 (프로젝트 작성자만 삭제 가능)
+     * 2. 삭제 가능 여부 확인
+     *    - piggy_banks 테이블에 데이터가 있으면 삭제 불가 (ON DELETE RESTRICT)
+     *    - settlements 테이블에 데이터가 있으면 삭제 불가 (ON DELETE RESTRICT)
+     * 3. 물리적 파일 삭제 (images, documents)
+     * 4. 프로젝트 삭제 (DB)
+     *    - project_images: CASCADE로 자동 삭제
+     *    - project_documents: CASCADE로 자동 삭제
+     *    - favorite_projects: CASCADE로 자동 삭제
+     *    - donations: project_id가 NULL로 변경됨 (SET NULL)
+     *
+     * @param projectId 삭제할 프로젝트 ID
+     * @param userId 요청한 사용자 ID
+     * @throws IllegalArgumentException 프로젝트를 찾을 수 없는 경우
+     * @throws IllegalStateException 권한이 없거나 삭제할 수 없는 경우
+     */
+    @Transactional
+    public void deleteProject(Long projectId, Long userId) {
+        // 1. 프로젝트 조회
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다"));
+
+        // 2. 기관 정보 조회
+        Organization organization = organizationRepository.findById(project.getOrgId())
+                .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다"));
+
+        // 3. 권한 확인 (프로젝트 작성자만 삭제 가능)
+        if (!organization.getUser().getUserId().equals(userId)) {
+            throw new IllegalStateException("프로젝트를 삭제할 권한이 없습니다");
+        }
+
+        // 4. 삭제 가능 여부 확인
+        // 4-1. 저금통에 잔액이 있는지 확인 (Native SQL)
+        Long piggyBankCount = ((Number) entityManager.createNativeQuery(
+                "SELECT COUNT(*) FROM piggy_banks WHERE project_id = :projectId AND balance > 0")
+                .setParameter("projectId", projectId)
+                .getSingleResult()).longValue();
+
+        if (piggyBankCount > 0) {
+            throw new IllegalStateException("저금통에 잔액이 있는 프로젝트는 삭제할 수 없습니다. 먼저 저금통을 정산하거나 출금해주세요.");
+        }
+
+        // 4-2. 정산 내역 확인 (Native SQL)
+        Long settlementCount = ((Number) entityManager.createNativeQuery(
+                "SELECT COUNT(*) FROM settlements WHERE project_id = :projectId")
+                .setParameter("projectId", projectId)
+                .getSingleResult()).longValue();
+
+        if (settlementCount > 0) {
+            throw new IllegalStateException("정산 내역이 있는 프로젝트는 삭제할 수 없습니다.");
+        }
+
+        // 4-3. 저금통 데이터 중 잔액이 0인 것들은 삭제 (DB 제약조건 우회)
+        entityManager.createNativeQuery(
+                "DELETE FROM piggy_banks WHERE project_id = :projectId AND balance = 0")
+                .setParameter("projectId", projectId)
+                .executeUpdate();
+
+        // 5. 물리적 파일 삭제
+        // 5-1. 이미지 파일 삭제
+        List<ProjectImage> images = projectImageRepository.findByProjectIdOrderByDisplayOrder(projectId);
+        for (ProjectImage image : images) {
+            fileStorageService.deleteFile(image.getFilePath());
+        }
+
+        // 5-2. 문서 파일 삭제
+        List<ProjectDocument> documents = projectDocumentRepository.findByProjectId(projectId);
+        for (ProjectDocument document : documents) {
+            fileStorageService.deleteFile(document.getFilePath());
+        }
+
+        // 6. 프로젝트 삭제 (DB)
+        // CASCADE 설정으로 project_images, project_documents, favorite_projects는 자동 삭제
+        // donations의 project_id는 NULL로 변경됨
+        projectRepository.delete(project);
     }
 }

@@ -147,6 +147,36 @@ public class ProjectController {
     }
 
     /**
+     * 프로젝트 삭제
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteProject(
+            @PathVariable("id") Long id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        try {
+            // JWT에서 userId 추출
+            Long userId = getUserIdFromToken(authHeader);
+
+            // 서비스 호출
+            projectService.deleteProject(id, userId);
+
+            return ResponseEntity.ok(
+                    ApiResponse.success(null, "프로젝트가 성공적으로 삭제되었습니다"));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error(e.getMessage(), "INVALID_REQUEST"));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(403).body(
+                    ApiResponse.error(e.getMessage(), "FORBIDDEN"));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    ApiResponse.error("프로젝트 삭제 중 오류가 발생했습니다: " + e.getMessage(), "INTERNAL_ERROR"));
+        }
+    }
+
+    /**
      * JWT 토큰에서 userId 추출
      */
     private Long getUserIdFromToken(String authHeader) {

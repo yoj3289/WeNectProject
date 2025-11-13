@@ -24,6 +24,8 @@ public class ProjectDetailResponse {
     @JsonProperty("id")
     private Long projectId;
 
+    private Long userId; // 프로젝트 작성자 ID
+
     private String title;
 
     @JsonProperty("category")
@@ -137,6 +139,7 @@ public class ProjectDetailResponse {
 
         return ProjectDetailResponse.builder()
                 .projectId(project.getProjectId())
+                .userId(organization.getUser().getUserId()) // 작성자 ID (Organization의 User)
                 .title(project.getTitle())
                 .categoryName(categoryName)
                 .currentAmount(project.getCurrentAmount())
