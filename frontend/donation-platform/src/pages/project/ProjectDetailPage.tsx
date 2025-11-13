@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight, Trash2, FileText, Download } from 'lucide-react';
 import { useProjectDetail, useToggleFavoriteProject, useUserFavoriteProjects, useDeleteProject } from '../../hooks/useProjects';
 import { useDonors } from '../../hooks/useDonations';
 import type { TabType } from '../../types';
@@ -204,6 +204,64 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               className="text-gray-700 leading-relaxed"
               dangerouslySetInnerHTML={{ __html: project.description }}
             />
+          </div>
+        );
+      case 'budget':
+        return (
+          <div className="space-y-6">
+            {/* 기부금 사용계획 */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 border-l-4 border-blue-500">
+              <div className="flex items-center gap-3 mb-4">
+                <FileText className="text-blue-600" size={28} />
+                <h4 className="font-bold text-xl text-gray-900">기부금 사용계획</h4>
+              </div>
+              <div className="bg-white rounded-lg p-6">
+                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {project.budgetPlan || '기부금 사용계획이 등록되지 않았습니다.'}
+                </p>
+              </div>
+            </div>
+
+            {/* 상세 사용계획서 다운로드 */}
+            {project.planDocumentUrl && project.isPlanPublic && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <FileText className="text-gray-600" size={24} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-900">상세 사용계획서</p>
+                      <p className="text-sm text-gray-500">PDF 문서로 다운로드 가능합니다</p>
+                    </div>
+                  </div>
+                  <a
+                    href={`http://localhost:8080${project.planDocumentUrl}`}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+                  >
+                    <Download size={18} />
+                    다운로드
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* 투명성 안내 */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="text-yellow-600 flex-shrink-0 mt-1" size={20} />
+                <div>
+                  <p className="font-semibold text-yellow-900 mb-2">투명한 기부금 사용</p>
+                  <p className="text-sm text-yellow-800 leading-relaxed">
+                    모든 기부금은 위에 명시된 사용계획에 따라 투명하게 사용됩니다.
+                    프로젝트 종료 후에는 상세한 사용 내역이 공개될 예정입니다.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         );
       case 'progress':
@@ -530,6 +588,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               <div className="flex border-b border-gray-200 overflow-x-auto">
                 {[
                   { id: 'intro', label: '프로젝트 소개' },
+                  { id: 'budget', label: '기부금 사용계획' },
                   { id: 'progress', label: '진행현황' },
                   { id: 'donors', label: '기부자 목록' },
                   { id: 'messages', label: '응원 메시지' }
