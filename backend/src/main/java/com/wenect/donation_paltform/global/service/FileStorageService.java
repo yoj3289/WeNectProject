@@ -1,5 +1,6 @@
 package com.wenect.donation_paltform.global.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,9 +13,20 @@ import java.nio.file.StandardCopyOption;
 @Service
 public class FileStorageService {
 
-    private final String uploadDir = "uploads/documents/";
-    private final String projectImagesDir = "uploads/projects/images/";
-    private final String projectDocumentsDir = "uploads/projects/documents/";
+    @Value("${file.upload.dir:uploads}")
+    private String baseUploadDir;
+
+    private String getUploadDir() {
+        return baseUploadDir + "/documents/";
+    }
+
+    private String getProjectImagesDir() {
+        return baseUploadDir + "/projects/images/";
+    }
+
+    private String getProjectDocumentsDir() {
+        return baseUploadDir + "/projects/documents/";
+    }
 
     public String saveFile(MultipartFile file) throws IOException {
         // 파일명 중복 방지
@@ -22,7 +34,7 @@ public class FileStorageService {
         String fileName = System.currentTimeMillis() + "_" + originalFilename;
 
         // 저장 경로 생성
-        Path uploadPath = Paths.get(uploadDir);
+        Path uploadPath = Paths.get(getUploadDir());
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
@@ -41,7 +53,7 @@ public class FileStorageService {
         String originalFilename = file.getOriginalFilename();
         String fileName = System.currentTimeMillis() + "_" + originalFilename;
 
-        Path uploadPath = Paths.get(projectImagesDir);
+        Path uploadPath = Paths.get(getProjectImagesDir());
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
@@ -59,7 +71,7 @@ public class FileStorageService {
         String originalFilename = file.getOriginalFilename();
         String fileName = System.currentTimeMillis() + "_" + originalFilename;
 
-        Path uploadPath = Paths.get(projectDocumentsDir);
+        Path uploadPath = Paths.get(getProjectDocumentsDir());
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
@@ -83,7 +95,10 @@ public class FileStorageService {
             // URL 경로를 실제 파일 시스템 경로로 변환
             // "/uploads/projects/images/file.jpg" -> "uploads/projects/images/file.jpg"
             String relativePath = filePath.startsWith("/") ? filePath.substring(1) : filePath;
-            Path path = Paths.get(relativePath);
+
+            // baseUploadDir를 사용하여 경로 구성
+            String fullPath = relativePath.replace("uploads", baseUploadDir);
+            Path path = Paths.get(fullPath);
 
             if (Files.exists(path)) {
                 Files.delete(path);

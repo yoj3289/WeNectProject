@@ -205,7 +205,7 @@ public class ProjectController {
      */
     @GetMapping("/{projectId}/options")
     public ResponseEntity<ApiResponse<List<DonationOptionDto>>> getProjectDonationOptions(
-            @PathVariable Long projectId) {
+            @PathVariable("projectId") Long projectId) {
         try {
             List<DonationOptionDto> options = donationOptionService.getActiveOptionsByProjectId(projectId);
             return ResponseEntity.ok(ApiResponse.success(options, "기부 옵션 조회 성공"));
@@ -221,7 +221,7 @@ public class ProjectController {
      */
     @GetMapping("/options/{optionId}")
     public ResponseEntity<ApiResponse<DonationOptionDto>> getDonationOption(
-            @PathVariable Long optionId) {
+            @PathVariable("optionId") Long optionId) {
         try {
             DonationOptionDto option = donationOptionService.getOptionById(optionId);
             return ResponseEntity.ok(ApiResponse.success(option, "기부 옵션 조회 성공"));
@@ -258,7 +258,7 @@ public class ProjectController {
     @PutMapping("/options/{optionId}")
     public ResponseEntity<ApiResponse<DonationOptionDto>> updateDonationOption(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @PathVariable Long optionId,
+            @PathVariable("optionId") Long optionId,
             @RequestBody DonationOptionDto dto) {
         try {
             // JWT 인증
@@ -279,7 +279,7 @@ public class ProjectController {
     @DeleteMapping("/options/{optionId}")
     public ResponseEntity<ApiResponse<Void>> deleteDonationOption(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @PathVariable Long optionId) {
+            @PathVariable("optionId") Long optionId) {
         try {
             // JWT 인증
             Long userId = getUserIdFromToken(authHeader);
