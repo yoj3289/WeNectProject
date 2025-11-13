@@ -45,7 +45,14 @@ class ApiClient {
           import('../stores/authStore').then(({ useAuthStore }) => {
             useAuthStore.getState().logout();
           });
-          window.location.href = '/login';
+
+          // Custom event 발행 → App.tsx에서 처리
+          window.dispatchEvent(new CustomEvent('auth:logout', {
+            detail: {
+              reason: 'token_expired',
+              currentPath: window.location.pathname
+            }
+          }));
         }
         return Promise.reject(error);
       }

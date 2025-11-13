@@ -89,23 +89,6 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     return iconMap[category] || { icon: <Heart size={120} />, bgColor: 'from-gray-100 to-gray-200' };
   };
 
-  // SNS 공유 함수
-  const shareToSNS = (platform: string, projectTitle: string) => {
-    const url = window.location.href;
-    const text = `${projectTitle} - 따뜻한 나눔`;
-
-    switch(platform) {
-      case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`);
-        break;
-      case 'twitter':
-        window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`);
-        break;
-      default:
-        break;
-    }
-  };
-
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
       alert('링크가 복사되었습니다!');
@@ -685,30 +668,14 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                 기부하기
               </button>
 
-              {/* SNS 공유 버튼들 */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => shareToSNS('facebook', project.title)}
-                  className="flex-1 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2"
-                >
-                  <Share2 size={20} />
-                  Facebook
-                </button>
-                <button
-                  onClick={() => shareToSNS('twitter', project.title)}
-                  className="flex-1 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2"
-                >
-                  <Share2 size={20} />
-                  Twitter
-                </button>
-                <button
-                  onClick={() => copyToClipboard(window.location.href)}
-                  className="flex-1 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2"
-                >
-                  <Share2 size={20} />
-                  링크 복사
-                </button>
-              </div>
+              {/* 링크 복사 버튼 */}
+              <button
+                onClick={() => copyToClipboard(window.location.href)}
+                className="w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2"
+              >
+                <Share2 size={20} />
+                링크 복사
+              </button>
             </div>
           </div>
         </div>
