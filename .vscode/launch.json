@@ -6,6 +6,13 @@
             "name": "DonationPaltformApplication",
             "request": "launch",
             "mainClass": "com.wenect.donation_paltform.DonationPaltformApplication",
+            "projectName": "backend"
+        },
+        {
+            "type": "java",
+            "name": "DonationPaltformApplication",
+            "request": "launch",
+            "mainClass": "com.wenect.donation_paltform.DonationPaltformApplication",
             "projectName": "donation-paltform-backend"
         },
         {
