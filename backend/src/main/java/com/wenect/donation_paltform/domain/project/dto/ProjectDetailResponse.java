@@ -49,6 +49,11 @@ public class ProjectDetailResponse {
     private LocalDate startDate;
     private LocalDate endDate;
 
+    // 기부금 사용계획 관련 필드
+    private String budgetPlan;
+    private String planDocumentUrl;
+    private Boolean isPlanPublic;
+
     private OrganizationInfo organization;
     private List<ImageInfo> images;
     private List<DocumentInfo> documents;
@@ -152,6 +157,9 @@ public class ProjectDetailResponse {
                 .rejectionReason(null) // TODO: rejection_reason 필드 추가 시 사용
                 .startDate(project.getStartDate())
                 .endDate(project.getEndDate())
+                .budgetPlan(project.getBudgetPlan())
+                .planDocumentUrl(project.getPlanDocumentUrl())
+                .isPlanPublic(project.getIsPlanPublic())
                 .organization(orgInfo)
                 .images(imageInfos)
                 .documents(documentInfos)

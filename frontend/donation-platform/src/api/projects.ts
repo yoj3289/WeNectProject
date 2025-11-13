@@ -1,5 +1,5 @@
 import { apiClient } from '../lib/apiClient';
-import type { Project } from '../types';
+import type { Project, DonationOption } from '../types';
 
 // ==================== 요청 타입 ====================
 export interface ProjectFilters {
@@ -48,6 +48,10 @@ export interface ProjectDetailResponse {
   rejectionReason?: string;
   startDate: string;
   endDate: string;
+  userId: number;                   // 프로젝트 작성자 ID
+  budgetPlan?: string;              // 기부금 사용계획
+  planDocumentUrl?: string;         // 사용계획서 파일 URL
+  isPlanPublic?: boolean;           // 계획서 공개 여부
   organization: {
     organizationId: number;
     name: string;
@@ -212,4 +216,45 @@ export const toggleFavoriteProject = async (projectId: number): Promise<void> =>
 export const getUserFavoriteProjects = async (): Promise<number[]> => {
   const response = await apiClient.get<{ data: number[]; message: string; success: boolean }>(`/favorites/projects`);
   return response.data;
+};
+
+// ==================== 기부 옵션 API ====================
+
+/**
+ * 프로젝트의 활성 기부 옵션 목록 조회
+ */
+export const getDonationOptions = async (projectId: number): Promise<DonationOption[]> => {
+  const response = await apiClient.get<{ data: DonationOption[]; message: string; success: boolean }>(`/projects/${projectId}/options`);
+  return response.data;
+};
+
+/**
+ * 기부 옵션 단건 조회
+ */
+export const getDonationOption = async (optionId: number): Promise<DonationOption> => {
+  const response = await apiClient.get<{ data: DonationOption; message: string; success: boolean }>(`/projects/options/${optionId}`);
+  return response.data;
+};
+
+/**
+ * 기부 옵션 생성 (관리자용)
+ */
+export const createDonationOption = async (option: DonationOption): Promise<DonationOption> => {
+  const response = await apiClient.post<{ data: DonationOption; message: string; success: boolean }>(`/projects/options`, option);
+  return response.data;
+};
+
+/**
+ * 기부 옵션 수정 (관리자용)
+ */
+export const updateDonationOption = async (optionId: number, option: DonationOption): Promise<DonationOption> => {
+  const response = await apiClient.put<{ data: DonationOption; message: string; success: boolean }>(`/projects/options/${optionId}`, option);
+  return response.data;
+};
+
+/**
+ * 기부 옵션 삭제 (관리자용)
+ */
+export const deleteDonationOption = async (optionId: number): Promise<void> => {
+  await apiClient.delete<{ message: string; success: boolean }>(`/projects/options/${optionId}`);
 };

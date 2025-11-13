@@ -925,12 +925,12 @@ const DonationPlatform: React.FC = () => {
   });
 
   const projects: Project[] = [
-    { id: 1, title: '소외계층 아동 급식 지원', category: '아동복지', currentAmount: 4200000, targetAmount: 5000000, dday: 15, donors: 142, image: '', description: '결식 아동들에게 영양가 있는 급식을 제공합니다.', organization: '아이사랑재단', status: 'approved' },
-    { id: 2, title: '유기동물 보호소 운영비', category: '동물보호', currentAmount: 3150000, targetAmount: 3000000, dday: 8, donors: 89, image: '', description: '유기동물들의 치료와 보호를 위한 운영비를 모금합니다.', organization: '동물사랑협회', status: 'approved' },
-    { id: 3, title: '독거노인 생활 지원', category: '노인복지', currentAmount: 9800000, targetAmount: 10000000, dday: 25, donors: 234, image: '', description: '홀로 지내시는 어르신들의 생활을 지원합니다.', organization: '실버케어센터', status: 'approved' },
-    { id: 4, title: '산불 피해 지역 복구', category: '환경보호', currentAmount: 6500000, targetAmount: 15000000, dday: 45, donors: 156, image: '', description: '산불로 피해를 입은 지역의 복구를 돕습니다.', organization: '환경보호협회', status: 'approved' },
-    { id: 5, title: '지역아동센터 운영 지원', category: '교육', currentAmount: 2800000, targetAmount: 5000000, dday: 30, donors: 78, image: '', description: '지역 아동센터의 안정적인 운영을 지원합니다.', organization: '교육나눔재단', status: 'approved' },
-    { id: 6, title: '장애인 재활 프로그램', category: '장애인복지', currentAmount: 1500000, targetAmount: 8000000, dday: 60, donors: 45, image: '', description: '장애인들의 자립을 위한 재활 프로그램을 진행합니다.', organization: '함께하는세상', status: 'approved' }
+    { id: 1, title: '소외계층 아동 급식 지원', category: '아동복지', currentAmount: 4200000, targetAmount: 5000000, dday: 15, donors: 142, image: '', description: '결식 아동들에게 영양가 있는 급식을 제공합니다.', organization: '아이사랑재단', status: 'approved', userId: 1 },
+    { id: 2, title: '유기동물 보호소 운영비', category: '동물보호', currentAmount: 3150000, targetAmount: 3000000, dday: 8, donors: 89, image: '', description: '유기동물들의 치료와 보호를 위한 운영비를 모금합니다.', organization: '동물사랑협회', status: 'approved', userId: 1 },
+    { id: 3, title: '독거노인 생활 지원', category: '노인복지', currentAmount: 9800000, targetAmount: 10000000, dday: 25, donors: 234, image: '', description: '홀로 지내시는 어르신들의 생활을 지원합니다.', organization: '실버케어센터', status: 'approved', userId: 1 },
+    { id: 4, title: '산불 피해 지역 복구', category: '환경보호', currentAmount: 6500000, targetAmount: 15000000, dday: 45, donors: 156, image: '', description: '산불로 피해를 입은 지역의 복구를 돕습니다.', organization: '환경보호협회', status: 'approved', userId: 1 },
+    { id: 5, title: '지역아동센터 운영 지원', category: '교육', currentAmount: 2800000, targetAmount: 5000000, dday: 30, donors: 78, image: '', description: '지역 아동센터의 안정적인 운영을 지원합니다.', organization: '교육나눔재단', status: 'approved', userId: 1 },
+    { id: 6, title: '장애인 재활 프로그램', category: '장애인복지', currentAmount: 1500000, targetAmount: 8000000, dday: 60, donors: 45, image: '', description: '장애인들의 자립을 위한 재활 프로그램을 진행합니다.', organization: '함께하는세상', status: 'approved', userId: 1 }
   ];
 
   const communityPosts: CommunityPost[] = [

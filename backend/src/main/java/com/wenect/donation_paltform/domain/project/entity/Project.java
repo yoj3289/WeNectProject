@@ -55,13 +55,22 @@ public class Project {
     @Builder.Default
     private ProjectStatus status = ProjectStatus.ACTIVE;
 
-    @Column(name = "is_plan_public", nullable = false)
-    @Builder.Default
-    private Boolean isPlanPublic = false;
-
     // TODO: 나중에 DB에 컬럼 추가 후 주석 해제
     // @Column(name = "rejection_reason", columnDefinition = "TEXT")
     // private String rejectionReason;
+
+    // 기부금 사용계획 (필수) - 사용자에게 공개되는 간단한 설명
+    @Column(name = "budget_plan", columnDefinition = "TEXT")
+    private String budgetPlan;
+
+    // 상세 사용계획서 파일 URL (선택) - 관리자 심사용 + 사용자 다운로드 가능
+    @Column(name = "plan_document_url", length = 500)
+    private String planDocumentUrl;
+
+    // 계획서 파일 공개 여부
+    @Column(name = "is_plan_public", nullable = false)
+    @Builder.Default
+    private Boolean isPlanPublic = true;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

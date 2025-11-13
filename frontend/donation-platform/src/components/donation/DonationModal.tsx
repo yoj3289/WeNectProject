@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Heart, CreditCard, Wallet } from 'lucide-react';
+import { X, Heart, CreditCard, Wallet, Loader2, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../../stores/authStore';
+import { getDonationOptions } from '../../api/projects';
+import type { DonationOption } from '../../types';
 
 interface DonationModalProps {
   projectId: number;
@@ -12,8 +14,13 @@ interface DonationModalProps {
 const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, onClose }) => {
   const { user } = useAuthStore();
 
-  const [amount, setAmount] = useState<string>('');
-  const [customAmount, setCustomAmount] = useState<string>('');
+  // 기부 옵션 관련 상태
+  const [selectedOption, setSelectedOption] = useState<DonationOption | null>(null);
+  const [donationOptions, setDonationOptions] = useState<DonationOption[]>([]);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
+  const [optionsError, setOptionsError] = useState<string | null>(null);
+
+  // 기부자 정보 상태
   const [donorName, setDonorName] = useState<string>('');
   const [donorEmail, setDonorEmail] = useState<string>('');
   const [donorPhone, setDonorPhone] = useState<string>('');
@@ -22,7 +29,24 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
   const [paymentMethod, setPaymentMethod] = useState<'KAKAO_PAY' | 'TOSS_PAY'>('KAKAO_PAY');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const predefinedAmounts = [5000, 10000, 30000, 50000, 100000];
+  // 기부 옵션 불러오기
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        setIsLoadingOptions(true);
+        const options = await getDonationOptions(projectId);
+        setDonationOptions(options);
+        setOptionsError(null);
+      } catch (error: any) {
+        console.error('기부 옵션 조회 실패:', error);
+        setOptionsError('기부 옵션을 불러오는데 실패했습니다.');
+      } finally {
+        setIsLoadingOptions(false);
+      }
+    };
+
+    fetchOptions();
+  }, [projectId]);
 
   // 로그인한 사용자 정보로 자동 채우기
   useEffect(() => {
@@ -33,21 +57,14 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
     }
   }, [user]);
 
-  const handleAmountSelect = (value: number) => {
-    setAmount(value.toString());
-    setCustomAmount('');
-  };
-
-  const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^0-9]/g, '');
-    setCustomAmount(value);
-    setAmount(value);
+  const handleOptionSelect = (option: DonationOption) => {
+    setSelectedOption(option);
   };
 
   const handleDonate = async () => {
     // 유효성 검사
-    if (!amount || parseInt(amount) < 1000) {
-      alert('기부 금액은 최소 1,000원 이상이어야 합니다.');
+    if (!selectedOption) {
+      alert('기부 옵션을 선택해주세요.');
       return;
     }
 
@@ -71,7 +88,8 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
     try {
       const requestData = {
         projectId: projectId,
-        amount: parseFloat(amount),
+        amount: selectedOption.amount,
+        selectedOptionId: selectedOption.optionId,
         donorName: donorName,
         donorEmail: donorEmail,
         donorPhone: donorPhone,
@@ -138,33 +156,59 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
 
         {/* 본문 */}
         <div className="p-6 space-y-6">
-          {/* 기부 금액 선택 */}
+          {/* 기부 옵션 선택 */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-3">
-              기부 금액 선택
+              기부 옵션 선택
             </label>
-            <div className="grid grid-cols-3 gap-3 mb-3">
-              {predefinedAmounts.map((value) => (
-                <button
-                  key={value}
-                  onClick={() => handleAmountSelect(value)}
-                  className={`py-3 px-4 rounded-lg font-medium transition ${
-                    amount === value.toString()
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {value.toLocaleString()}원
-                </button>
-              ))}
-            </div>
-            <input
-              type="text"
-              value={customAmount}
-              onChange={handleCustomAmountChange}
-              placeholder="직접 입력 (최소 1,000원)"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+
+            {isLoadingOptions ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
+              </div>
+            ) : optionsError ? (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+                <p className="text-sm text-red-800">{optionsError}</p>
+              </div>
+            ) : donationOptions.length === 0 ? (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+                <AlertCircle className="text-yellow-600 flex-shrink-0 mt-0.5" size={20} />
+                <p className="text-sm text-yellow-800">등록된 기부 옵션이 없습니다.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {donationOptions.map((option) => (
+                  <button
+                    key={option.optionId}
+                    onClick={() => handleOptionSelect(option)}
+                    className={`p-4 rounded-lg border-2 transition-all text-left hover:shadow-md ${
+                      selectedOption?.optionId === option.optionId
+                        ? 'border-red-500 bg-red-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <h4 className="font-bold text-gray-900 mb-1">
+                          {option.optionName}
+                        </h4>
+                        {option.optionDescription && (
+                          <p className="text-sm text-gray-600 mb-2">
+                            {option.optionDescription}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xl font-bold text-red-600">
+                          {option.amount.toLocaleString()}원
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 기부자 정보 */}
@@ -176,7 +220,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
               value={donorName}
               onChange={(e) => setDonorName(e.target.value)}
               placeholder="이름 *"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               required
             />
 
@@ -185,7 +229,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
               value={donorEmail}
               onChange={(e) => setDonorEmail(e.target.value)}
               placeholder="이메일 * (영수증 발송용)"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               required
             />
 
@@ -194,7 +238,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
               value={donorPhone}
               onChange={(e) => setDonorPhone(e.target.value)}
               placeholder="전화번호 (선택)"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
 
             <div className="flex items-center gap-2">
@@ -203,7 +247,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
                 id="anonymous"
                 checked={isAnonymous}
                 onChange={(e) => setIsAnonymous(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
               />
               <label htmlFor="anonymous" className="text-sm text-gray-700">
                 익명으로 기부하기
@@ -221,7 +265,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
               onChange={(e) => setMessage(e.target.value)}
               placeholder="프로젝트에 전할 응원 메시지를 작성해주세요."
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
             />
           </div>
 
@@ -254,12 +298,18 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
           </div>
 
           {/* 금액 요약 */}
-          {amount && parseInt(amount) >= 1000 && (
-            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+          {selectedOption && (
+            <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-700 font-medium">선택한 옵션</span>
+                <span className="font-semibold text-gray-900">
+                  {selectedOption.optionName}
+                </span>
+              </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-700 font-medium">총 기부 금액</span>
-                <span className="text-2xl font-bold text-blue-600">
-                  {parseInt(amount).toLocaleString()}원
+                <span className="text-2xl font-bold text-red-600">
+                  {selectedOption.amount.toLocaleString()}원
                 </span>
               </div>
             </div>
@@ -270,11 +320,14 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
         <div className="sticky bottom-0 bg-gray-50 p-6 rounded-b-2xl border-t border-gray-200">
           <button
             onClick={handleDonate}
-            disabled={isLoading || !amount || parseInt(amount) < 1000 || !donorName || !donorEmail}
-            className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            disabled={isLoading || !selectedOption || !donorName || !donorEmail}
+            className="w-full py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold rounded-xl hover:from-red-600 hover:to-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
-              <>처리 중...</>
+              <>
+                <Loader2 className="animate-spin" size={20} />
+                처리 중...
+              </>
             ) : (
               <>
                 <Heart size={20} />

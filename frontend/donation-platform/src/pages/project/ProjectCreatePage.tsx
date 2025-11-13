@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, X, Image as ImageIcon, FileText, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, FileText, CheckCircle, Loader2, AlertCircle, Wallet, Plus } from 'lucide-react';
 import { useCreateProject } from '../../hooks/useProjects';
 import { useAuthStore } from '../../stores/authStore';
 import RichTextEditor from '../../components/editor/RichTextEditor';
+import type { DonationOption } from '../../types';
 import '../../components/editor/editor.css';
 
 interface CreateProjectPageProps {
@@ -39,8 +40,19 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
   // 이미지
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
 
-  // 사용계획서
+  // 기부 옵션 (신규)
+  const [donationOptions, setDonationOptions] = useState<DonationOption[]>([
+    { optionName: '', amount: 0, optionDescription: '', iconEmoji: '💝' }
+  ]);
+
+  // 기부금 사용계획 (신규)
+  const [budgetPlan, setBudgetPlan] = useState('');
+
+  // 사용계획서 파일
   const [planDocument, setPlanDocument] = useState<File | null>(null);
+
+  // 계획서 공개 여부
+  const [isPlanPublic, setIsPlanPublic] = useState(true);
 
   // 현재 단계
   const [currentStep, setCurrentStep] = useState(1);
@@ -92,6 +104,36 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
     setErrorMessage('');
   };
 
+  // 기부 옵션 추가
+  const addOption = () => {
+    if (donationOptions.length >= 10) {
+      setErrorMessage('기부 옵션은 최대 10개까지 추가 가능합니다.');
+      return;
+    }
+    setDonationOptions([
+      ...donationOptions,
+      { optionName: '', amount: 0, optionDescription: '', iconEmoji: '💝' }
+    ]);
+    setErrorMessage('');
+  };
+
+  // 기부 옵션 제거
+  const removeOption = (index: number) => {
+    if (donationOptions.length <= 1) {
+      setErrorMessage('기부 옵션은 최소 1개 이상이어야 합니다.');
+      return;
+    }
+    setDonationOptions(donationOptions.filter((_, i) => i !== index));
+    setErrorMessage('');
+  };
+
+  // 기부 옵션 업데이트
+  const updateOption = (index: number, field: keyof DonationOption, value: string | number) => {
+    const updated = [...donationOptions];
+    updated[index] = { ...updated[index], [field]: value };
+    setDonationOptions(updated);
+  };
+
   // 다음 단계
   const nextStep = () => {
     setErrorMessage('');
@@ -119,6 +161,13 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
         setErrorMessage('프로젝트 상세 설명을 입력해주세요.');
         return;
       }
+    } else if (currentStep === 4) {
+      // 기부 옵션 검증
+      const hasEmptyOption = donationOptions.some(opt => !opt.optionName || opt.amount < 1000);
+      if (hasEmptyOption) {
+        setErrorMessage('모든 기부 옵션의 이름과 금액(최소 1,000원)을 입력해주세요.');
+        return;
+      }
     }
     setCurrentStep(currentStep + 1);
   };
@@ -131,10 +180,16 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
 
   // 제출
   const handleSubmit = async () => {
+    // 기부금 사용계획 검증
+    if (!budgetPlan.trim()) {
+      setErrorMessage('기부금 사용계획은 필수입니다.');
+      return;
+    }
+
+    // 상세 사용계획서 필수 검증
     if (!planDocument) {
-      if (!confirm('사용계획서를 업로드하지 않았습니다. 계속 진행하시겠습니까?')) {
-        return;
-      }
+      setErrorMessage('상세 사용계획서 파일을 업로드해주세요.');
+      return;
     }
 
     try {
@@ -144,21 +199,35 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
       const formData = new FormData();
       formData.append('title', projectTitle);
       formData.append('category', projectCategory);
-      formData.append('organization', organizationName);
+      formData.append('description', description);
       formData.append('targetAmount', targetAmount);
       formData.append('startDate', startDate);
       formData.append('endDate', endDate);
-      formData.append('description', description);
+
+      // 기부금 사용계획 (필수)
+      formData.append('budgetPlan', budgetPlan);
+
+      // 계획서 공개 여부
+      formData.append('isPlanPublic', String(isPlanPublic));
+
+      // 기부 옵션 JSON 문자열로 변환
+      const optionsWithOrder = donationOptions.map((opt, index) => ({
+        optionName: opt.optionName,
+        optionDescription: opt.optionDescription || '',
+        amount: opt.amount,
+        iconEmoji: opt.iconEmoji || '💝',
+        displayOrder: index,
+        isActive: true
+      }));
+      formData.append('donationOptions', JSON.stringify(optionsWithOrder));
 
       // 이미지 추가
-      uploadedImages.forEach((image, index) => {
-        formData.append(`images`, image);
+      uploadedImages.forEach((image) => {
+        formData.append('images', image);
       });
 
-      // 사용계획서 추가
-      if (planDocument) {
-        formData.append('planDocument', planDocument);
-      }
+      // 사용계획서 파일 추가 (필수)
+      formData.append('planDocument', planDocument);
 
       // API 호출
       await createProjectMutation.mutateAsync(formData);
@@ -166,6 +235,7 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
       alert('프로젝트 등록이 완료되었습니다!\n관리자 승인 후 게시됩니다.');
       onSubmit();
     } catch (error: any) {
+      console.error('프로젝트 등록 실패:', error);
       const message = error.response?.data?.message || '프로젝트 등록에 실패했습니다.';
       setErrorMessage(message);
     }
@@ -338,16 +408,160 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
       case 4:
         return (
           <div className="space-y-6">
-            {/* 사용계획서 업로드 */}
+            {/* 기부 옵션 추가 */}
+            <div className="bg-gradient-to-br from-pink-50 to-red-50 border-2 border-red-200 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <Wallet size={28} className="text-red-600" />
+                <h3 className="text-xl font-bold text-gray-800">
+                  기부 옵션 설정
+                </h3>
+              </div>
+              <p className="text-sm text-gray-600 ml-11">
+                기부자가 선택할 수 있는 옵션을 추가해주세요.
+                (예: "1명의 아동 식사 지원 - 4,000원")
+              </p>
+            </div>
+
+            {/* 옵션 리스트 */}
+            {donationOptions.map((option, index) => (
+              <div key={index} className="bg-white border-2 border-gray-300 rounded-lg p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-bold text-gray-800">옵션 {index + 1}</h4>
+                  {donationOptions.length > 1 && (
+                    <button
+                      onClick={() => removeOption(index)}
+                      disabled={createProjectMutation.isPending}
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                    >
+                      <X size={20} />
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  {/* 옵션명 */}
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                      옵션명 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={option.optionName}
+                      onChange={(e) => updateOption(index, 'optionName', e.target.value)}
+                      placeholder="예: 1명의 아동 식사 지원"
+                      disabled={createProjectMutation.isPending}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+
+                  {/* 금액 */}
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                      금액 <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={option.amount || ''}
+                        onChange={(e) => updateOption(index, 'amount', Number(e.target.value))}
+                        placeholder="4000"
+                        disabled={createProjectMutation.isPending}
+                        className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">원</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">최소 1,000원 이상</p>
+                  </div>
+
+                  {/* 설명 */}
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                      설명 (선택)
+                    </label>
+                    <textarea
+                      value={option.optionDescription || ''}
+                      onChange={(e) => updateOption(index, 'optionDescription', e.target.value)}
+                      placeholder="1명의 아동에게 따뜻한 한 끼를 제공합니다"
+                      rows={2}
+                      disabled={createProjectMutation.isPending}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+
+                </div>
+              </div>
+            ))}
+
+            {/* 옵션 추가 버튼 */}
+            <button
+              onClick={addOption}
+              disabled={donationOptions.length >= 10 || createProjectMutation.isPending}
+              className="w-full py-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 font-semibold hover:border-red-500 hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <Plus size={20} />
+              옵션 추가 ({donationOptions.length}/10)
+            </button>
+
+          </div>
+        );
+
+      case 5:
+        return (
+          <div className="space-y-6">
+            {/* 기부금 사용계획 작성 (필수) */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="p-3 bg-green-500 rounded-lg">
+                  <Wallet className="text-white" size={24} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-800 mb-1">
+                    기부금 사용계획 작성 <span className="text-red-500">*</span>
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    기부자들이 쉽게 이해할 수 있도록 기부금 사용 계획을 작성해주세요.
+                  </p>
+                </div>
+              </div>
+
+              <textarea
+                value={budgetPlan}
+                onChange={(e) => setBudgetPlan(e.target.value)}
+                placeholder={`예시:
+
+• 식자재 구매: 3,000,000원 (75%)
+  - 쌀, 반찬 재료, 과일 등 구매
+
+• 배송 및 포장: 500,000원 (12.5%)
+  - 도시락 용기, 배송 차량 유류비
+
+• 운영비: 500,000원 (12.5%)
+  - 자원봉사자 식비, 주방 운영비
+
+총 목표 금액: 4,000,000원`}
+                rows={12}
+                disabled={createProjectMutation.isPending}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-100"
+              />
+
+              <p className="text-xs text-gray-500 mt-2">
+                구체적인 항목과 금액을 작성하면 기부자의 신뢰도가 높아집니다.
+              </p>
+            </div>
+
+            {/* 상세 사용계획서 업로드 (선택) */}
             <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl p-6">
               <div className="flex items-start gap-4 mb-4">
                 <div className="p-3 bg-blue-500 rounded-lg">
                   <FileText className="text-white" size={24} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-800 mb-1">사용계획서 첨부</h3>
+                  <h3 className="text-lg font-bold text-gray-800 mb-1">
+                    상세 사용계획서 첨부 <span className="text-red-500">*</span>
+                  </h3>
                   <p className="text-sm text-gray-600">
-                    기부금 사용 계획을 상세히 작성한 문서를 첨부해주세요.
+                    상세 사용계획서 파일 제출은 필수입니다.
+                    사용자에게 공개할지 여부는 아래에서 선택할 수 있습니다.
                   </p>
                 </div>
               </div>
@@ -459,7 +673,7 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
         {/* 진행 단계 표시 */}
         <div className="mb-6 md:mb-8">
           <div className="flex items-center justify-between">
-            {['기본 정보', '목표 & 일정', '상세 설명', '최종 확인'].map((label, index) => (
+            {['기본 정보', '목표 & 일정', '상세 설명', '기부 옵션', '사용계획 & 확인'].map((label, index) => (
               <div key={index} className="flex items-center">
                 <div className="flex flex-col items-center">
                   <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-lg ${
@@ -471,7 +685,7 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
                   </div>
                   <span className="text-xs mt-1 md:mt-2 font-medium text-gray-600 text-center hidden sm:block">{label}</span>
                 </div>
-                {index < 3 && (
+                {index < 4 && (
                   <div className={`w-12 md:w-24 h-1 mx-1 md:mx-2 ${
                     currentStep > index + 1 ? 'bg-green-500' : 'bg-gray-200'
                   }`}></div>
@@ -508,7 +722,7 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
                 이전
               </button>
             )}
-            {currentStep < 4 ? (
+            {currentStep < 5 ? (
               <button
                 onClick={nextStep}
                 disabled={createProjectMutation.isPending}

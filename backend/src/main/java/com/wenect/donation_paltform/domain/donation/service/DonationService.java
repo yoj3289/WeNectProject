@@ -48,6 +48,7 @@ public class DonationService {
         Donation donation = Donation.builder()
                 .projectId(request.getProjectId())
                 .userId(userId)  // 비회원은 null 허용
+                .selectedOptionId(request.getSelectedOptionId())  // 선택한 기부 옵션 ID
                 .donorName(request.getDonorName())
                 .donorEmail(request.getDonorEmail())
                 .donorPhone(request.getDonorPhone())

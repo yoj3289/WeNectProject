@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 public class DonationRequest {
 
     private Long projectId;          // 프로젝트 ID
+    private Long selectedOptionId;   // 선택한 기부 옵션 ID
     private BigDecimal amount;       // 기부 금액
     private String donorName;        // 기부자 이름
     private String donorEmail;       // 기부자 이메일
