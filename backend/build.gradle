@@ -57,3 +57,11 @@ tasks.named('test') {
 compileJava {
     options.compilerArgs << '-parameters'
 }
+
+// 데이터베이스 체커 실행 태스크
+task checkDatabase(type: JavaExec) {
+    group = 'verification'
+    description = '데이터베이스 구조 및 데이터 확인'
+    mainClass = 'com.wenect.donation_paltform.util.DatabaseChecker'
+    classpath = sourceSets.main.runtimeClasspath
+}
