@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Heart, Bell, User, LogOut } from 'lucide-react';
 import NotificationDropdown from './NotificationDropdown';
 import type { UserType, UserProfile } from '../../types';
@@ -18,12 +18,11 @@ const Header: React.FC<HeaderProps> = ({
   userProfile,
   handleLogout,
 }) => {
-  const navigate = useNavigate();
   const location = useLocation();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
-  // 실제 API에서 읽지 않은 알림 개수 가져오기
-  const { data: unreadData } = useUnreadCount();
+  // 실제 API에서 읽지 않은 알림 개수 가져오기 (로그인 상태일 때만)
+  const { data: unreadData } = useUnreadCount(isLoggedIn);
 
   // 251027추가
   const handleShowConsentModal = () => {
@@ -36,35 +35,35 @@ const Header: React.FC<HeaderProps> = ({
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-[1400px] mx-auto px-8 py-5 flex items-center justify-between">
         {/* 로고 */}
-        <div
-          className="flex items-center gap-2 cursor-pointer"
-          onClick={() => navigate('/')}
+        <Link
+          to="/"
+          className="flex items-center gap-2"
         >
           <Heart className="text-red-500" size={32} fill="currentColor" />
           <span className="text-2xl font-bold">위넥트</span>
-        </div>
+        </Link>
 
         {/* 네비게이션 메뉴 */}
         <nav className="flex items-center gap-8">
-          <button
-            onClick={() => navigate('/projects')}
+          <Link
+            to="/projects"
             className="text-lg font-semibold hover:text-red-500 transition-colors"
           >
             프로젝트
-          </button>
-          <button
-            onClick={() => navigate('/community')}
+          </Link>
+          <Link
+            to="/community"
             className="text-lg font-semibold hover:text-red-500 transition-colors"
           >
             커뮤니티
-          </button>
+          </Link>
           {isLoggedIn && userType === 'admin' && (
-            <button
-              onClick={() => navigate('/admin')}
+            <Link
+              to="/admin"
               className="text-lg font-semibold hover:text-red-500 transition-colors"
             >
               관리자
-            </button>
+            </Link>
           )}
         </nav>
 
@@ -88,19 +87,19 @@ const Header: React.FC<HeaderProps> = ({
                 <NotificationDropdown
                   isOpen={isNotificationOpen}
                   onClose={() => setIsNotificationOpen(false)}
-                  onOpenFullPage={() => navigate('/notifications')}
+                  onOpenFullPage={() => window.location.href = '/notifications'}
                   onShowConsentModal={handleShowConsentModal}
                 />
               </div>
 
               {/* 마이페이지 버튼 */}
-              <button
-                onClick={() => navigate('/profile')}
+              <Link
+                to="/profile"
                 className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <User size={24} />
                 <span className="font-semibold">{userProfile.name}</span>
-              </button>
+              </Link>
 
               {/* 로그아웃 버튼 */}
               <button
@@ -113,12 +112,12 @@ const Header: React.FC<HeaderProps> = ({
             </>
           ) : (
             /* 로그인 버튼 */
-            <button
-              onClick={() => navigate('/login')}
-              className="px-6 py-3 font-semibold hover:bg-gray-100 rounded-lg transition-colors"
+            <Link
+              to="/login"
+              className="px-6 py-3 font-semibold hover:bg-gray-100 rounded-lg transition-colors inline-block"
             >
               로그인
-            </button>
+            </Link>
           )}
         </div>
       </div>

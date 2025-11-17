@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Shield, Users, CheckCircle, Eye, Award, Heart, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2 } from 'lucide-react';
 import type { UserType } from '../types';
 import { getCategoryLabel } from '../types';
@@ -17,7 +17,6 @@ const HomePage: React.FC<HomePageProps> = ({
   isLoggedIn,
   userType,
 }) => {
-  const navigate = useNavigate();
   // ✅ API 호출로 데이터 가져오기 (하드코딩 제거!)
   const { data: projects, isLoading: projectsLoading } = usePopularProjects(4);
   const { data: recentDonations, isLoading: donationsLoading } = useRecentDonations(4);
@@ -51,19 +50,19 @@ const HomePage: React.FC<HomePageProps> = ({
                 작은 나눔이 모여 큰 변화를 만듭니다
               </p>
               <div className="flex flex-col gap-3">
-                <button
-                  onClick={() => navigate('/projects')}
-                  className="w-full px-6 md:px-8 py-3 md:py-4 bg-white text-red-500 rounded-lg font-bold text-base md:text-lg hover:bg-gray-100 transition-all"
+                <Link
+                  to="/projects"
+                  className="w-full px-6 md:px-8 py-3 md:py-4 bg-white text-red-500 rounded-lg font-bold text-base md:text-lg hover:bg-gray-100 transition-all inline-block text-center"
                 >
                   프로젝트 둘러보기
-                </button>
+                </Link>
                 {isLoggedIn && userType === 'organization' && (
-                  <button
-                    onClick={() => navigate('/projects/create')}
-                    className="w-full px-6 md:px-8 py-3 md:py-4 border-2 border-white text-white rounded-lg font-bold text-base md:text-lg hover:bg-white hover:text-red-500 transition-all"
+                  <Link
+                    to="/projects/create"
+                    className="w-full px-6 md:px-8 py-3 md:py-4 border-2 border-white text-white rounded-lg font-bold text-base md:text-lg hover:bg-white hover:text-red-500 transition-all inline-block text-center"
                   >
                     프로젝트 등록하기
-                  </button>
+                  </Link>
                 )}
               </div>
             </div>
@@ -131,12 +130,12 @@ const HomePage: React.FC<HomePageProps> = ({
         {/* 정적 헤더 - 즉시 렌더링 */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 md:mb-10 gap-4">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold">지금 주목받는 프로젝트</h2>
-          <button
-            onClick={() => navigate('/projects')}
+          <Link
+            to="/projects"
             className="text-red-500 font-bold hover:underline text-sm md:text-base whitespace-nowrap"
           >
             전체보기 →
-          </button>
+          </Link>
         </div>
 
         {/* 동적 프로젝트 목록 - 스켈레톤 UI */}
@@ -170,10 +169,10 @@ const HomePage: React.FC<HomePageProps> = ({
               const categoryKo = getCategoryLabel(project.category); // 영어 -> 한글 변환
               const categoryInfo = getCategoryIcon(categoryKo);
               return (
-                <div
+                <Link
                   key={project.id}
-                  className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => navigate(`/projects/${project.id}`)}
+                  to={`/projects/${project.id}`}
+                  className="block border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow"
                 >
                   {project.image ? (
                     <div className="h-40 md:h-48 bg-gray-900 overflow-hidden flex items-center justify-center">
@@ -219,7 +218,7 @@ const HomePage: React.FC<HomePageProps> = ({
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

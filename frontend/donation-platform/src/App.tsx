@@ -690,6 +690,7 @@ import PaymentFailPage from './pages/payment/PaymentFailPage';
 
 // Component imports
 import DonationModal from './components/donation/DonationModal';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Layout imports
 import MainLayout from './layouts/MainLayout';
@@ -708,12 +709,37 @@ const queryClient = new QueryClient({
   },
 });
 
-const DonationPlatform: React.FC = () => {
+// BrowserRouter 내부에서 사용할 컴포넌트
+const AppRoutes: React.FC = () => {
   // ✅ useAuth로 실제 로그인 상태 가져오기
   const { isLoggedIn, user, logout } = useAuth();
+  const navigate = useNavigate();
 
   // userType은 user 객체에서 가져오기 (기본값은 'individual')
   const userType: UserType = user?.userType || 'individual';
+
+  // JWT 토큰 만료 시 자동 로그아웃 처리
+  React.useEffect(() => {
+    const handleAuthLogout = (event: Event) => {
+      const customEvent = event as CustomEvent<{ reason: string; currentPath: string }>;
+      const { currentPath } = customEvent.detail;
+
+      // 로그아웃 처리 (이미 apiClient에서 처리되었지만 React Query 캐시 정리)
+      logout();
+
+      // 로그인 페이지로 리다이렉트 (현재 경로를 redirect 파라미터로 전달)
+      navigate(`/login?redirect=${encodeURIComponent(currentPath)}`);
+
+      // 사용자에게 알림
+      alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+    };
+
+    window.addEventListener('auth:logout', handleAuthLogout);
+
+    return () => {
+      window.removeEventListener('auth:logout', handleAuthLogout);
+    };
+  }, [logout, navigate]);
 
   // UI states
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -1027,7 +1053,7 @@ const DonationPlatform: React.FC = () => {
   };
 
   return (
-    <BrowserRouter>
+    <>
       <Routes>
         {/* Auth Routes - AuthLayout 내부에서 처리 */}
         <Route path="/login" element={
@@ -1043,10 +1069,11 @@ const DonationPlatform: React.FC = () => {
 
         {/* Admin Routes - AdminLayout으로 감싸기 */}
         <Route path="/admin/*" element={
-          <AdminLayout
-            activeMenu={activeMenu}
-            setActiveMenu={setActiveMenu}
-          >
+          <ProtectedRoute>
+            <AdminLayout
+              activeMenu={activeMenu}
+              setActiveMenu={setActiveMenu}
+            >
             <Routes>
               <Route path="dashboard" element={
                 <DashboardPage
@@ -1267,7 +1294,8 @@ const DonationPlatform: React.FC = () => {
               } />
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
             </Routes>
-          </AdminLayout>
+            </AdminLayout>
+          </ProtectedRoute>
         } />
 
         {/* Notification Page - 레이아웃 없음, API 사용 */}
@@ -1309,7 +1337,11 @@ const DonationPlatform: React.FC = () => {
                   onShowDonationModal={() => setShowDonationModal(true)}
                 />
               } />
-              <Route path="/projects/create" element={<ProjectCreatePageWrapper />} />
+              <Route path="/projects/create" element={
+                <ProtectedRoute>
+                  <ProjectCreatePageWrapper />
+                </ProtectedRoute>
+              } />
               <Route path="/community" element={
                 <BoardPage
                   isLoggedIn={isLoggedIn}
@@ -1362,17 +1394,19 @@ const DonationPlatform: React.FC = () => {
                 ) : <Navigate to="/community" replace />
               } />
               <Route path="/profile" element={
-                <ProfilePage
-                  userType={userType}
-                  userProfile={userProfile}
-                  setUserProfile={setUserProfile}
-                  donationHistory={donationHistory}
-                  favoriteProjects={projects.filter(p => favoriteProjectIds.has(p.id))}
-                  piggyBanks={piggyBanks}
-                  favoriteProjectIds={favoriteProjectIds}
-                  setFavoriteProjectIds={setFavoriteProjectIds}
-                  setSelectedProject={setSelectedProject}
-                />
+                <ProtectedRoute>
+                  <ProfilePage
+                    userType={userType}
+                    userProfile={userProfile}
+                    setUserProfile={setUserProfile}
+                    donationHistory={donationHistory}
+                    favoriteProjects={projects.filter(p => favoriteProjectIds.has(p.id))}
+                    piggyBanks={piggyBanks}
+                    favoriteProjectIds={favoriteProjectIds}
+                    setFavoriteProjectIds={setFavoriteProjectIds}
+                    setSelectedProject={setSelectedProject}
+                  />
+                </ProtectedRoute>
               } />
             </Routes>
           </MainLayout>
@@ -1387,6 +1421,15 @@ const DonationPlatform: React.FC = () => {
           onClose={() => setShowDonationModal(false)}
         />
       )}
+    </>
+  );
+};
+
+// DonationPlatform 컴포넌트: BrowserRouter로 감싸기
+const DonationPlatform: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
     </BrowserRouter>
   );
 };

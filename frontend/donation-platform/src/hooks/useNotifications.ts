@@ -16,12 +16,13 @@ export function useMyNotifications() {
 /**
  * 읽지 않은 알림 개수
  */
-export function useUnreadCount() {
+export function useUnreadCount(enabled: boolean = true) {
   return useQuery({
     queryKey: ['unread-count'],
     queryFn: notificationsApi.getUnreadCount,
     // 30초마다 자동 갱신
     refetchInterval: 30000,
+    enabled, // 로그인 상태일 때만 쿼리 실행
   });
 }
 
