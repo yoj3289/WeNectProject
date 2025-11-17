@@ -25,3 +25,11 @@ nul
 **/build/
 # Claude
 .claude/
+
+# 민감한 파일들
+# SQL 파일 (테스트/백업용)
+*.sql
+!**/db/migration/*.sql
+# Kubernetes secrets
+k8s/secret.yaml
+k8s/*-secret.yaml

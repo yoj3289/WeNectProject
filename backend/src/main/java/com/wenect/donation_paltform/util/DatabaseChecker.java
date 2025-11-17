@@ -7,9 +7,12 @@ import java.sql.*;
  */
 public class DatabaseChecker {
 
-    private static final String URL = "jdbc:mysql://140.245.64.178:33060/mydb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul";
-    private static final String USER = "root";
-    private static final String PASSWORD = "1!DnlsprxM2@QlalfqjsgH3#";
+    // 환경변수에서 데이터베이스 연결 정보를 읽어옵니다
+    // 실행 시: java -DSPRING_DATASOURCE_URL=... -DSPRING_DATASOURCE_USERNAME=... -DSPRING_DATASOURCE_PASSWORD=... DatabaseChecker
+    private static final String URL = System.getProperty("SPRING_DATASOURCE_URL",
+        "jdbc:mysql://localhost:3306/mydb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul");
+    private static final String USER = System.getProperty("SPRING_DATASOURCE_USERNAME", "root");
+    private static final String PASSWORD = System.getProperty("SPRING_DATASOURCE_PASSWORD", "your_password_here");
 
     public static void main(String[] args) {
         try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
