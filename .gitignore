@@ -5,6 +5,10 @@
 #환경변수
 .env
 .env.local
+#Docker Compose (비밀번호 포함)
+docker-compose.yml
+docker-compose.*.yml
+!docker-compose.example.yml
 #카카오페이 설정 (민감정보)
 **/application-pay.yml
 **/application-pay-prod.yml

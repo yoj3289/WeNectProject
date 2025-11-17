@@ -7,11 +7,11 @@ services:
     container_name: wenect-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_ROOT_PASSWORD: "YOUR_MYSQL_PASSWORD_HERE"  # 실제 비밀번호로 변경하세요
       MYSQL_DATABASE: mydb
       TZ: Asia/Chuncheon
     ports:
-      - "33060:33060"
+      - "33060:3306"
     volumes:
       - mysql-data:/var/lib/mysql
       - ./init-db:/docker-entrypoint-initdb.d  # 초기 SQL 스크립트
@@ -32,12 +32,12 @@ services:
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:33060/mydb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/mydb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: rootpassword
+      SPRING_DATASOURCE_PASSWORD: "YOUR_MYSQL_PASSWORD_HERE"  # 실제 비밀번호로 변경하세요
       SPRING_JPA_HIBERNATE_DDL_AUTO: none
       SPRING_JPA_SHOW_SQL: "false"
-      JWT_SECRET: your-jwt-secret-key-change-this
+      JWT_SECRET: "YOUR_JWT_SECRET_KEY_AT_LEAST_256_BITS"  # 실제 JWT 시크릿으로 변경하세요
     ports:
       - "8080:8080"
     depends_on:
