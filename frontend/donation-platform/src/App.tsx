@@ -671,7 +671,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
 import ProjectListPage from './pages/project/ProjectListPage';
-import ProjectDetailPage from './pages/project/ProjectDetailPage';
+import ProjectDetailContainer from './pages/project/ProjectDetailContainer';
 import ProjectCreatePage from './pages/project/ProjectCreatePage';
 import { useParams } from 'react-router-dom';
 import BoardPage from './pages/community/BoardPage';
@@ -747,17 +747,15 @@ const AppRoutes: React.FC = () => {
   const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null);
 
   // URL 파라미터에서 ID를 추출하는 Wrapper 컴포넌트
-  const ProjectDetailPageWrapper: React.FC<{
+  const ProjectDetailContainerWrapper: React.FC<{
     isLoggedIn: boolean;
     favoriteProjectIds: Set<number>;
     onShowDonationModal: () => void;
   }> = ({ isLoggedIn, favoriteProjectIds, onShowDonationModal }) => {
     const { id } = useParams<{ id: string }>();
-    const projectId = Number(id);
 
     return (
-      <ProjectDetailPage
-        projectId={projectId}
+      <ProjectDetailContainer
         isLoggedIn={isLoggedIn}
         favoriteProjectIds={favoriteProjectIds}
         onNavigateToLogin={() => {}}
@@ -1331,7 +1329,7 @@ const AppRoutes: React.FC = () => {
                 />
               } />
               <Route path="/projects/:id" element={
-                <ProjectDetailPageWrapper
+                <ProjectDetailContainerWrapper
                   isLoggedIn={isLoggedIn}
                   favoriteProjectIds={favoriteProjectIds}
                   onShowDonationModal={() => setShowDonationModal(true)}

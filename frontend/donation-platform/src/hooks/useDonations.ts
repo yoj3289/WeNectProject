@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as donationsApi from '../api/donations';
+import { getProjectDonors } from '../api/projects';
 
 /**
  * 나의 기부 내역 조회
@@ -18,8 +19,9 @@ export function useRecentDonations(limit: number = 4) {
   return useQuery({
     queryKey: ['recent-donations', limit],
     queryFn: () => donationsApi.getRecentDonations(limit),
-    // 30초마다 자동 갱신 (실시간 기부 현황)
-    refetchInterval: 30000,
+    staleTime: 2 * 60 * 1000, // 2분간 캐시
+    refetchOnWindowFocus: true, // 포커스 시 재조회
+    refetchOnReconnect: true, // 재연결 시 재조회
   });
 }
 
@@ -40,11 +42,9 @@ export function useProjectDonations(projectId: number) {
 export function useDonors(projectId: number) {
   return useQuery({
     queryKey: ['project-donors', projectId],
-    queryFn: async () => {
-      const { getProjectDonors } = await import('../api/projects');
-      return getProjectDonors(projectId);
-    },
+    queryFn: () => getProjectDonors(projectId),
     enabled: !!projectId,
+    staleTime: 5 * 60 * 1000, // 5분간 캐시
   });
 }
 

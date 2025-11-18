@@ -8,8 +8,9 @@ export function useProjects(filters: projectsApi.ProjectFilters = {}) {
   return useQuery({
     queryKey: ['projects', filters],
     queryFn: () => projectsApi.getProjects(filters),
-    // 30초마다 백그라운드에서 자동 갱신
-    refetchInterval: 30000,
+    staleTime: 5 * 60 * 1000, // 5분간 캐시
+    refetchOnWindowFocus: true, // 포커스 시 재조회
+    refetchOnReconnect: true, // 재연결 시 재조회
   });
 }
 

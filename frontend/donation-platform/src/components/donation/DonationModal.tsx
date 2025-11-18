@@ -20,6 +20,10 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [optionsError, setOptionsError] = useState<string | null>(null);
 
+  // 커스텀 금액 입력 상태
+  const [useCustomAmount, setUseCustomAmount] = useState<boolean>(false);
+  const [customAmount, setCustomAmount] = useState<string>('');
+
   // 기부자 정보 상태
   const [donorName, setDonorName] = useState<string>('');
   const [donorEmail, setDonorEmail] = useState<string>('');
@@ -59,37 +63,57 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
 
   const handleOptionSelect = (option: DonationOption) => {
     setSelectedOption(option);
+    setUseCustomAmount(false); // 옵션 선택 시 커스텀 모드 해제
+  };
+
+  const handleCustomAmountToggle = () => {
+    setUseCustomAmount(true);
+    setSelectedOption(null); // 커스텀 모드 시 옵션 선택 해제
+  };
+
+  // 최종 기부 금액 계산
+  const getFinalAmount = (): number => {
+    if (useCustomAmount) {
+      const amount = parseInt(customAmount);
+      if (isNaN(amount) || amount < 4000) {
+        throw new Error('최소 4,000원 이상 기부해주세요.');
+      }
+      return amount;
+    }
+
+    if (!selectedOption) {
+      throw new Error('기부 옵션을 선택하거나 금액을 직접 입력해주세요.');
+    }
+
+    return selectedOption.amount;
   };
 
   const handleDonate = async () => {
     // 유효성 검사
-    if (!selectedOption) {
-      alert('기부 옵션을 선택해주세요.');
-      return;
-    }
-
-    if (!donorName.trim()) {
-      alert('기부자 이름을 입력해주세요.');
-      return;
-    }
-
-    if (!donorEmail.trim()) {
-      alert('이메일을 입력해주세요.');
-      return;
-    }
-
-    if (paymentMethod === 'TOSS_PAY') {
-      alert('토스페이는 곧 지원될 예정입니다. 카카오페이를 이용해주세요.');
-      return;
-    }
-
-    setIsLoading(true);
-
     try {
+      const amount = getFinalAmount(); // 금액 검증 포함
+
+      if (!donorName.trim()) {
+        alert('기부자 이름을 입력해주세요.');
+        return;
+      }
+
+      if (!donorEmail.trim()) {
+        alert('이메일을 입력해주세요.');
+        return;
+      }
+
+      if (paymentMethod === 'TOSS_PAY') {
+        alert('토스페이는 곧 지원될 예정입니다. 카카오페이를 이용해주세요.');
+        return;
+      }
+
+      setIsLoading(true);
+
       const requestData = {
         projectId: projectId,
-        amount: selectedOption.amount,
-        selectedOptionId: selectedOption.optionId,
+        amount: amount,
+        selectedOptionId: useCustomAmount ? null : selectedOption?.optionId,
         donorName: donorName,
         donorEmail: donorEmail,
         donorPhone: donorPhone,
@@ -117,6 +141,11 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
         alert('결제 준비 중 오류가 발생했습니다.');
       }
     } catch (error: any) {
+      if (error.message && error.message.includes('원 이상')) {
+        alert(error.message);
+        return;
+      }
+
       console.error('=== 결제 준비 실패 ===');
       console.error('에러 객체:', error);
       console.error('에러 메시지:', error.message);
@@ -156,58 +185,126 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
 
         {/* 본문 */}
         <div className="p-6 space-y-6">
-          {/* 기부 옵션 선택 */}
+          {/* 기부 금액 선택 방식 탭 */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-3">
-              기부 옵션 선택
+              기부 금액 선택
             </label>
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => {
+                  setUseCustomAmount(false);
+                  setCustomAmount('');
+                }}
+                className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all ${
+                  !useCustomAmount
+                    ? 'bg-red-500 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                옵션 선택
+              </button>
+              <button
+                onClick={handleCustomAmountToggle}
+                className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all ${
+                  useCustomAmount
+                    ? 'bg-red-500 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                직접 입력
+              </button>
+            </div>
+          </div>
 
-            {isLoadingOptions ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
-              </div>
-            ) : optionsError ? (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-                <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
-                <p className="text-sm text-red-800">{optionsError}</p>
-              </div>
-            ) : donationOptions.length === 0 ? (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
-                <AlertCircle className="text-yellow-600 flex-shrink-0 mt-0.5" size={20} />
-                <p className="text-sm text-yellow-800">등록된 기부 옵션이 없습니다.</p>
+          {/* 기부 옵션 선택 또는 커스텀 금액 입력 */}
+          <div>
+            {useCustomAmount ? (
+              /* 커스텀 금액 입력 UI */
+              <div className="space-y-3">
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={customAmount}
+                    onChange={(e) => setCustomAmount(e.target.value)}
+                    placeholder="기부 금액을 입력하세요"
+                    className="w-full px-4 py-4 pr-12 text-lg border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    min="1000"
+                    step="1000"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-medium text-gray-500">
+                    원
+                  </span>
+                </div>
+                <div className="flex items-start gap-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                  <AlertCircle size={16} className="flex-shrink-0 mt-0.5 text-gray-500" />
+                  <p>최소 <span className="font-semibold text-red-600">4,000원</span> 이상 기부 가능합니다. 원하시는 금액을 자유롭게 입력해주세요.</p>
+                </div>
+                {/* 빠른 금액 선택 버튼 */}
+                <div className="grid grid-cols-3 gap-2">
+                  {[5000, 10000, 30000, 50000, 100000, 300000].map((amount) => (
+                    <button
+                      key={amount}
+                      onClick={() => setCustomAmount(amount.toString())}
+                      className="py-2.5 px-3 border-2 border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 transition-all text-sm font-medium"
+                    >
+                      {(amount / 10000).toFixed(amount >= 10000 ? 0 : 1)}만원
+                    </button>
+                  ))}
+                </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-3">
-                {donationOptions.map((option) => (
-                  <button
-                    key={option.optionId}
-                    onClick={() => handleOptionSelect(option)}
-                    className={`p-4 rounded-lg border-2 transition-all text-left hover:shadow-md ${
-                      selectedOption?.optionId === option.optionId
-                        ? 'border-red-500 bg-red-50'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <h4 className="font-bold text-gray-900 mb-1">
-                          {option.optionName}
-                        </h4>
-                        {option.optionDescription && (
-                          <p className="text-sm text-gray-600 mb-2">
-                            {option.optionDescription}
+              /* 기부 옵션 선택 UI */
+              isLoadingOptions ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
+                </div>
+              ) : optionsError ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                  <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+                  <p className="text-sm text-red-800">{optionsError}</p>
+                </div>
+              ) : donationOptions.length === 0 ? (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+                  <AlertCircle className="text-yellow-600 flex-shrink-0 mt-0.5" size={20} />
+                  <div>
+                    <p className="text-sm font-medium text-yellow-800 mb-1">등록된 기부 옵션이 없습니다.</p>
+                    <p className="text-sm text-yellow-700">상단의 '직접 입력' 버튼을 눌러 원하시는 금액을 입력해주세요.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3">
+                  {donationOptions.map((option) => (
+                    <button
+                      key={option.optionId}
+                      onClick={() => handleOptionSelect(option)}
+                      className={`p-4 rounded-lg border-2 transition-all text-left hover:shadow-md ${
+                        selectedOption?.optionId === option.optionId
+                          ? 'border-red-500 bg-red-50'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <h4 className="font-bold text-gray-900 mb-1">
+                            {option.optionName}
+                          </h4>
+                          {option.optionDescription && (
+                            <p className="text-sm text-gray-600 mb-2">
+                              {option.optionDescription}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xl font-bold text-red-600">
+                            {option.amount.toLocaleString()}원
                           </p>
-                        )}
+                        </div>
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xl font-bold text-red-600">
-                          {option.amount.toLocaleString()}원
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                    </button>
+                  ))}
+                </div>
+              )
             )}
           </div>
 
@@ -298,18 +395,22 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
           </div>
 
           {/* 금액 요약 */}
-          {selectedOption && (
+          {(selectedOption || (useCustomAmount && customAmount)) && (
             <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-700 font-medium">선택한 옵션</span>
-                <span className="font-semibold text-gray-900">
-                  {selectedOption.optionName}
-                </span>
-              </div>
+              {selectedOption && (
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-gray-700 font-medium">선택한 옵션</span>
+                  <span className="font-semibold text-gray-900">
+                    {selectedOption.optionName}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between items-center">
                 <span className="text-gray-700 font-medium">총 기부 금액</span>
                 <span className="text-2xl font-bold text-red-600">
-                  {selectedOption.amount.toLocaleString()}원
+                  {useCustomAmount
+                    ? parseInt(customAmount || '0').toLocaleString()
+                    : selectedOption?.amount.toLocaleString()}원
                 </span>
               </div>
             </div>
@@ -320,7 +421,13 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
         <div className="sticky bottom-0 bg-gray-50 p-6 rounded-b-2xl border-t border-gray-200">
           <button
             onClick={handleDonate}
-            disabled={isLoading || !selectedOption || !donorName || !donorEmail}
+            disabled={
+              isLoading ||
+              (!selectedOption && !useCustomAmount) ||
+              (useCustomAmount && !customAmount) ||
+              !donorName ||
+              !donorEmail
+            }
             className="w-full py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold rounded-xl hover:from-red-600 hover:to-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (

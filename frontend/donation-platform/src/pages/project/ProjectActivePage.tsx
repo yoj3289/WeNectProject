@@ -1,25 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight, Trash2, FileText, Download } from 'lucide-react';
-import { useProjectDetail, useToggleFavoriteProject, useUserFavoriteProjects, useDeleteProject } from '../../hooks/useProjects';
+import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, ChevronLeft, ChevronRight, Trash2, Loader2, FileText, Download, AlertCircle } from 'lucide-react';
+import { useToggleFavoriteProject, useUserFavoriteProjects, useDeleteProject } from '../../hooks/useProjects';
 import { useDonors } from '../../hooks/useDonations';
-import type { TabType } from '../../types';
+import type { TabType, Project } from '../../types';
 import { getCategoryLabel } from '../../types';
 import DonationModal from '../../components/donation/DonationModal';
 import { useAuthStore } from '../../stores/authStore';
 import { sanitizeHTML } from '../../utils/sanitize';
 import '../../components/editor/editor.css';
 
-interface ProjectDetailPageProps {
+interface ProjectActivePageProps {
   projectId: number;
+  project: Project;
   isLoggedIn: boolean;
   favoriteProjectIds: Set<number>;
   onNavigateToLogin: () => void;
   onShowDonationModal: () => void;
 }
 
-const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
+/**
+ * 진행 중인 프로젝트 상세 페이지
+ * - 프로젝트 소개, 기부금 사용계획, 진행현황, 기부자 목록, 응원 메시지 표시
+ * - 기부하기 기능 제공
+ */
+const ProjectActivePage: React.FC<ProjectActivePageProps> = ({
   projectId,
+  project,
   isLoggedIn,
   favoriteProjectIds,
   onNavigateToLogin,
@@ -35,9 +42,6 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
-  // API: 프로젝트 상세 정보 조회
-  const { data: project, isLoading: isLoadingProject, isError: isErrorProject, error: projectError } = useProjectDetail(projectId);
 
   // API: 기부자 목록 조회
   const { data: donors = [], isLoading: isLoadingDonors } = useDonors(projectId);
@@ -137,38 +141,6 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     }
   };
 
-  // 로딩 상태
-  if (isLoadingProject) {
-    return (
-      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-red-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">프로젝트 정보를 불러오는 중...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // 에러 상태
-  if (isErrorProject || !project) {
-    return (
-      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-600 mb-4">
-            {(projectError as any)?.response?.data?.message || '프로젝트를 불러오는데 실패했습니다.'}
-          </p>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600"
-          >
-            목록으로 돌아가기
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const progress = calculatePercentage(project.currentAmount, project.targetAmount);
   // 서버에서 가져온 실제 관심 프로젝트 목록 사용 (로그인 시에만)
   const isFavorite = isLoggedIn ? actualFavoriteIds.has(project.id) : false;
@@ -178,7 +150,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   // 응원 메시지가 있는 기부자만 필터링
   const donorsWithMessages = donors.filter(d => d.message);
 
-  // 탭 컨텐츠 렌더링
+  // 탭 컨텐츠 렌더링 (진행 중 프로젝트 전용)
   const renderTabContent = () => {
     switch (activeTab) {
       case 'intro':
@@ -488,7 +460,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                   <>
                     <button
                       onClick={() => setCurrentImageIndex((prev) =>
-                        prev === 0 ? project.images.length - 1 : prev - 1
+                        prev === 0 ? (project.images?.length ?? 1) - 1 : prev - 1
                       )}
                       className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 md:p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                     >
@@ -496,7 +468,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     </button>
                     <button
                       onClick={() => setCurrentImageIndex((prev) =>
-                        prev === project.images.length - 1 ? 0 : prev + 1
+                        prev === (project.images?.length ?? 1) - 1 ? 0 : prev + 1
                       )}
                       className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 md:p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                     >
@@ -551,7 +523,9 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 md:mb-3">{project.title}</h1>
-                    <p className="text-base md:text-lg lg:text-xl text-gray-600">{project.organization.name}</p>
+                    <p className="text-base md:text-lg lg:text-xl text-gray-600">
+                      {typeof project.organization === 'string' ? project.organization : project.organization.name}
+                    </p>
                   </div>
 
                   {/* 삭제 버튼 (작성자만 보임) */}
@@ -568,7 +542,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                 </div>
               </div>
 
-              {/* 탭 네비게이션 */}
+              {/* 탭 네비게이션 (진행 중 프로젝트 전용) */}
               <div className="flex border-b border-gray-200 overflow-x-auto">
                 {[
                   { id: 'intro', label: '프로젝트 소개' },
@@ -739,4 +713,4 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   );
 };
 
-export default ProjectDetailPage;
+export default ProjectActivePage;

@@ -38,21 +38,28 @@ class ApiClient {
     this.axiosInstance.interceptors.response.use(
       (response) => response,
       async (error) => {
-        if (error.response?.status === 401) {
-          // 토큰 만료 또는 인증 실패
-          this.clearToken();
-          // Zustand 스토어도 초기화 (순환 참조 방지를 위해 동적 import)
-          import('../stores/authStore').then(({ useAuthStore }) => {
-            useAuthStore.getState().logout();
-          });
+        // 401 Unauthorized 또는 403 Forbidden (JWT 만료 포함)
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          // JWT 만료 메시지 확인
+          const isJWTExpired = error.response?.data?.message?.includes('JWT expired') ||
+                               error.response?.data?.error?.includes('JWT expired');
 
-          // Custom event 발행 → App.tsx에서 처리
-          window.dispatchEvent(new CustomEvent('auth:logout', {
-            detail: {
-              reason: 'token_expired',
-              currentPath: window.location.pathname
-            }
-          }));
+          if (error.response?.status === 401 || isJWTExpired) {
+            // 토큰 만료 또는 인증 실패
+            this.clearToken();
+            // Zustand 스토어도 초기화 (순환 참조 방지를 위해 동적 import)
+            import('../stores/authStore').then(({ useAuthStore }) => {
+              useAuthStore.getState().logout();
+            });
+
+            // Custom event 발행 → App.tsx에서 처리
+            window.dispatchEvent(new CustomEvent('auth:logout', {
+              detail: {
+                reason: 'token_expired',
+                currentPath: window.location.pathname
+              }
+            }));
+          }
         }
         return Promise.reject(error);
       }

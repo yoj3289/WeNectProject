@@ -90,11 +90,13 @@ public class Project {
     }
 
     public enum ProjectStatus {
-        PENDING,    // 대기
-        APPROVED,   // 승인
-        ACTIVE,     // 진행중
-        COMPLETED,  // 완료
-        CANCELLED,  // 취소
-        REJECTED    // 반려
+        PENDING,     // 대기
+        APPROVED,    // 승인
+        ACTIVE,      // 진행중
+        COMPLETED,   // 완료
+        SETTLEMENT,  // 결산중
+        CLOSED,      // 종료 (결산 완료)
+        CANCELLED,   // 취소
+        REJECTED     // 반려
     }
 }

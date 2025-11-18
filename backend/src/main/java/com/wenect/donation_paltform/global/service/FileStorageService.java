@@ -41,6 +41,10 @@ public class FileStorageService {
         return baseUploadDir + "/projects/documents/";
     }
 
+    private String getExpenseReceiptsDir() {
+        return baseUploadDir + "/expenses/receipts/";
+    }
+
     public String saveFile(MultipartFile file) throws IOException {
         // 파일명 중복 방지
         String originalFilename = file.getOriginalFilename();
@@ -95,6 +99,25 @@ public class FileStorageService {
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
         return "/uploads/projects/documents/" + fileName;
+    }
+
+    /**
+     * 영수증 이미지 저장
+     */
+    public String saveExpenseReceipt(MultipartFile file) throws IOException {
+        String originalFilename = file.getOriginalFilename();
+        String fileName = System.currentTimeMillis() + "_" + originalFilename;
+
+        // 절대 경로 사용
+        Path uploadPath = getAbsoluteUploadPath("expenses/receipts");
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        Path filePath = uploadPath.resolve(fileName);
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+        return "/uploads/expenses/receipts/" + fileName;
     }
 
     /**
