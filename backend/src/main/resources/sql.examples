@@ -1,0 +1,573 @@
+-- ========================================
+-- 기부 플랫폼 데이터베이스 복구/초기화 스크립트 (Full)
+-- Database: mydb
+-- 생성 대상: 신규 DB (또는 비어있는 DB)
+-- 특징:
+--  - 게스트 기부 허용(donations.user_id NULL)
+--  - 프로젝트 삭제 시 기부 내역 보존(donations.project_id ON DELETE SET NULL)
+--  - 관심 프로젝트(favorite_projects)
+--  - 기부 옵션(donation_options) + donations.selected_option_id FK
+--  - projects에 budget_plan / plan_document_url / is_plan_public 컬럼 포함
+--  - 카테고리 6종 기본 데이터 삽입
+-- ========================================
+
+-- 데이터베이스 생성 및 선택
+CREATE DATABASE IF NOT EXISTS mydb
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+USE mydb;
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ========================================
+-- 1. 사용자 관리 영역
+-- ========================================
+
+-- 1-1. users
+CREATE TABLE IF NOT EXISTS users (
+  user_id     BIGINT AUTO_INCREMENT COMMENT '사용자 고유 ID',
+  email       VARCHAR(100) NOT NULL COMMENT '이메일(로그인 ID)',
+  password    VARCHAR(255) NOT NULL COMMENT '암호화된 비밀번호(bcrypt)',
+  user_name   VARCHAR(50)  NOT NULL COMMENT '사용자명',
+  phone       VARCHAR(20)  NULL COMMENT '전화번호',
+  user_type   ENUM('INDIVIDUAL','ORGANIZATION','ADMIN') NOT NULL COMMENT '사용자 유형(일반, 기관, 관리자)',
+  status      ENUM('ACTIVE','INACTIVE','SUSPENDED') NOT NULL DEFAULT 'ACTIVE' COMMENT '계정 상태(활성, 비활성, 정지)',
+  created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  updated_at  TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+  PRIMARY KEY (user_id),
+  UNIQUE KEY UK_users_email (email),
+  INDEX IDX_users_type_status (user_type, status),
+  INDEX IDX_users_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='사용자 기본 정보';
+
+-- 1-2. organizations
+CREATE TABLE IF NOT EXISTS organizations (
+  org_id               BIGINT AUTO_INCREMENT COMMENT '기관 고유 ID',
+  user_id              BIGINT NOT NULL COMMENT '사용자 ID',
+  org_name             VARCHAR(100) NOT NULL COMMENT '기관명',
+  registration_number  VARCHAR(50) NOT NULL COMMENT '사업자/고유번호(암호화)',
+  org_type             VARCHAR(50) NULL COMMENT '기관 유형(재단, NPO 등)',
+  address              TEXT NULL COMMENT '주소',
+  representative       VARCHAR(50) NULL COMMENT '대표자명',
+  verified             BOOLEAN NOT NULL DEFAULT FALSE COMMENT '인증 여부',
+  verified_at          TIMESTAMP NULL COMMENT '인증일시',
+  created_at           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  updated_at           TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+  PRIMARY KEY (org_id),
+  UNIQUE KEY UK_organizations_user (user_id),
+  UNIQUE KEY UK_organizations_reg (registration_number),
+  INDEX  IDX_organizations_verified (verified),
+  CONSTRAINT FK_organizations_user
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='기관 상세 정보';
+
+-- 1-3. organization_documents
+CREATE TABLE IF NOT EXISTS organization_documents (
+  doc_id      BIGINT AUTO_INCREMENT COMMENT '서류 고유 ID',
+  org_id      BIGINT NOT NULL COMMENT '기관 ID',
+  doc_type    ENUM('BUSINESS_LICENSE','REGISTRATION_CERTIFICATE','BANK_STATEMENT','OTHER') NOT NULL COMMENT '서류 유형',
+  file_name   VARCHAR(255) NOT NULL COMMENT '원본 파일명',
+  file_path   VARCHAR(500) NOT NULL COMMENT '파일 저장 경로',
+  file_size   BIGINT NOT NULL COMMENT '파일 크기(bytes)',
+  uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '업로드 일시',
+  PRIMARY KEY (doc_id),
+  INDEX IDX_org_docs (org_id, doc_type),
+  CONSTRAINT FK_org_documents_org
+    FOREIGN KEY (org_id) REFERENCES organizations(org_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='기관 제출 서류';
+
+-- ========================================
+-- 2. 프로젝트 관리 영역
+-- ========================================
+
+-- 2-1. project_categories
+CREATE TABLE IF NOT EXISTS project_categories (
+  category_id   INT AUTO_INCREMENT COMMENT '카테고리 ID',
+  category_name VARCHAR(50) NOT NULL COMMENT '카테고리명',
+  description   TEXT NULL COMMENT '카테고리 설명',
+  display_order INT NOT NULL DEFAULT 0 COMMENT '표시 순서',
+  is_active     BOOLEAN NOT NULL DEFAULT TRUE COMMENT '활성여부',
+  created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  PRIMARY KEY (category_id),
+  UNIQUE KEY UK_categories_name (category_name),
+  INDEX IDX_categories_active_order (is_active, display_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='프로젝트 카테고리';
+
+-- 2-2. projects
+CREATE TABLE IF NOT EXISTS projects (
+  project_id     BIGINT AUTO_INCREMENT COMMENT '프로젝트 ID',
+  org_id         BIGINT NOT NULL COMMENT '기관 ID',
+  category_id    INT    NOT NULL COMMENT '카테고리 ID',
+  title          VARCHAR(200) NOT NULL COMMENT '프로젝트명',
+  description    TEXT NOT NULL COMMENT '상세 설명',
+  target_amount  DECIMAL(15,2) NOT NULL COMMENT '목표 금액(원)',
+  current_amount DECIMAL(15,2) NOT NULL DEFAULT 0 COMMENT '현재 모금액(원)',
+  donor_count    INT NOT NULL DEFAULT 0 COMMENT '기부자 수',
+  start_date     DATE NOT NULL COMMENT '시작일',
+  end_date       DATE NOT NULL COMMENT '종료일',
+  status         ENUM('PENDING','APPROVED','ACTIVE','COMPLETED','CANCELLED','REJECTED') NOT NULL DEFAULT 'PENDING' COMMENT '상태',
+  rejection_reason TEXT NULL COMMENT '반려 사유',
+  -- 추가 컬럼 (요청사항)
+  budget_plan      TEXT NULL COMMENT '예산/집행 계획',
+  plan_document_url VARCHAR(500) NULL COMMENT '계획서 문서 URL',
+  is_plan_public    BOOLEAN NOT NULL DEFAULT TRUE COMMENT '계획 공개 여부',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+  PRIMARY KEY (project_id),
+  INDEX IDX_projects_status_dates (status, start_date, end_date),
+  INDEX IDX_projects_org (org_id),
+  INDEX IDX_projects_category (category_id, status),
+  CONSTRAINT CHK_projects_amount CHECK (target_amount > 0),
+  CONSTRAINT CHK_projects_dates CHECK (end_date > start_date),
+  CONSTRAINT CHK_projects_current_amount CHECK (current_amount >= 0),
+  CONSTRAINT FK_projects_org
+    FOREIGN KEY (org_id) REFERENCES organizations(org_id)
+    ON DELETE RESTRICT,
+  CONSTRAINT FK_projects_category
+    FOREIGN KEY (category_id) REFERENCES project_categories(category_id)
+    ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='기부 프로젝트';
+
+-- 2-3. project_images
+CREATE TABLE IF NOT EXISTS project_images (
+  image_id      BIGINT AUTO_INCREMENT COMMENT '이미지 ID',
+  project_id    BIGINT NOT NULL COMMENT '프로젝트 ID',
+  file_path     VARCHAR(500) NOT NULL COMMENT '파일 경로',
+  file_name     VARCHAR(255) NOT NULL COMMENT '원본 파일명',
+  file_size     BIGINT NOT NULL COMMENT '파일 크기(bytes)',
+  display_order INT NOT NULL DEFAULT 0 COMMENT '표시 순서',
+  is_thumbnail  BOOLEAN NOT NULL DEFAULT FALSE COMMENT '대표 여부',
+  created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '업로드일시',
+  PRIMARY KEY (image_id),
+  INDEX IDX_project_images (project_id, display_order),
+  CONSTRAINT CHK_project_images_order CHECK (display_order BETWEEN 0 AND 4),
+  CONSTRAINT FK_project_images_project
+    FOREIGN KEY (project_id) REFERENCES projects(project_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='프로젝트 이미지';
+
+-- 2-4. project_documents
+CREATE TABLE IF NOT EXISTS project_documents (
+  doc_id      BIGINT AUTO_INCREMENT COMMENT '서류 ID',
+  project_id  BIGINT NOT NULL COMMENT '프로젝트 ID',
+  doc_type    ENUM('PROPOSAL','BUDGET','USAGE_PLAN','REPORT','OTHER') NOT NULL COMMENT '서류 유형',
+  file_name   VARCHAR(255) NOT NULL COMMENT '원본 파일명',
+  file_path   VARCHAR(500) NOT NULL COMMENT '파일 경로',
+  file_size   BIGINT NOT NULL COMMENT '파일 크기(bytes)',
+  uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '업로드 일시',
+  PRIMARY KEY (doc_id),
+  INDEX IDX_project_docs (project_id, doc_type),
+  CONSTRAINT FK_project_documents_project
+    FOREIGN KEY (project_id) REFERENCES projects(project_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='프로젝트 제출 서류';
+
+-- 2-5. 관심 프로젝트 (추가)
+CREATE TABLE IF NOT EXISTS favorite_projects (
+  favorite_id BIGINT AUTO_INCREMENT COMMENT '관심 프로젝트 ID',
+  user_id     BIGINT NOT NULL COMMENT '사용자 ID',
+  project_id  BIGINT NOT NULL COMMENT '프로젝트 ID',
+  created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
+  PRIMARY KEY (favorite_id),
+  UNIQUE KEY UK_favorite_user_project (user_id, project_id),
+  INDEX IDX_favorite_user (user_id, created_at DESC),
+  INDEX IDX_favorite_project (project_id),
+  CONSTRAINT FK_favorite_user
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  CONSTRAINT FK_favorite_project
+    FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='사용자 관심 프로젝트';
+
+-- ========================================
+-- 3. 기부/결제 영역
+-- ========================================
+
+-- 3-1. payments
+CREATE TABLE IF NOT EXISTS payments (
+  payment_id  BIGINT AUTO_INCREMENT COMMENT '결제 ID',
+  payment_key VARCHAR(100) NOT NULL COMMENT '토스 결제 키',
+  order_id    VARCHAR(100) NOT NULL COMMENT '주문번호',
+  method      VARCHAR(50)  NULL COMMENT '결제수단',
+  amount      DECIMAL(15,2) NOT NULL COMMENT '결제금액(원)',
+  status      VARCHAR(50) NOT NULL COMMENT '결제상태(DONE, CANCELED 등)',
+  approved_at TIMESTAMP NULL COMMENT '승인일시',
+  raw_data    JSON NULL COMMENT '결제 원본 데이터',
+  created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  PRIMARY KEY (payment_id),
+  UNIQUE KEY UK_payments_key (payment_key),
+  UNIQUE KEY UK_payments_order (order_id),
+  INDEX IDX_payments_status (status),
+  INDEX IDX_payments_approved (approved_at),
+  CONSTRAINT CHK_payments_amount CHECK (amount > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='토스페이먼츠 결제 정보';
+
+-- 3-2. donations (수정 반영: user_id NULL, project_id NULL + ON DELETE SET NULL, selected_option_id 추가)
+CREATE TABLE IF NOT EXISTS donations (
+  donation_id BIGINT AUTO_INCREMENT COMMENT '기부 ID',
+  user_id     BIGINT NULL COMMENT '기부자 ID(게스트 기부 허용)',
+  project_id  BIGINT NULL COMMENT '프로젝트 ID(삭제 시 NULL 유지)',
+  payment_id  BIGINT NULL COMMENT '결제 ID',
+  amount      DECIMAL(15,2) NOT NULL COMMENT '기부 금액(원)',
+  message     TEXT NULL COMMENT '기부 메시지',
+  anonymous   BOOLEAN NOT NULL DEFAULT FALSE COMMENT '익명 여부',
+  status      ENUM('PENDING','COMPLETED','CANCELLED','REFUNDED') NOT NULL DEFAULT 'PENDING' COMMENT '기부 상태',
+  donated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '기부일시',
+  created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  -- 기부 옵션 연결(없을 수도 있음)
+  selected_option_id BIGINT NULL COMMENT '선택한 기부 옵션 ID',
+  PRIMARY KEY (donation_id),
+  UNIQUE KEY UK_donations_payment (payment_id),
+  INDEX IDX_donations_user (user_id, donated_at DESC),
+  INDEX IDX_donations_project (project_id, status),
+  INDEX IDX_donations_date (donated_at DESC),
+  INDEX IDX_donations_status (status),
+  INDEX idx_selected_option (selected_option_id),
+  CONSTRAINT CHK_donations_amount CHECK (amount > 0),
+  CONSTRAINT FK_donations_user
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT FK_donations_project
+    FOREIGN KEY (project_id) REFERENCES projects(project_id)
+    ON DELETE SET NULL,
+  CONSTRAINT FK_donations_payment
+    FOREIGN KEY (payment_id) REFERENCES payments(payment_id)
+    ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='기부 내역';
+
+-- 3-3. piggy_banks
+CREATE TABLE IF NOT EXISTS piggy_banks (
+  piggy_id        BIGINT AUTO_INCREMENT COMMENT '저금통 ID',
+  project_id      BIGINT NOT NULL COMMENT '프로젝트 ID',
+  total_amount    DECIMAL(15,2) NOT NULL DEFAULT 0 COMMENT '총 누적 금액(원)',
+  withdrawn_amount DECIMAL(15,2) NOT NULL DEFAULT 0 COMMENT '정산 완료 금액(원)',
+  balance         DECIMAL(15,2) NOT NULL DEFAULT 0 COMMENT '잔액(원)',
+  status          ENUM('ACTIVE','WITHDRAWN','LOCKED') NOT NULL DEFAULT 'ACTIVE' COMMENT '저금통 상태',
+  last_updated    TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '최종 업데이트',
+  created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  PRIMARY KEY (piggy_id),
+  UNIQUE KEY UK_piggy_banks_project (project_id),
+  CONSTRAINT CHK_piggy_balance CHECK (balance >= 0),
+  CONSTRAINT CHK_piggy_amounts CHECK (balance = total_amount - withdrawn_amount),
+  CONSTRAINT FK_piggy_banks_project
+    FOREIGN KEY (project_id) REFERENCES projects(project_id)
+    ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='프로젝트 저금통';
+
+-- 3-4. donation_receipts
+CREATE TABLE IF NOT EXISTS donation_receipts (
+  receipt_id        BIGINT AUTO_INCREMENT COMMENT '영수증 ID',
+  donation_id       BIGINT NOT NULL COMMENT '기부 ID',
+  receipt_number    VARCHAR(50) NOT NULL COMMENT '영수증 번호',
+  issue_date        DATE NOT NULL COMMENT '발급일',
+  donor_name        VARCHAR(100) NOT NULL COMMENT '기부자명',
+  donor_id_number   VARCHAR(50) NULL COMMENT '주민/사업자번호(암호화)',
+  receipt_type      ENUM('INDIVIDUAL','BUSINESS') NOT NULL COMMENT '영수증 유형',
+  amount            DECIMAL(15,2) NOT NULL COMMENT '기부금액(원)',
+  organization_name VARCHAR(100) NOT NULL COMMENT '발급 기관명',
+  created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  PRIMARY KEY (receipt_id),
+  UNIQUE KEY UK_receipts_donation (donation_id),
+  UNIQUE KEY UK_receipts_number (receipt_number),
+  INDEX IDX_receipts_date (issue_date),
+  CONSTRAINT CHK_receipts_amount CHECK (amount > 0),
+  CONSTRAINT FK_receipts_donation
+    FOREIGN KEY (donation_id) REFERENCES donations(donation_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='기부금 영수증';
+
+-- 3-5. settlements
+CREATE TABLE IF NOT EXISTS settlements (
+  settlement_id     BIGINT AUTO_INCREMENT COMMENT '정산 ID',
+  project_id        BIGINT NOT NULL COMMENT '프로젝트 ID',
+  piggy_id          BIGINT NOT NULL COMMENT '저금통 ID',
+  settlement_amount DECIMAL(15,2) NOT NULL COMMENT '정산 신청 금액(원)',
+  bank_name         VARCHAR(50) NOT NULL COMMENT '입금 은행명',
+  account_number    VARCHAR(100) NOT NULL COMMENT '입금 계좌번호(암호화)',
+  account_holder    VARCHAR(50) NOT NULL COMMENT '예금주명',
+  status            ENUM('PENDING','APPROVED','COMPLETED','REJECTED') NOT NULL DEFAULT 'PENDING' COMMENT '정산 상태',
+  requested_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '정산 요청일시',
+  approved_at       TIMESTAMP NULL COMMENT '승인일시',
+  completed_at      TIMESTAMP NULL COMMENT '송금 완료일시',
+  rejection_reason  TEXT NULL COMMENT '반려 사유',
+  admin_memo        TEXT NULL COMMENT '관리자 메모',
+  created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  updated_at        TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+  PRIMARY KEY (settlement_id),
+  INDEX IDX_settlements_status (status, requested_at DESC),
+  INDEX IDX_settlements_project_date (project_id, requested_at DESC),
+  CONSTRAINT CHK_settlements_amount CHECK (settlement_amount > 0),
+  CONSTRAINT FK_settlements_project
+    FOREIGN KEY (project_id) REFERENCES projects(project_id)
+    ON DELETE RESTRICT,
+  CONSTRAINT FK_settlements_piggy
+    FOREIGN KEY (piggy_id) REFERENCES piggy_banks(piggy_id)
+    ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='프로젝트 정산';
+
+-- 3-6. settlement_documents
+CREATE TABLE IF NOT EXISTS settlement_documents (
+  doc_id        BIGINT AUTO_INCREMENT COMMENT '서류 ID',
+  settlement_id BIGINT NOT NULL COMMENT '정산 ID',
+  doc_type      ENUM('ACCOUNT_COPY','USAGE_REPORT','INVOICE','OTHER') NOT NULL COMMENT '서류 유형',
+  file_name     VARCHAR(255) NOT NULL COMMENT '파일명',
+  file_path     VARCHAR(500) NOT NULL COMMENT '파일 경로',
+  file_size     BIGINT NOT NULL COMMENT '파일 크기(bytes)',
+  uploaded_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '업로드일시',
+  PRIMARY KEY (doc_id),
+  INDEX IDX_settlement_docs (settlement_id, doc_type),
+  CONSTRAINT FK_settlement_docs
+    FOREIGN KEY (settlement_id) REFERENCES settlements(settlement_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='정산 첨부 서류';
+
+-- 3-7. donation_options (추가)
+CREATE TABLE IF NOT EXISTS donation_options (
+  option_id          BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '옵션 ID',
+  project_id         BIGINT NOT NULL COMMENT '프로젝트 ID',
+  option_name        VARCHAR(200) NOT NULL COMMENT '옵션명',
+  option_description VARCHAR(500) NULL COMMENT '옵션 설명',
+  amount             DECIMAL(15,2) NOT NULL COMMENT '금액(원)',
+  icon_emoji         VARCHAR(10) NULL COMMENT '아이콘 이모지',
+  display_order      INT NOT NULL DEFAULT 0 COMMENT '표시 순서',
+  is_active          BOOLEAN NOT NULL DEFAULT TRUE COMMENT '활성 여부',
+  created_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  updated_at         DATETIME NULL  DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+  INDEX idx_project_id (project_id),
+  CONSTRAINT FK_donation_options_project
+    FOREIGN KEY (project_id) REFERENCES projects(project_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='프로젝트별 기부 옵션';
+
+-- donations ← donation_options FK (위에서 테이블 생성 후 추가 보장)
+ALTER TABLE donations
+  ADD CONSTRAINT FK_donations_selected_option
+  FOREIGN KEY (selected_option_id)
+  REFERENCES donation_options(option_id)
+  ON DELETE SET NULL;
+
+-- ========================================
+-- 4. 커뮤니티 영역
+-- ========================================
+
+-- 4-1. posts
+CREATE TABLE IF NOT EXISTS posts (
+  post_id     BIGINT AUTO_INCREMENT COMMENT '게시글 ID',
+  user_id     BIGINT NOT NULL COMMENT '작성자 ID',
+  project_id  BIGINT NULL COMMENT '관련 프로젝트 ID',
+  type        ENUM('NOTICE','QUESTION','SUPPORT','GENERAL') NOT NULL COMMENT '글 유형',
+  title       VARCHAR(200) NOT NULL COMMENT '제목',
+  content     TEXT NOT NULL COMMENT '본문',
+  view_count  INT NOT NULL DEFAULT 0 COMMENT '조회수',
+  like_count  INT NOT NULL DEFAULT 0 COMMENT '좋아요 수',
+  is_notice   BOOLEAN NOT NULL DEFAULT FALSE COMMENT '공지 고정 여부',
+  is_deleted  BOOLEAN NOT NULL DEFAULT FALSE COMMENT '소프트 삭제',
+  created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '작성일시',
+  updated_at  TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+  deleted_at  TIMESTAMP NULL COMMENT '삭제일시',
+  PRIMARY KEY (post_id),
+  INDEX IDX_posts_active (is_deleted, created_at DESC),
+  INDEX IDX_posts_project (project_id, type, is_deleted, created_at DESC),
+  INDEX IDX_posts_type (type, is_deleted, created_at DESC),
+  INDEX IDX_posts_user (user_id, is_deleted),
+  INDEX IDX_posts_notice (is_notice, created_at DESC),
+  CONSTRAINT FK_posts_user
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT FK_posts_project
+    FOREIGN KEY (project_id) REFERENCES projects(project_id)
+    ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='커뮤니티 게시글';
+
+-- 4-2. post_images
+CREATE TABLE IF NOT EXISTS post_images (
+  image_id     BIGINT AUTO_INCREMENT COMMENT '이미지 ID',
+  post_id      BIGINT NOT NULL COMMENT '게시글 ID',
+  file_path    VARCHAR(500) NOT NULL COMMENT '파일 경로',
+  file_name    VARCHAR(255) NOT NULL COMMENT '원본 파일명',
+  file_size    BIGINT NOT NULL COMMENT '파일 크기(bytes)',
+  display_order INT NOT NULL DEFAULT 0 COMMENT '표시 순서',
+  created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '업로드일시',
+  PRIMARY KEY (image_id),
+  INDEX IDX_post_images (post_id, display_order),
+  CONSTRAINT FK_post_images_post
+    FOREIGN KEY (post_id) REFERENCES posts(post_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='게시글 이미지';
+
+-- 4-3. comments
+CREATE TABLE IF NOT EXISTS comments (
+  comment_id        BIGINT AUTO_INCREMENT COMMENT '댓글 ID',
+  post_id           BIGINT NOT NULL COMMENT '게시글 ID',
+  user_id           BIGINT NOT NULL COMMENT '작성자 ID',
+  parent_comment_id BIGINT NULL COMMENT '부모 댓글 ID',
+  content           TEXT NOT NULL COMMENT '댓글 내용',
+  is_deleted        BOOLEAN NOT NULL DEFAULT FALSE COMMENT '소프트 삭제',
+  created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '작성일시',
+  updated_at        TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+  deleted_at        TIMESTAMP NULL COMMENT '삭제일시',
+  PRIMARY KEY (comment_id),
+  INDEX IDX_comments_post (post_id, is_deleted, created_at),
+  INDEX IDX_comments_parent (parent_comment_id, created_at),
+  INDEX IDX_comments_user (user_id, is_deleted, created_at DESC),
+  CONSTRAINT FK_comments_post
+    FOREIGN KEY (post_id) REFERENCES posts(post_id)
+    ON DELETE CASCADE,
+  CONSTRAINT FK_comments_user
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT FK_comments_parent
+    FOREIGN KEY (parent_comment_id) REFERENCES comments(comment_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='게시글 댓글';
+
+-- ========================================
+-- 5. 알림 영역
+-- ========================================
+
+-- 5-1. notifications
+CREATE TABLE IF NOT EXISTS notifications (
+  notification_id BIGINT AUTO_INCREMENT COMMENT '알림 ID',
+  user_id    BIGINT NOT NULL COMMENT '수신자 ID',
+  type       ENUM('DONATION','PROJECT','SETTLEMENT','COMMENT','SYSTEM') NOT NULL COMMENT '알림 유형',
+  category   VARCHAR(50) NOT NULL COMMENT '알림 카테고리',
+  title      VARCHAR(200) NOT NULL COMMENT '제목',
+  message    TEXT NOT NULL COMMENT '내용',
+  link       VARCHAR(500) NULL COMMENT 'URL',
+  metadata   JSON NULL COMMENT '관련 데이터(JSON)',
+  is_read    BOOLEAN NOT NULL DEFAULT FALSE COMMENT '읽음 여부',
+  is_archived BOOLEAN NOT NULL DEFAULT FALSE COMMENT '보관 여부',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  read_at    TIMESTAMP NULL COMMENT '읽은 일시',
+  PRIMARY KEY (notification_id),
+  INDEX IDX_notifications_user (user_id, is_archived, is_read, created_at DESC),
+  INDEX IDX_notifications_unread (user_id, is_read, is_archived),
+  INDEX IDX_notifications_type (type),
+  CONSTRAINT FK_notifications_user
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='사용자 알림';
+
+-- ========================================
+-- 6. 트리거 정의 (재생성 안전: 먼저 삭제 후 생성)
+-- ========================================
+
+DELIMITER //
+
+-- 6-1. 기부 발생 시 프로젝트 금액/카운트 업데이트
+DROP TRIGGER IF EXISTS trg_donation_update_project//
+CREATE TRIGGER trg_donation_update_project
+AFTER INSERT ON donations
+FOR EACH ROW
+BEGIN
+  IF NEW.status = 'COMPLETED' THEN
+    UPDATE projects
+       SET current_amount = current_amount + NEW.amount,
+           donor_count    = donor_count + 1
+     WHERE project_id = NEW.project_id;
+  END IF;
+END//
+
+-- 6-2. 기부 발생 시 저금통 업데이트
+DROP TRIGGER IF EXISTS trg_donation_update_piggybank//
+CREATE TRIGGER trg_donation_update_piggybank
+AFTER INSERT ON donations
+FOR EACH ROW
+BEGIN
+  IF NEW.status = 'COMPLETED' THEN
+    UPDATE piggy_banks
+       SET total_amount = total_amount + NEW.amount,
+           balance      = balance      + NEW.amount,
+           last_updated = CURRENT_TIMESTAMP
+     WHERE project_id = NEW.project_id;
+  END IF;
+END//
+
+-- 6-3. 프로젝트 생성 시 저금통 자동 생성
+DROP TRIGGER IF EXISTS trg_project_create_piggybank//
+CREATE TRIGGER trg_project_create_piggybank
+AFTER INSERT ON projects
+FOR EACH ROW
+BEGIN
+  INSERT INTO piggy_banks (project_id, total_amount, withdrawn_amount, balance, status)
+  VALUES (NEW.project_id, 0, 0, 0, 'ACTIVE');
+END//
+
+-- 6-4. 정산 완료 시 저금통 업데이트
+DROP TRIGGER IF EXISTS trg_settlement_update_piggybank//
+CREATE TRIGGER trg_settlement_update_piggybank
+AFTER UPDATE ON settlements
+FOR EACH ROW
+BEGIN
+  IF NEW.status = 'COMPLETED' AND OLD.status <> 'COMPLETED' THEN
+    UPDATE piggy_banks
+       SET withdrawn_amount = withdrawn_amount + NEW.settlement_amount,
+           balance          = balance          - NEW.settlement_amount,
+           status           = CASE
+                                 WHEN (balance - NEW.settlement_amount) <= 0 THEN 'WITHDRAWN'
+                                 ELSE status
+                               END,
+           last_updated     = CURRENT_TIMESTAMP
+     WHERE piggy_id = NEW.piggy_id;
+  END IF;
+END//
+
+-- 6-5. 기부 취소/환불 시 프로젝트/저금통 롤백
+DROP TRIGGER IF EXISTS trg_donation_cancel_update//
+CREATE TRIGGER trg_donation_cancel_update
+AFTER UPDATE ON donations
+FOR EACH ROW
+BEGIN
+  IF OLD.status = 'COMPLETED' AND NEW.status IN ('CANCELLED','REFUNDED') THEN
+    UPDATE projects
+       SET current_amount = current_amount - OLD.amount,
+           donor_count    = donor_count - 1
+     WHERE project_id = OLD.project_id;
+
+    UPDATE piggy_banks
+       SET total_amount = total_amount - OLD.amount,
+           balance      = balance      - OLD.amount,
+           last_updated = CURRENT_TIMESTAMP
+     WHERE project_id = OLD.project_id;
+  END IF;
+END//
+
+DELIMITER ;
+
+-- ========================================
+-- 7. 초기 데이터 삽입 (카테고리 6종)
+--  - 새 DB 가정: 단순 INSERT
+--  - 기존 DB에 재실행할 땐 INSERT IGNORE 권장
+-- ========================================
+INSERT INTO project_categories (category_name, description, display_order) VALUES
+('Child Welfare', 'Child welfare projects', 1),
+('Elder Care', 'Elder care projects', 2),
+('Disability Support', 'Disability support projects', 3),
+('Animal Protection', 'Animal protection projects', 4),
+('Environment', 'Environmental projects', 5),
+('Education', 'Education projects', 6);
+
+-- ========================================
+-- 복구/초기화 완료
+-- ========================================

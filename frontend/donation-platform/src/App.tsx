@@ -1069,7 +1069,7 @@ const AppRoutes: React.FC = () => {
 
         {/* Admin Routes - AdminLayout으로 감싸기 */}
         <Route path="/admin/*" element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedUserTypes={['admin']}>
             <AdminLayout
               activeMenu={activeMenu}
               setActiveMenu={setActiveMenu}

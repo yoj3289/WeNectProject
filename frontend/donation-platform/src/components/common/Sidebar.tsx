@@ -10,6 +10,7 @@ import {
   Building2
 } from 'lucide-react';
 import type { UserType } from '../../types';
+import { useAuth } from '../../hooks/useAuth';
 
 // Sidebar Props Interface
 interface SidebarProps {
@@ -34,6 +35,7 @@ interface AdminMenuItem {
   id: string;
   icon: React.ComponentType<{ size?: number }>;
   label: string;
+  allowedUserTypes?: UserType[]; // 특정 사용자 타입만 접근 가능
 }
 
 // 일반 사용자 메뉴 섹션 타입
@@ -53,15 +55,24 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
   activeMenu = 'dashboard',
   setActiveMenu = () => {},
 }) => {
+  const { user } = useAuth();
+  const currentUserType = user?.userType || 'individual';
+
   const menuItems: AdminMenuItem[] = [
     { id: 'dashboard', icon: LayoutDashboard, label: '대시보드' },
-    { id: 'organizations', icon: Building2, label: '기관 승인' },
-    { id: 'projects', icon: FolderCheck, label: '프로젝트 승인' },
-    { id: 'users', icon: Users, label: '사용자 관리' },
+    { id: 'organizations', icon: Building2, label: '기관 승인', allowedUserTypes: ['admin'] },
+    { id: 'projects', icon: FolderCheck, label: '프로젝트 승인', allowedUserTypes: ['admin'] },
+    { id: 'users', icon: Users, label: '사용자 관리', allowedUserTypes: ['admin'] },
     { id: 'settlements', icon: DollarSign, label: '정산 관리' },
-    { id: 'reports', icon: BarChart3, label: '통계 리포트' },
-    { id: 'settings', icon: Settings, label: '설정' },
+    { id: 'reports', icon: BarChart3, label: '통계 리포트', allowedUserTypes: ['admin'] },
+    { id: 'settings', icon: Settings, label: '설정', allowedUserTypes: ['admin'] },
   ];
+
+  // 현재 사용자가 접근 가능한 메뉴만 필터링
+  const visibleMenuItems = menuItems.filter(item => {
+    if (!item.allowedUserTypes) return true; // allowedUserTypes가 없으면 모두 접근 가능
+    return item.allowedUserTypes.includes(currentUserType);
+  });
 
   return (
     <div className={`fixed left-0 top-0 h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'}`}>
@@ -78,7 +89,7 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
 
       {/* 네비게이션 메뉴 */}
       <nav className="p-4 space-y-2">
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           const Icon = item.icon;
           return (
             <button

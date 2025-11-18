@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, User, LogOut, Home } from 'lucide-react';
 import Sidebar from '../components/common/Sidebar';
+import { useAuth } from '../hooks/useAuth';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -16,6 +17,28 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
 }) => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { user, logout } = useAuth();
+
+  // 사용자 타입에 따른 레이블 결정
+  const getUserTypeLabel = () => {
+    if (!user) return '게스트';
+
+    switch (user.userType) {
+      case 'admin':
+        return '관리자';
+      case 'organization':
+        return '기관 관리자';
+      case 'individual':
+        return '일반 회원';
+      default:
+        return '사용자';
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -51,8 +74,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
             {/* 프로필 */}
             <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
               <div className="text-right">
-                <p className="text-sm font-medium text-gray-800">관리자</p>
-                <p className="text-xs text-gray-500">admin@wenect.com</p>
+                <p className="text-sm font-medium text-gray-800">{getUserTypeLabel()}</p>
+                <p className="text-xs text-gray-500">{user?.email || 'guest@example.com'}</p>
               </div>
               <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-pink-500 rounded-full flex items-center justify-center">
                 <User size={20} className="text-white" />
@@ -60,7 +83,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
             </div>
 
             {/* 로그아웃 */}
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <button
+              onClick={handleLogout}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
               <LogOut size={20} className="text-gray-600" />
             </button>
           </div>
