@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Menu,
   LayoutDashboard,
@@ -55,6 +56,7 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
   activeMenu = 'dashboard',
   setActiveMenu = () => {},
 }) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const currentUserType = user?.userType || 'individual';
 
@@ -94,7 +96,10 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
           return (
             <button
               key={item.id}
-              onClick={() => setActiveMenu(item.id)}
+              onClick={() => {
+                setActiveMenu(item.id);
+                navigate(`/admin/${item.id}`);
+              }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 activeMenu === item.id
                   ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white'

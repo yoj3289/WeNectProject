@@ -4,6 +4,7 @@ import com.wenect.donation_paltform.global.filter.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
@@ -18,6 +19,7 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)  // @PreAuthorize 활성화
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -62,6 +64,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/payments/**").permitAll() // 결제 API는 인증 불필요
                         .requestMatchers("/api/statistics/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll() // 업로드된 파일 접근 허용
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 API는 ADMIN 권한 필요
                         .requestMatchers("/api/favorites/**").authenticated() // 관심 프로젝트 API는 인증 필요
                         .requestMatchers("/api/users/me/**").authenticated() // 사용자 프로필 API는 인증 필요
                         .anyRequest().authenticated())

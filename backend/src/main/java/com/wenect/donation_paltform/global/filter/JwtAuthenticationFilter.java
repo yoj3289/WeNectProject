@@ -14,6 +14,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
  * JWT 인증 필터
@@ -38,15 +40,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // 2. 토큰이 있고 유효하면 인증 처리
             if (token != null && jwtTokenProvider.validateToken(token)) {
-                // 토큰에서 userId 추출
+                // 토큰에서 userId와 userType 추출
                 Long userId = jwtTokenProvider.getUserId(token);
+                String userType = jwtTokenProvider.getUserType(token);
 
-                // 인증 객체 생성 (권한은 빈 리스트, 필요시 추가)
+                // userType에 따라 권한 부여
+                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                if ("ADMIN".equalsIgnoreCase(userType)) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                    logger.info("User " + userId + " granted ROLE_ADMIN authority");
+                } else if ("ORGANIZATION".equalsIgnoreCase(userType)) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_ORGANIZATION"));
+                    logger.info("User " + userId + " granted ROLE_ORGANIZATION authority");
+                } else {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+                    logger.info("User " + userId + " granted ROLE_USER authority");
+                }
+                logger.info("UserType from token: " + userType + ", Authorities: " + authorities);
+
+                // 인증 객체 생성
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 userId, // principal: userId
                                 null,   // credentials: 비밀번호는 null
-                                new ArrayList<>() // authorities: 권한 목록
+                                authorities // authorities: 권한 목록
                         );
 
                 // Request의 상세 정보 설정

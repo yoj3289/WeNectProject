@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Search, Eye, Edit, Trash2, X, Heart, FileText, Clock, Settings, Shield, LogOut, History } from 'lucide-react';
 import type { AdminDashboardProps } from '../../types/admin';
+import { useAdminUsers } from '../../hooks/useAdmin';
+import type { AdminUserResponse } from '../../api/admin';
 
 interface UserManagementPageProps extends AdminDashboardProps {}
 
@@ -57,14 +59,43 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
   const [showRoleHistory, setShowRoleHistory] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>('user');
   const [roleChangeReason, setRoleChangeReason] = useState('');
+  const [currentPage, setCurrentPage] = useState(0);
 
-  const users: User[] = [
-    { id: 1, name: '김기부', email: 'donor@example.com', role: 'user', status: 'active', registeredDate: '2024-01-15', lastLogin: '2024-03-16 14:30', totalDonations: 1250000, donationCount: 12, projects: 8 },
-    { id: 2, name: '박나눔', email: 'sharer@example.com', role: 'user', status: 'active', registeredDate: '2024-02-01', lastLogin: '2024-03-15 09:20', totalDonations: 850000, donationCount: 7, projects: 5 },
-    { id: 3, name: '이사랑', email: 'love@example.com', role: 'organization_admin', status: 'active', registeredDate: '2024-01-20', lastLogin: '2024-03-16 16:45', totalDonations: 0, donationCount: 0, projects: 0 },
-    { id: 4, name: '최관리', email: 'admin@example.com', role: 'super_admin', status: 'active', registeredDate: '2023-12-01', lastLogin: '2024-03-16 17:00', totalDonations: 0, donationCount: 0, projects: 0 },
-    { id: 5, name: '정선행', email: 'good@example.com', role: 'user', status: 'suspended', registeredDate: '2024-02-10', lastLogin: '2024-03-10 11:30', totalDonations: 450000, donationCount: 4, projects: 3 },
-  ];
+  // API 호출
+  const { data, isLoading, error } = useAdminUsers({
+    search: userSearchTerm || undefined,
+    userType: userTypeFilter !== 'all' ? userTypeFilter : undefined,
+    status: userStatusFilter !== 'all' ? userStatusFilter.toUpperCase() : undefined,
+    page: currentPage,
+    size: 20,
+  });
+
+  // 백엔드 데이터를 프론트엔드 형식으로 변환
+  const users: User[] = data?.data?.content?.map((apiUser: AdminUserResponse) => {
+    const userTypeStr = apiUser.userType.toUpperCase();
+    let role: UserRole = 'user';
+
+    if (userTypeStr === 'INDIVIDUAL') {
+      role = 'user';
+    } else if (userTypeStr === 'ORGANIZATION') {
+      role = 'organization_admin';
+    } else if (userTypeStr === 'ADMIN') {
+      role = 'super_admin';
+    }
+
+    return {
+      id: apiUser.userId,
+      name: apiUser.userName,
+      email: apiUser.email,
+      role: role,
+      status: apiUser.status.toLowerCase() as 'active' | 'inactive' | 'suspended',
+      registeredDate: new Date(apiUser.createdAt).toLocaleDateString('ko-KR'),
+      lastLogin: apiUser.updatedAt ? new Date(apiUser.updatedAt).toLocaleString('ko-KR') : '-',
+      totalDonations: 0, // TODO: 추후 기부 통계 API 연동
+      donationCount: 0,
+      projects: 0,
+    };
+  }) || [];
 
   const activityLogs: ActivityLog[] = [
     { id: 1, userId: 1, action: '로그인', details: '정상 로그인', timestamp: '2024-03-16 14:30', ipAddress: '192.168.1.100' },
@@ -140,20 +171,34 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
     }
   };
 
-  const filteredUsers = users.filter(u => {
-    const roleMatch = userTypeFilter === 'all' ||
-      (userTypeFilter === '일반' && u.role === 'user') ||
-      (userTypeFilter === '기관' && u.role === 'organization_admin') ||
-      (userTypeFilter === '관리자' && u.role === 'super_admin');
+  // 백엔드에서 이미 필터링되어 오므로 별도 필터링 불필요
+  const filteredUsers = users;
 
-    const statusMatch = userStatusFilter === 'all' || u.status === userStatusFilter;
+  // 로딩 상태
+  if (isLoading) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">사용자 목록을 불러오는 중...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-    const searchMatch = userSearchTerm === '' ||
-      u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(userSearchTerm.toLowerCase());
-
-    return roleMatch && statusMatch && searchMatch;
-  });
+  // 에러 상태
+  if (error) {
+    return (
+      <div className="p-8">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <h3 className="text-lg font-bold text-red-800 mb-2">데이터 로딩 오류</h3>
+          <p className="text-red-600">사용자 목록을 불러오는 중 오류가 발생했습니다.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -446,9 +491,9 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
               <option value="all">모든 유형</option>
-              <option value="일반">일반</option>
-              <option value="기관">기관관리자</option>
-              <option value="관리자">최고관리자</option>
+              <option value="individual">일반</option>
+              <option value="organization">기관관리자</option>
+              <option value="admin">최고관리자</option>
             </select>
             <select
               value={userStatusFilter}

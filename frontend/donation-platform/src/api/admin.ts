@@ -11,9 +11,9 @@ export interface AdminProjectFilters {
 }
 
 export interface AdminUserFilters {
-  userType?: 'all' | 'individual' | 'organization' | 'admin';
-  status?: 'all' | 'active' | 'inactive' | 'suspended';
-  keyword?: string;
+  userType?: string;
+  status?: string;
+  search?: string;
   page?: number;
   size?: number;
 }
@@ -90,13 +90,16 @@ export interface AdminDashboardResponse {
 }
 
 export interface AdminUserResponse {
-  id: number;
-  name: string;
+  userId: number;
+  userName: string;
   email: string;
-  type: string;
+  userType: string;
   status: string;
-  registeredDate: string;
-  lastLogin: string;
+  phone: string;
+  createdAt: string;
+  updatedAt: string;
+  organizationName?: string;
+  verified?: boolean;
 }
 
 export interface OrganizationApprovalResponse {

@@ -1,5 +1,6 @@
 package com.wenect.donation_paltform.domain.organization.repository;
 
+import com.wenect.donation_paltform.domain.auth.entity.User;
 import com.wenect.donation_paltform.domain.organization.entity.Organization;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -9,4 +10,7 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
 
     // user_id로 기관 정보 조회
     Optional<Organization> findByUser_UserId(Long userId);
+
+    // User 객체로 기관 정보 조회
+    Optional<Organization> findByUser(User user);
 }
