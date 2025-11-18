@@ -16,6 +16,19 @@ public class FileStorageService {
     @Value("${file.upload.dir:uploads}")
     private String baseUploadDir;
 
+    /**
+     * 절대 경로로 변환된 업로드 디렉토리 반환
+     */
+    private Path getAbsoluteUploadPath(String relativePath) {
+        // 상대 경로인 경우 프로젝트 루트 기준으로 절대 경로 생성
+        Path path = Paths.get(baseUploadDir).resolve(relativePath);
+        if (!path.isAbsolute()) {
+            // 현재 작업 디렉토리 기준으로 절대 경로 변환
+            path = Paths.get(System.getProperty("user.dir")).resolve(path);
+        }
+        return path;
+    }
+
     private String getUploadDir() {
         return baseUploadDir + "/documents/";
     }
@@ -33,8 +46,8 @@ public class FileStorageService {
         String originalFilename = file.getOriginalFilename();
         String fileName = System.currentTimeMillis() + "_" + originalFilename;
 
-        // 저장 경로 생성
-        Path uploadPath = Paths.get(getUploadDir());
+        // 저장 경로 생성 (절대 경로)
+        Path uploadPath = getAbsoluteUploadPath("documents");
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
@@ -53,7 +66,8 @@ public class FileStorageService {
         String originalFilename = file.getOriginalFilename();
         String fileName = System.currentTimeMillis() + "_" + originalFilename;
 
-        Path uploadPath = Paths.get(getProjectImagesDir());
+        // 절대 경로 사용
+        Path uploadPath = getAbsoluteUploadPath("projects/images");
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
@@ -71,7 +85,8 @@ public class FileStorageService {
         String originalFilename = file.getOriginalFilename();
         String fileName = System.currentTimeMillis() + "_" + originalFilename;
 
-        Path uploadPath = Paths.get(getProjectDocumentsDir());
+        // 절대 경로 사용
+        Path uploadPath = getAbsoluteUploadPath("projects/documents");
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
