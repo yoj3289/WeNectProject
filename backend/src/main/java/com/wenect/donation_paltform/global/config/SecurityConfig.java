@@ -25,8 +25,9 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // Argon2id 사용
-        return Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
+        // Argon2id 사용 - VM 리소스에 맞춰 파라미터 조정
+        // saltLength: 16 bytes, hashLength: 32 bytes, parallelism: 1, memory: 4096 KB (4MB), iterations: 2
+        return new Argon2PasswordEncoder(16, 32, 1, 4096, 2);
     }
 
     @Bean
