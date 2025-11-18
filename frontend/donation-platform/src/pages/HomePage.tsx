@@ -177,7 +177,7 @@ const HomePage: React.FC<HomePageProps> = ({
                   {project.image ? (
                     <div className="h-40 md:h-48 bg-gray-900 overflow-hidden flex items-center justify-center">
                       <img
-                        src={`http://localhost:8080${project.image}`}
+                        src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.image}`}
                         alt={project.title}
                         className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                         onError={(e) => {

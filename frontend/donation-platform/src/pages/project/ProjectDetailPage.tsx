@@ -476,7 +476,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                 {/* 메인 이미지 */}
                 <div className="aspect-video bg-gray-900 flex items-center justify-center">
                   <img
-                    src={`http://localhost:8080${project.images[currentImageIndex].imageUrl}`}
+                    src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.images[currentImageIndex].imageUrl}`}
                     alt={`${project.title} - 이미지 ${currentImageIndex + 1}`}
                     className="w-full h-full object-contain"
                   />

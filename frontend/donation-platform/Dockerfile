@@ -12,8 +12,9 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Set environment variable for production build
+# Set environment variables for production build
 ENV VITE_API_BASE_URL=/api
+ENV VITE_IMAGE_BASE_URL=
 
 # Build application
 RUN npm run build
