@@ -15,7 +15,7 @@ interface ProjectDetailContainerProps {
 /**
  * 프로젝트 상태에 따라 적절한 페이지 컴포넌트를 렌더링하는 컨테이너
  * - ACTIVE/APPROVED/PENDING: ProjectActivePage (진행 중 프로젝트)
- * - SETTLEMENT/CLOSED: ProjectSettlementPage (결산 페이지)
+ * - COMPLETED/SETTLEMENT/CLOSED: ProjectSettlementPage (결산 페이지)
  */
 const ProjectDetailContainer: React.FC<ProjectDetailContainerProps> = ({
   isLoggedIn,
@@ -64,6 +64,7 @@ const ProjectDetailContainer: React.FC<ProjectDetailContainerProps> = ({
 
   // 프로젝트 상태에 따라 다른 페이지 렌더링
   const isSettlementPhase =
+    project.status?.toLowerCase() === 'completed' ||
     project.status?.toLowerCase() === 'settlement' ||
     project.status?.toLowerCase() === 'closed';
 

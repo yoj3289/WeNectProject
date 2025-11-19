@@ -115,6 +115,23 @@ export const getPopularProjects = async (limit: number = 4): Promise<Project[]> 
 };
 
 /**
+ * 결산 중/종료된 프로젝트 목록 조회 (COMPLETED, SETTLEMENT, CLOSED)
+ */
+export const getSettlementProjects = async (
+  filters: ProjectFilters = {}
+): Promise<PageResponse<Project>> => {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      params.append(key, String(value));
+    }
+  });
+
+  return apiClient.get<PageResponse<Project>>(`/projects/settlement?${params.toString()}`);
+};
+
+/**
  * 프로젝트 상세 조회
  */
 export const getProject = async (id: number): Promise<ProjectDetailResponse> => {

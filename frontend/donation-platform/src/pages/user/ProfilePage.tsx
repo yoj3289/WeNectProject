@@ -7,7 +7,6 @@ import {
   X,
   Loader2
 } from 'lucide-react';
-import PiggyBankPage from './PiggyBankPage';
 import DonationHistoryPage from './DonationHistoryPage';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserFavoriteProjects, useProjects, useToggleFavoriteProject } from '../../hooks/useProjects';
@@ -44,7 +43,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 }) => {
   const navigate = useNavigate();
   const { updateUser, isLoggedIn } = useAuthStore();
-  const [selectedMenu, setSelectedMenu] = useState<'main' | 'profile-edit' | 'donation-history' | 'favorite-projects' | 'piggy-bank'>('main');
+  const [selectedMenu, setSelectedMenu] = useState<'main' | 'profile-edit' | 'donation-history' | 'favorite-projects'>('main');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   // ✅ 실제 API로 관심 프로젝트 ID 조회
@@ -242,10 +241,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     프로젝트 등록
                   </button>
                   <button
-                    onClick={() => setSelectedMenu('piggy-bank')}
+                    onClick={() => navigate('/organization/dashboard')}
                     className="w-full py-3 text-left hover:bg-gray-50 rounded-lg px-4 font-semibold"
                   >
-                    저금통 관리
+                    프로젝트 관리
                   </button>
                 </div>
               </div>
@@ -569,12 +568,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         <DonationHistoryPage onBack={() => setSelectedMenu('main')} />
       )}
       {selectedMenu === 'favorite-projects' && <FavoriteProjectsPage />}
-      {selectedMenu === 'piggy-bank' && (
-        <PiggyBankPage
-          piggyBanks={piggyBanks}
-          onBack={() => setSelectedMenu('main')}
-        />
-      )}
       {showPasswordModal && <PasswordChangeModal />}
     </>
   );

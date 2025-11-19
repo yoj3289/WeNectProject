@@ -241,7 +241,7 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
                   </span>
                   <span className="px-2 md:px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1">
                     <CheckCircle size={14} />
-                    프로젝트 완료
+                    모금 완료
                   </span>
                 </div>
                 <div className="flex items-start justify-between gap-4">
@@ -326,12 +326,12 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
                 </div>
               </div>
 
-              {/* 프로젝트 완료 안내 */}
+              {/* 모금 완료 안내 */}
               <div className="mb-3 p-4 bg-green-50 border-2 border-green-500 rounded-lg text-center">
                 <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                <p className="font-bold text-green-700 mb-1">프로젝트 완료</p>
+                <p className="font-bold text-green-700 mb-1">모금 완료</p>
                 <p className="text-sm text-green-600">
-                  성공적으로 종료되었습니다
+                  목표 금액을 달성했습니다
                 </p>
               </div>
 

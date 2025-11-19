@@ -153,10 +153,19 @@ public class DonationService {
         // 기부자 수 증가
         project.setDonorCount(project.getDonorCount() + 1);
 
+        // ✅ 실시간 상태 체크: 목표 달성 시 프로젝트 완료 처리
+        if (project.getStatus() == Project.ProjectStatus.ACTIVE) {
+            if (newAmount.compareTo(project.getTargetAmount()) >= 0) {
+                project.setStatus(Project.ProjectStatus.COMPLETED);
+                log.info("프로젝트 목표 달성으로 완료 처리 - projectId: {}, targetAmount: {}, currentAmount: {}",
+                        projectId, project.getTargetAmount(), newAmount);
+            }
+        }
+
         projectRepository.save(project);
 
-        log.info("프로젝트 통계 업데이트 완료 - projectId: {}, currentAmount: {}, donorCount: {}",
-                projectId, newAmount, project.getDonorCount());
+        log.info("프로젝트 통계 업데이트 완료 - projectId: {}, currentAmount: {}, donorCount: {}, status: {}",
+                projectId, newAmount, project.getDonorCount(), project.getStatus());
     }
 
     /**

@@ -10,7 +10,11 @@ import java.time.LocalDateTime;
  * 기부 내역 엔티티
  */
 @Entity
-@Table(name = "donations")
+@Table(name = "donations", indexes = {
+    @Index(name = "idx_donation_project_id", columnList = "project_id"),
+    @Index(name = "idx_donation_user_id", columnList = "user_id"),
+    @Index(name = "idx_donation_created_at", columnList = "created_at")
+})
 @Getter
 @Setter
 @NoArgsConstructor

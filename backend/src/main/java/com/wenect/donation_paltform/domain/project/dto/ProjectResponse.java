@@ -76,7 +76,7 @@ public class ProjectResponse {
                 .donorCount(project.getDonorCount())
                 .startDate(project.getStartDate())
                 .endDate(project.getEndDate())
-                .status(project.getStatus().name())
+                .status(project.getStatus().name().toLowerCase())
                 .createdAt(project.getCreatedAt())
                 .updatedAt(project.getUpdatedAt())
                 .imageUrls(imageUrls)

@@ -223,7 +223,7 @@ public class ProjectService {
     }
 
     /**
-     * 프로젝트 검색 (카테고리, 키워드, 정렬)
+     * 프로젝트 검색 (카테고리, 키워드, 정렬) - ACTIVE 상태만
      */
     @Transactional(readOnly = true)
     public List<ProjectResponse> searchProjects(String category, String keyword, String sortBy) {
@@ -253,6 +253,52 @@ public class ProjectService {
             projects = projectRepository.findByStatus(Project.ProjectStatus.ACTIVE);
         }
 
+        return sortAndConvertProjects(projects, sortBy);
+    }
+
+    /**
+     * 결산 중/종료된 프로젝트 검색 (카테고리, 키워드, 정렬) - COMPLETED, SETTLEMENT, CLOSED 상태
+     */
+    @Transactional(readOnly = true)
+    public List<ProjectResponse> searchSettlementProjects(String category, String keyword, String sortBy) {
+        List<Project> projects = projectRepository.findAll();
+
+        // 결산 관련 상태로 필터링 (COMPLETED, SETTLEMENT, CLOSED)
+        projects = projects.stream()
+                .filter(p -> p.getStatus() == Project.ProjectStatus.COMPLETED ||
+                           p.getStatus() == Project.ProjectStatus.SETTLEMENT ||
+                           p.getStatus() == Project.ProjectStatus.CLOSED)
+                .collect(Collectors.toList());
+
+        // 카테고리 ID 변환
+        Integer categoryId = null;
+        if (category != null && !category.trim().isEmpty()) {
+            categoryId = getCategoryId(category);
+        }
+
+        // 카테고리 필터링
+        if (categoryId != null) {
+            final Integer finalCategoryId = categoryId;
+            projects = projects.stream()
+                    .filter(p -> p.getCategoryId().equals(finalCategoryId))
+                    .collect(Collectors.toList());
+        }
+
+        // 키워드 필터링
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            final String searchKeyword = keyword.toLowerCase();
+            projects = projects.stream()
+                    .filter(p -> p.getTitle().toLowerCase().contains(searchKeyword))
+                    .collect(Collectors.toList());
+        }
+
+        return sortAndConvertProjects(projects, sortBy);
+    }
+
+    /**
+     * 프로젝트 정렬 및 DTO 변환 (공통 로직)
+     */
+    private List<ProjectResponse> sortAndConvertProjects(List<Project> projects, String sortBy) {
         // 정렬
         if ("deadline".equals(sortBy)) {
             // 마감임박순 (endDate 오름차순)
@@ -400,5 +446,60 @@ public class ProjectService {
         // CASCADE 설정으로 project_images, project_documents, favorite_projects는 자동 삭제
         // donations의 project_id는 NULL로 변경됨
         projectRepository.delete(project);
+    }
+
+    /**
+     * 기관의 프로젝트 목록 조회 (기관 대시보드용)
+     * - 기관이 등록한 모든 프로젝트 조회
+     * - 상태, 카테고리, 검색, 정렬 필터 지원
+     *
+     * @param orgId 기관 ID
+     * @param statusFilter 상태 필터 (ACTIVE/COMPLETED/SETTLEMENT/CLOSED, 선택)
+     * @param category 카테고리 필터 (선택)
+     * @param keyword 검색 키워드 (선택)
+     * @param sortBy 정렬 기준 (latest/deadline/fundingRate)
+     * @return 프로젝트 목록
+     */
+    @Transactional(readOnly = true)
+    public List<ProjectResponse> searchOrganizationProjects(
+            Long orgId,
+            String statusFilter,
+            String category,
+            String keyword,
+            String sortBy) {
+
+        // 1. 기관의 모든 프로젝트 조회
+        List<Project> projects = projectRepository.findByOrgId(orgId);
+
+        // 2. 상태 필터링
+        if (statusFilter != null && !statusFilter.isEmpty()) {
+            try {
+                Project.ProjectStatus status = Project.ProjectStatus.valueOf(statusFilter.toUpperCase());
+                projects = projects.stream()
+                        .filter(p -> p.getStatus() == status)
+                        .collect(Collectors.toList());
+            } catch (IllegalArgumentException e) {
+                // 잘못된 상태값은 무시
+            }
+        }
+
+        // 3. 카테고리 필터링
+        if (category != null && !category.isEmpty()) {
+            Integer categoryId = getCategoryId(category);
+            projects = projects.stream()
+                    .filter(p -> p.getCategoryId().equals(categoryId))
+                    .collect(Collectors.toList());
+        }
+
+        // 4. 검색 필터링
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String lowerKeyword = keyword.toLowerCase();
+            projects = projects.stream()
+                    .filter(p -> p.getTitle().toLowerCase().contains(lowerKeyword))
+                    .collect(Collectors.toList());
+        }
+
+        // 5. 정렬 및 변환
+        return sortAndConvertProjects(projects, sortBy);
     }
 }

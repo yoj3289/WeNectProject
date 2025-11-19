@@ -683,6 +683,7 @@ import UserManagementPage from './pages/admin/UserManagementPage';
 import ProjectManagementPage from './pages/admin/ProjectManagementPage';
 import SettlementManagementPage from './pages/admin/SettlementManagementPage';
 import OrganizationApprovalPage from './pages/admin/OrganizationApprovalPage';
+import OrganizationDashboardPage from './pages/organization/OrganizationDashboardPage';
 import NotificationPageWithAPI from './pages/notification/NotificationPageWithAPI';
 import PaymentSuccessPage from './pages/payment/PaymentSuccessPage';
 import PaymentCancelPage from './pages/payment/PaymentCancelPage';
@@ -1404,6 +1405,11 @@ const AppRoutes: React.FC = () => {
                     setFavoriteProjectIds={setFavoriteProjectIds}
                     setSelectedProject={setSelectedProject}
                   />
+                </ProtectedRoute>
+              } />
+              <Route path="/organization/dashboard" element={
+                <ProtectedRoute allowedUserTypes={['organization']}>
+                  <OrganizationDashboardPage />
                 </ProtectedRoute>
               } />
             </Routes>
