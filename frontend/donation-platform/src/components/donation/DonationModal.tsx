@@ -126,7 +126,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
       console.log('전송 데이터:', requestData);
 
       // 카카오페이 결제 준비 API 호출
-      const response = await apiClient.post('/payments/kakao/ready', requestData);
+      const response = await apiClient.post<{ next_redirect_pc_url: string }>('/payments/kakao/ready', requestData);
 
       console.log('=== 결제 준비 응답 ===');
       console.log('응답 데이터:', response);
