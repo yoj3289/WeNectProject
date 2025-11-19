@@ -46,7 +46,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     );
   }
 
-  const stats = dashboardData?.data || {
+  const stats = dashboardData || {
     todayDonation: 0,
     donationChange: 0,
     newUsers: 0,
@@ -55,9 +55,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     pendingSettlements: 0
   };
 
-  const recentProjects = [];  // 목업 데이터 - 아직 미구현
+  const recentProjects: any[] = [];  // 목업 데이터 - 아직 미구현
   const weeklyDonations = [65, 85, 72, 90, 78, 95, 88];  // 목업 데이터 - 아직 미구현
-  const categories = categoryData?.data || [];
+  const categories = categoryData || [];
 
   return (
     <div className="p-8 space-y-6">
