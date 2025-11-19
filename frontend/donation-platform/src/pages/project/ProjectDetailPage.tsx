@@ -10,6 +10,8 @@ import { useAuthStore } from '../../stores/authStore';
 import { sanitizeHTML } from '../../utils/sanitize';
 import '../../components/editor/editor.css';
 
+const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+
 interface ProjectDetailPageProps {
   projectId: number;
   isLoggedIn: boolean;
@@ -220,7 +222,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     </div>
                   </div>
                   <a
-                    href={`http://localhost:8080${project.planDocumentUrl}`}
+                    href={`${IMAGE_BASE_URL}${project.planDocumentUrl}`}
                     download
                     target="_blank"
                     rel="noopener noreferrer"

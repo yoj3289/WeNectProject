@@ -2,6 +2,8 @@ import React from 'react';
 import { X, Download, ZoomIn, ZoomOut, Calendar, FileText } from 'lucide-react';
 import type { Expense } from '../../types';
 
+const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+
 interface ReceiptViewerProps {
   expense: Expense;
   onClose: () => void;
@@ -24,7 +26,7 @@ const ReceiptViewer: React.FC<ReceiptViewerProps> = ({ expense, onClose }) => {
 
   const handleDownload = () => {
     // 실제로는 다운로드 API 호출
-    window.open(`http://localhost:8080${expense.receiptUrl}`, '_blank');
+    window.open(`${IMAGE_BASE_URL}${expense.receiptUrl}`, '_blank');
   };
 
   // ESC 키로 모달 닫기
@@ -122,7 +124,7 @@ const ReceiptViewer: React.FC<ReceiptViewerProps> = ({ expense, onClose }) => {
         <div className="flex-1 overflow-auto bg-gray-100 p-4">
           <div className="flex items-center justify-center min-h-full">
             <img
-              src={`http://localhost:8080${expense.receiptUrl}`}
+              src={`${IMAGE_BASE_URL}${expense.receiptUrl}`}
               alt={`${expense.description} 영수증`}
               className="max-w-full h-auto rounded-lg shadow-lg transition-transform duration-200"
               style={{ transform: `scale(${zoom / 100})` }}

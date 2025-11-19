@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Heart, CreditCard, Wallet, Loader2, AlertCircle } from 'lucide-react';
-import axios from 'axios';
 import { useAuthStore } from '../../stores/authStore';
 import { getDonationOptions } from '../../api/projects';
+import { apiClient } from '../../lib/apiClient';
 import type { DonationOption } from '../../types';
 
 interface DonationModalProps {
@@ -124,20 +124,19 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
 
       console.log('=== 결제 준비 요청 데이터 ===');
       console.log('전송 데이터:', requestData);
-      console.log('URL:', 'http://localhost:8080/api/payments/kakao/ready');
 
       // 카카오페이 결제 준비 API 호출
-      const response = await axios.post('http://localhost:8080/api/payments/kakao/ready', requestData);
+      const response = await apiClient.post('/payments/kakao/ready', requestData);
 
       console.log('=== 결제 준비 응답 ===');
-      console.log('응답 데이터:', response.data);
+      console.log('응답 데이터:', response);
 
       // 카카오페이 결제 페이지로 리다이렉트
-      if (response.data.next_redirect_pc_url) {
-        console.log('결제 페이지로 이동:', response.data.next_redirect_pc_url);
-        window.location.href = response.data.next_redirect_pc_url;
+      if (response.next_redirect_pc_url) {
+        console.log('결제 페이지로 이동:', response.next_redirect_pc_url);
+        window.location.href = response.next_redirect_pc_url;
       } else {
-        console.error('next_redirect_pc_url이 없습니다:', response.data);
+        console.error('next_redirect_pc_url이 없습니다:', response);
         alert('결제 준비 중 오류가 발생했습니다.');
       }
     } catch (error: any) {

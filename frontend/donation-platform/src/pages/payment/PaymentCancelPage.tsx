@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { XCircle, Home, ArrowLeft } from 'lucide-react';
+import { apiClient } from '../../lib/apiClient';
 
 const PaymentCancelPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -9,7 +10,7 @@ const PaymentCancelPage: React.FC = () => {
 
   useEffect(() => {
     if (orderId) {
-      fetch(`http://localhost:8080/api/payments/kakao/cancel?orderId=${orderId}`)
+      apiClient.get(`/payments/kakao/cancel?orderId=${orderId}`)
         .catch(err => console.error('취소 처리 오류:', err));
     }
   }, [orderId]);

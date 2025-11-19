@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Heart, Home } from 'lucide-react';
+import { apiClient } from '../../lib/apiClient';
 
 const PaymentSuccessPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -21,14 +22,7 @@ const PaymentSuccessPage: React.FC = () => {
       }
 
       try {
-        const response = await fetch(
-          `http://localhost:8080/api/payments/kakao/success?pg_token=${pgToken}&orderId=${orderId}`
-        );
-
-        if (!response.ok) {
-          throw new Error('결제 승인에 실패했습니다.');
-        }
-
+        await apiClient.get(`/payments/kakao/success?pg_token=${pgToken}&orderId=${orderId}`);
         setIsProcessing(false);
       } catch (err) {
         console.error('결제 승인 실패:', err);

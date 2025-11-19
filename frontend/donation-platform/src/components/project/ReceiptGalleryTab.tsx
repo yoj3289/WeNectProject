@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Image as ImageIcon, Calendar, FileText } from 'lucide-react';
 import type { Expense } from '../../types';
 
+const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+
 interface ReceiptGalleryTabProps {
   expenses: Expense[];
   onReceiptClick: (expense: Expense) => void;
@@ -85,7 +87,7 @@ const ReceiptGalleryTab: React.FC<ReceiptGalleryTabProps> = ({ expenses, onRecei
             {/* 썸네일 이미지 */}
             <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
               <img
-                src={`http://localhost:8080${expense.receiptThumbnailUrl || expense.receiptUrl}`}
+                src={`${IMAGE_BASE_URL}${expense.receiptThumbnailUrl || expense.receiptUrl}`}
                 alt={expense.description}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                 loading="lazy"
