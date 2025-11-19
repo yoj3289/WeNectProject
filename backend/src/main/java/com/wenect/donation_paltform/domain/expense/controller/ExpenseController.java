@@ -3,7 +3,7 @@ package com.wenect.donation_paltform.domain.expense.controller;
 import com.wenect.donation_paltform.domain.expense.dto.ExpenseRequest;
 import com.wenect.donation_paltform.domain.expense.dto.ExpenseResponse;
 import com.wenect.donation_paltform.domain.expense.service.ExpenseService;
-import com.wenect.donation_paltform.global.service.FileStorageService;
+import com.wenect.donation_paltform.global.service.RemoteFileStorageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,7 @@ import java.util.List;
 public class ExpenseController {
 
     private final ExpenseService expenseService;
-    private final FileStorageService fileStorageService;
+    private final RemoteFileStorageService fileStorageService;
 
     /**
      * 지출 내역 등록

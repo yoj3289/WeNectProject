@@ -30,7 +30,7 @@ public class AuthService {
 
     private final JwtTokenProvider jwtTokenProvider; // 251031추가
 
-    private final com.wenect.donation_paltform.global.service.FileStorageService fileStorageService; // 필드 추가 (23줄 아래)
+    private final com.wenect.donation_paltform.global.service.RemoteFileStorageService fileStorageService; // 필드 추가 (23줄 아래)
 
     private final OrganizationRepository organizationRepository;
 

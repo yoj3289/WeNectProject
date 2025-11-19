@@ -33,7 +33,7 @@ public class ProjectService {
     private final ProjectImageRepository projectImageRepository;
     private final ProjectDocumentRepository projectDocumentRepository;
     private final OrganizationRepository organizationRepository;
-    private final com.wenect.donation_paltform.global.service.FileStorageService fileStorageService;
+    private final com.wenect.donation_paltform.global.service.RemoteFileStorageService fileStorageService;
     private final com.wenect.donation_paltform.domain.favorite.service.FavoriteProjectService favoriteProjectService;
     private final DonationOptionService donationOptionService;
 

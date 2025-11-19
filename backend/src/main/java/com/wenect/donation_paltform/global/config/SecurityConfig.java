@@ -63,6 +63,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/donations/**").permitAll()
                         .requestMatchers("/api/payments/**").permitAll() // 결제 API는 인증 불필요
                         .requestMatchers("/api/statistics/**").permitAll()
+                        .requestMatchers("/api/files/**").permitAll() // 파일 업로드 API 허용
                         .requestMatchers("/uploads/**").permitAll() // 업로드된 파일 접근 허용
                         .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 API는 ADMIN 권한 필요
                         .requestMatchers("/api/favorites/**").authenticated() // 관심 프로젝트 API는 인증 필요
