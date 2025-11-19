@@ -10,4 +10,4 @@ public class DonationPaltformApplication {
 		SpringApplication.run(DonationPaltformApplication.class, args);
 	}
 
-}																																																																																															
+}

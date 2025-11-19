@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Git pull 또는 merge 후 자동으로 npm install 실행
+
+echo "🔍 Checking for package.json changes..."
+
+# package.json 또는 package-lock.json이 변경되었는지 확인
+changed_files="$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD)"
+
+check_run() {
+    echo "$changed_files" | grep --quiet "$1" && eval "$2"
+}
+
+# Frontend dependencies check
+if echo "$changed_files" | grep -q "frontend/donation-platform/package"; then
+    echo "📦 Frontend package files changed. Running npm install..."
+    cd frontend/donation-platform
+    npm install
+    echo "✅ Frontend dependencies updated!"
+    cd ../..
+fi
+
+# Backend dependencies check (Gradle)
+if echo "$changed_files" | grep -q "backend/build.gradle"; then
+    echo "📦 Backend build.gradle changed. You may need to refresh Gradle dependencies."
+fi
+
+echo "✅ Post-merge hook completed!"
