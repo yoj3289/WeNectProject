@@ -71,7 +71,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
   });
 
   // 백엔드 데이터를 프론트엔드 형식으로 변환
-  const users: User[] = data?.content?.map((apiUser: AdminUserResponse) => {
+  const users: User[] = data?.data?.content?.map((apiUser: AdminUserResponse) => {
     const userTypeStr = apiUser.userType.toUpperCase();
     let role: UserRole = 'user';
 

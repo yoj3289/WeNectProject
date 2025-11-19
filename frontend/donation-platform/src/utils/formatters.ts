@@ -3,7 +3,8 @@
  * @param amount - 포맷팅할 금액
  * @returns 천단위 쉼표가 포함된 금액 문자열
  */
-export const formatAmount = (amount: number): string => {
+export const formatAmount = (amount: number | undefined | null): string => {
+  if (amount === undefined || amount === null) return '0';
   return amount.toLocaleString('ko-KR');
 };
 
