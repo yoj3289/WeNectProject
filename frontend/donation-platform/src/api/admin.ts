@@ -64,29 +64,19 @@ export interface RejectSettlementRequest {
 
 // ==================== 응답 타입 ====================
 export interface AdminDashboardResponse {
-  stats: {
-    todayDonation: number;
-    donationChange: number;
-    newUsers: number;
-    userChange: number;
-    pendingApprovals: number;
-    pendingSettlements: number;
-  };
-  recentProjects: Array<{
-    id: number;
-    title: string;
-    org: string;
-    amount: number;
-    status: string;
-    date: string;
-    category: string;
-  }>;
-  weeklyDonations: number[];
-  categoryDistribution: Array<{
-    name: string;
-    percent: number;
-    color: string;
-  }>;
+  todayDonation: number;
+  donationChange: number;
+  newUsers: number;
+  userChange: number;
+  pendingApprovals: number;
+  pendingSettlements: number;
+}
+
+export interface CategoryDistributionResponse {
+  name: string;
+  count: number;
+  percent: number;
+  color: string;
 }
 
 export interface AdminUserResponse {
@@ -257,9 +247,7 @@ export const getMetrics = async (
 /**
  * 카테고리별 분포
  */
-export const getCategoryDistribution = async (): Promise<
-  Array<{ name: string; percent: number; color: string }>
-> => {
+export const getCategoryDistribution = async (): Promise<CategoryDistributionResponse[]> => {
   return apiClient.get('/admin/metrics/category-distribution');
 };
 

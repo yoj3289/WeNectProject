@@ -46,7 +46,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     );
   }
 
-  const stats = dashboardData.stats || {
+  const stats = dashboardData?.data || {
     todayDonation: 0,
     donationChange: 0,
     newUsers: 0,
@@ -55,15 +55,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     pendingSettlements: 0
   };
 
-  const recentProjects = dashboardData.recentProjects || [];
-  const weeklyDonations = dashboardData.weeklyDonations || [65, 85, 72, 90, 78, 95, 88];
-  const categories = categoryData || [
-    { name: '아동·청소년', percent: 35, color: 'bg-red-500' },
-    { name: '어르신', percent: 25, color: 'bg-pink-500' },
-    { name: '장애인', percent: 20, color: 'bg-rose-500' },
-    { name: '환경보호', percent: 15, color: 'bg-orange-500' },
-    { name: '기타', percent: 5, color: 'bg-amber-500' },
-  ];
+  const recentProjects = [];  // 목업 데이터 - 아직 미구현
+  const weeklyDonations = [65, 85, 72, 90, 78, 95, 88];  // 목업 데이터 - 아직 미구현
+  const categories = categoryData?.data || [];
 
   return (
     <div className="p-8 space-y-6">
@@ -217,8 +211,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
-                    className={`${cat.color} h-2 rounded-full transition-all`}
-                    style={{ width: `${cat.percent}%` }}
+                    className="h-2 rounded-full transition-all"
+                    style={{ width: `${cat.percent}%`, backgroundColor: cat.color }}
                   ></div>
                 </div>
               </div>
