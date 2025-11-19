@@ -93,8 +93,9 @@ public class ProjectController {
             return ResponseEntity.badRequest().body(
                     ApiResponse.error(e.getMessage(), "INVALID_REQUEST"));
         } catch (IOException e) {
+            e.printStackTrace(); // 에러 로깅 추가
             return ResponseEntity.internalServerError().body(
-                    ApiResponse.error("파일 업로드 중 오류가 발생했습니다", "FILE_UPLOAD_ERROR"));
+                    ApiResponse.error("파일 업로드 중 오류가 발생했습니다: " + e.getMessage(), "FILE_UPLOAD_ERROR"));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(
                     ApiResponse.error("프로젝트 등록 중 오류가 발생했습니다: " + e.getMessage(), "INTERNAL_ERROR"));
