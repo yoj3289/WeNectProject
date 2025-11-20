@@ -58,6 +58,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll() // 헬스체크 허용
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/projects/**").permitAll()
                         .requestMatchers("/api/donations/**").permitAll()
