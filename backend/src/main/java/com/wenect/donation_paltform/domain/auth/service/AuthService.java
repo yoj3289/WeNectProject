@@ -80,6 +80,7 @@ public class AuthService {
                     .orgName(dto.getOrganizationName())
                     .registrationNumber(dto.getBusinessNumber())
                     .representative(dto.getRepresentativeName())
+                    .approvalStatus(Organization.ApprovalStatus.PENDING) // 승인 대기 상태
                     .verified(false) // 관리자 승인 전
                     .build();
             Organization savedOrg = organizationRepository.save(org);
@@ -149,12 +150,24 @@ public class AuthService {
             throw new IllegalStateException("비활성화된 계정입니다");
         }
 
-        // 4. 기관명 조회 (기관 사용자인 경우)
+        // 4. 기관명 조회 및 승인 상태 확인 (기관 사용자인 경우)
         String organizationName = null;
         if (user.getUserType() == User.UserType.ORGANIZATION) {
-            organizationName = organizationRepository.findByUser_UserId(user.getUserId())
-                    .map(Organization::getOrgName)
+            Organization organization = organizationRepository.findByUser_UserId(user.getUserId())
                     .orElse(null);
+
+            if (organization != null) {
+                // 승인 상태 확인
+                if (organization.getApprovalStatus() == Organization.ApprovalStatus.PENDING) {
+                    throw new IllegalStateException("승인 대기 중인 계정입니다. 관리자의 승인을 기다려주세요");
+                }
+
+                if (organization.getApprovalStatus() == Organization.ApprovalStatus.REJECTED) {
+                    throw new IllegalStateException("승인이 거부된 계정입니다. 관리자에게 문의하세요");
+                }
+
+                organizationName = organization.getOrgName();
+            }
         }
 
         // 5. JWT 토큰 생성
