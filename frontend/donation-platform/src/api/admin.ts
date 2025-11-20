@@ -184,7 +184,8 @@ export const getAdminUsers = async (
     }
   });
 
-  return apiClient.get(`/admin/users?${params.toString()}`);
+  const response = await apiClient.get<{ data: any }>(`/admin/users?${params.toString()}`);
+  return response.data;
 };
 
 /**

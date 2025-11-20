@@ -25,9 +25,9 @@ public class AdminUserController {
      */
     @GetMapping
     public ResponseEntity<ApiResponse<Page<UserListResponse>>> getUserList(
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String userType,
-            @RequestParam(required = false) String status,
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "userType", required = false) String userType,
+            @RequestParam(value = "status", required = false) String status,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<UserListResponse> users = adminUserService.getUserList(search, userType, status, pageable);
