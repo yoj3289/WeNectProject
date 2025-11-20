@@ -135,8 +135,8 @@ export interface MetricsResponse {
 /**
  * 관리자 대시보드 데이터
  */
-export const getAdminDashboard = async (): Promise<AdminDashboardResponse> => {
-  return apiClient.get<AdminDashboardResponse>('/admin/dashboard');
+export const getAdminDashboard = async (): Promise<{ data: AdminDashboardResponse }> => {
+  return apiClient.get<{ data: AdminDashboardResponse }>('/admin/dashboard');
 };
 
 /**
@@ -247,8 +247,8 @@ export const getMetrics = async (
 /**
  * 카테고리별 분포
  */
-export const getCategoryDistribution = async (): Promise<CategoryDistributionResponse[]> => {
-  return apiClient.get('/admin/metrics/category-distribution');
+export const getCategoryDistribution = async (): Promise<{ data: CategoryDistributionResponse[] }> => {
+  return apiClient.get<{ data: CategoryDistributionResponse[] }>('/admin/metrics/category-distribution');
 };
 
 /**
