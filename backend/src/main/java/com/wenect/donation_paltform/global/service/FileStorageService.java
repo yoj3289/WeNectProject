@@ -45,6 +45,10 @@ public class FileStorageService {
         return baseUploadDir + "/expenses/receipts/";
     }
 
+    private String getCommunityPostImagesDir() {
+        return baseUploadDir + "/community/posts/";
+    }
+
     public String saveFile(MultipartFile file) throws IOException {
         // 파일명 중복 방지
         String originalFilename = file.getOriginalFilename();
@@ -118,6 +122,25 @@ public class FileStorageService {
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
         return "/uploads/expenses/receipts/" + fileName;
+    }
+
+    /**
+     * 커뮤니티 게시글 이미지 저장
+     */
+    public String saveCommunityPostImage(MultipartFile file) throws IOException {
+        String originalFilename = file.getOriginalFilename();
+        String fileName = System.currentTimeMillis() + "_" + originalFilename;
+
+        // 절대 경로 사용
+        Path uploadPath = getAbsoluteUploadPath("community/posts");
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        Path filePath = uploadPath.resolve(fileName);
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+        return "/uploads/community/posts/" + fileName;
     }
 
     /**
