@@ -67,6 +67,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/notifications/**").permitAll() // 알림 API 허용
                         .requestMatchers("/api/files/**").permitAll() // 파일 업로드 API 허용
                         .requestMatchers("/uploads/**").permitAll() // 업로드된 파일 접근 허용
+                        .requestMatchers("/api/posts/**").permitAll() // 커뮤니티 게시글 API 허용
+                        .requestMatchers("/api/comments/**").permitAll() // 커뮤니티 댓글 API 허용
                         .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 API는 ADMIN 권한 필요
                         .requestMatchers("/api/favorites/**").authenticated() // 관심 프로젝트 API는 인증 필요
                         .requestMatchers("/api/users/me/**").authenticated() // 사용자 프로필 API는 인증 필요
