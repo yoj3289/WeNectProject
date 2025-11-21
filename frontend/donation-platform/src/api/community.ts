@@ -81,14 +81,16 @@ export const getPosts = async (
     }
   });
 
-  return apiClient.get(`/posts?${params.toString()}`);
+  const response = await apiClient.get<{ data: { content: PostResponse[]; totalPages: number; currentPage: number } }>(`/posts?${params.toString()}`);
+  return response.data;
 };
 
 /**
  * 게시글 상세 조회
  */
 export const getPost = async (id: number): Promise<PostResponse> => {
-  return apiClient.get<PostResponse>(`/posts/${id}`);
+  const response = await apiClient.get<{ data: PostResponse }>(`/posts/${id}`);
+  return response.data;
 };
 
 /**
@@ -142,7 +144,8 @@ export const likePost = async (id: number): Promise<{ likeCount: number }> => {
  * 댓글 목록 조회
  */
 export const getComments = async (postId: number): Promise<CommentResponse[]> => {
-  return apiClient.get<CommentResponse[]>(`/posts/${postId}/comments`);
+  const response = await apiClient.get<{ data: CommentResponse[] }>(`/posts/${postId}/comments`);
+  return response.data;
 };
 
 /**
