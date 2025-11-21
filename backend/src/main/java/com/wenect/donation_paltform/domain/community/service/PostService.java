@@ -5,9 +5,11 @@ import com.wenect.donation_paltform.domain.auth.repository.UserRepository;
 import com.wenect.donation_paltform.domain.community.dto.*;
 import com.wenect.donation_paltform.domain.community.entity.Post;
 import com.wenect.donation_paltform.domain.community.entity.PostImage;
+import com.wenect.donation_paltform.domain.community.entity.PostLike;
 import com.wenect.donation_paltform.domain.community.repository.CommentRepository;
 import com.wenect.donation_paltform.domain.community.repository.PostImageRepository;
 import com.wenect.donation_paltform.domain.community.repository.PostRepository;
+import com.wenect.donation_paltform.domain.community.repository.PostLikeRepository;
 import com.wenect.donation_paltform.global.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,8 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,6 +35,7 @@ public class PostService {
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
+    private final PostLikeRepository postLikeRepository;
 
     /**
      * 게시글 목록 조회 (페이징, 필터링, 검색)
@@ -216,17 +219,31 @@ public class PostService {
     }
 
     /**
-     * 좋아요 토글 (간단 구현 - 실제로는 별도 테이블 필요)
+     * 좋아요 토글
      */
     @Transactional
     public PostResponse toggleLike(Long userId, Long postId) {
         Post post = postRepository.findByIdAndNotDeleted(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
-        // 간단 구현: 좋아요 수만 증가 (실제로는 post_likes 테이블 필요)
-        post.incrementLikeCount();
-        post = postRepository.save(post);
+        // 이미 좋아요를 눌렀는지 확인
+        Optional<PostLike> existingLike = postLikeRepository.findByPostIdAndUserId(postId, userId);
 
+        if (existingLike.isPresent()) {
+            // 좋아요 취소
+            postLikeRepository.delete(existingLike.get());
+            post.decrementLikeCount();
+        } else {
+            // 좋아요 추가
+            PostLike postLike = PostLike.builder()
+                    .postId(postId)
+                    .userId(userId)
+                    .build();
+            postLikeRepository.save(postLike);
+            post.incrementLikeCount();
+        }
+
+        post = postRepository.save(post);
         return convertToResponse(post);
     }
 

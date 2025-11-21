@@ -7,7 +7,9 @@ import com.wenect.donation_paltform.domain.community.dto.CommentResponse;
 import com.wenect.donation_paltform.domain.community.dto.CreateCommentRequest;
 import com.wenect.donation_paltform.domain.community.dto.UpdateCommentRequest;
 import com.wenect.donation_paltform.domain.community.entity.Comment;
+import com.wenect.donation_paltform.domain.community.entity.CommentLike;
 import com.wenect.donation_paltform.domain.community.entity.Post;
+import com.wenect.donation_paltform.domain.community.repository.CommentLikeRepository;
 import com.wenect.donation_paltform.domain.community.repository.CommentRepository;
 import com.wenect.donation_paltform.domain.community.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +30,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     /**
      * 게시글의 댓글 목록 조회 (트리 구조)
@@ -123,17 +127,31 @@ public class CommentService {
     }
 
     /**
-     * 댓글 좋아요 토글 (간단 구현)
+     * 댓글 좋아요 토글
      */
     @Transactional
     public CommentResponse toggleLike(Long userId, Long commentId) {
         Comment comment = commentRepository.findByIdAndNotDeleted(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
 
-        // 간단 구현: 좋아요 카운트만 저장 (실제로는 comment_likes 테이블 필요)
-        // 여기서는 Entity에 likeCount 필드가 없으므로 추가 필요
-        // 임시로 응답만 반환
+        // 이미 좋아요를 눌렀는지 확인
+        Optional<CommentLike> existingLike = commentLikeRepository.findByCommentIdAndUserId(commentId, userId);
 
+        if (existingLike.isPresent()) {
+            // 좋아요 취소
+            commentLikeRepository.delete(existingLike.get());
+            comment.decrementLikeCount();
+        } else {
+            // 좋아요 추가
+            CommentLike commentLike = CommentLike.builder()
+                    .commentId(commentId)
+                    .userId(userId)
+                    .build();
+            commentLikeRepository.save(commentLike);
+            comment.incrementLikeCount();
+        }
+
+        comment = commentRepository.save(comment);
         return convertToResponse(comment, null);
     }
 
@@ -155,7 +173,7 @@ public class CommentService {
                 .postId(comment.getPost().getPostId())
                 .content(comment.getContent())
                 .author(author)
-                .likeCount(0) // 좋아요 기능은 별도 테이블 필요
+                .likeCount(comment.getLikeCount())
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .parentCommentId(comment.getParentCommentId())

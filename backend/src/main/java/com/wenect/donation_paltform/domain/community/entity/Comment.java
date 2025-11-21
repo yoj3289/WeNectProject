@@ -34,6 +34,10 @@ public class Comment {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Column(name = "like_count", nullable = false)
+    @Builder.Default
+    private Integer likeCount = 0;
+
     @Column(name = "is_deleted", nullable = false)
     @Builder.Default
     private Boolean isDeleted = false;
@@ -60,6 +64,18 @@ public class Comment {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    // 좋아요 증가
+    public void incrementLikeCount() {
+        this.likeCount++;
+    }
+
+    // 좋아요 감소
+    public void decrementLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
     }
 
     // 소프트 삭제
