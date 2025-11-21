@@ -97,26 +97,23 @@ export const getPost = async (id: number): Promise<PostResponse> => {
  * 게시글 작성
  */
 export const createPost = async (data: CreatePostRequest): Promise<PostResponse> => {
-  // 이미지가 있으면 먼저 업로드
+  // 백엔드가 @RequestParam으로 받으므로 항상 FormData 사용
+  const formData = new FormData();
+  formData.append('type', data.type);
+  formData.append('title', data.title);
+  formData.append('content', data.content);
+
+  // 이미지가 있으면 추가
   if (data.images && data.images.length > 0) {
-    const formData = new FormData();
-    formData.append('type', data.type);
-    formData.append('title', data.title);
-    formData.append('content', data.content);
     data.images.forEach((image) => {
       formData.append('images', image);
     });
-
-    return apiClient.post<PostResponse>('/posts', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
   }
 
-  return apiClient.post<PostResponse>('/posts', {
-    type: data.type,
-    title: data.title,
-    content: data.content,
+  const response = await apiClient.post<{ data: PostResponse }>('/posts', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
   });
+  return response.data;
 };
 
 /**
