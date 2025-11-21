@@ -3,6 +3,7 @@ import { MessageSquare, Eye, Heart, ChevronRight, Search, Reply, Image as ImageI
 import type { CommunityPost, PostType } from '../../types';
 import { POST_TYPE_LABELS } from '../../types';
 import { usePosts } from '../../hooks/useCommunity';
+import { createPost } from '../../api/community';
 
 interface BoardPageProps {
   isLoggedIn: boolean;
@@ -101,7 +102,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
     setReplyTo(null);
   };
 
-  const handleSubmitPost = () => {
+  const handleSubmitPost = async () => {
     if (!postTitle.trim()) {
       alert('제목을 입력해주세요.');
       return;
@@ -117,16 +118,29 @@ const BoardPage: React.FC<BoardPageProps> = ({
       return;
     }
 
-    // 이미지가 첨부된 경우 처리
-    const imageUrls = uploadedImageFiles.map(file => URL.createObjectURL(file));
+    try {
+      // API 호출하여 실제로 게시글 생성
+      await createPost({
+        type: postType,
+        title: postTitle,
+        content: postContent,
+        images: uploadedImageFiles.length > 0 ? uploadedImageFiles : undefined
+      });
 
-    alert(`게시글이 등록되었습니다.\n제목: ${postTitle}\n카테고리: ${POST_TYPE_LABELS[postType]}\n이미지: ${imageUrls.length}개`);
+      alert('게시글이 등록되었습니다.');
 
-    setPostTitle('');
-    setPostContent('');
-    setPostType('QUESTION');
-    setUploadedImageFiles([]);
-    setCurrentView('list');
+      setPostTitle('');
+      setPostContent('');
+      setPostType('QUESTION');
+      setUploadedImageFiles([]);
+      setCurrentView('list');
+
+      // 게시글 목록 새로고침을 위해 페이지 리로드
+      window.location.reload();
+    } catch (error) {
+      console.error('게시글 작성 실패:', error);
+      alert('게시글 작성에 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
   const getCategoryColor = (type: PostType) => {
