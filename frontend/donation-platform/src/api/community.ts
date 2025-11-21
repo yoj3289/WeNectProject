@@ -120,7 +120,8 @@ export const createPost = async (data: CreatePostRequest): Promise<PostResponse>
  * 게시글 수정
  */
 export const updatePost = async (id: number, data: UpdatePostRequest): Promise<PostResponse> => {
-  return apiClient.put<PostResponse>(`/posts/${id}`, data);
+  const response = await apiClient.put<{ data: PostResponse }>(`/posts/${id}`, data);
+  return response.data;  // ApiResponse 언래핑
 };
 
 /**
@@ -133,8 +134,9 @@ export const deletePost = async (id: number): Promise<void> => {
 /**
  * 게시글 좋아요
  */
-export const likePost = async (id: number): Promise<{ likeCount: number }> => {
-  return apiClient.post<{ likeCount: number }>(`/posts/${id}/like`);
+export const likePost = async (id: number): Promise<PostResponse> => {
+  const response = await apiClient.post<{ data: PostResponse }>(`/posts/${id}/like`);
+  return response.data;  // ApiResponse 언래핑
 };
 
 /**
@@ -152,7 +154,8 @@ export const createComment = async (
   postId: number,
   data: CreateCommentRequest
 ): Promise<CommentResponse> => {
-  return apiClient.post<CommentResponse>(`/posts/${postId}/comments`, data);
+  const response = await apiClient.post<{ data: CommentResponse }>(`/posts/${postId}/comments`, data);
+  return response.data;  // ApiResponse 언래핑
 };
 
 /**
@@ -162,7 +165,8 @@ export const updateComment = async (
   commentId: number,
   content: string
 ): Promise<CommentResponse> => {
-  return apiClient.put<CommentResponse>(`/comments/${commentId}`, { content });
+  const response = await apiClient.put<{ data: CommentResponse }>(`/comments/${commentId}`, { content });
+  return response.data;  // ApiResponse 언래핑
 };
 
 /**
@@ -175,6 +179,7 @@ export const deleteComment = async (commentId: number): Promise<void> => {
 /**
  * 댓글 좋아요
  */
-export const likeComment = async (commentId: number): Promise<{ likeCount: number }> => {
-  return apiClient.post<{ likeCount: number }>(`/comments/${commentId}/like`);
+export const likeComment = async (commentId: number): Promise<CommentResponse> => {
+  const response = await apiClient.post<{ data: CommentResponse }>(`/comments/${commentId}/like`);
+  return response.data;  // ApiResponse 언래핑
 };
