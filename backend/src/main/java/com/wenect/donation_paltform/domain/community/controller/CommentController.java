@@ -142,6 +142,6 @@ public class CommentController {
         }
 
         String token = authHeader.substring(7);
-        return jwtTokenProvider.getUserIdFromToken(token);
+        return jwtTokenProvider.getUserId(token);
     }
 }
