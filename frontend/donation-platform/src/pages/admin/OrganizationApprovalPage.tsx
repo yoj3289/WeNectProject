@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Eye, Check, X, FileText, Building2, User, Phone, Mail, Calendar, Download } from 'lucide-react';
 import type { AdminDashboardProps } from '../../types/admin';
+import { getOrganizationApprovals, approveOrganization, rejectOrganization } from '../../api/admin';
 
 interface OrganizationApprovalPageProps extends AdminDashboardProps {}
 
 interface OrganizationApproval {
-  id: number;
+  orgId: number;
   userId: number;
   userName: string;
   email: string;
@@ -20,6 +21,12 @@ interface OrganizationApproval {
   rejectionReason?: string;
 }
 
+interface ApprovalStats {
+  pending: number;
+  approved: number;
+  rejected: number;
+}
+
 const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
@@ -30,64 +37,29 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
   const [approvalNote, setApprovalNote] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
 
-  // 임시 데이터 (실제로는 API에서 가져옴)
-  const approvals: OrganizationApproval[] = [
-    {
-      id: 1,
-      userId: 101,
-      userName: '김기관',
-      email: 'kim@organization.com',
-      phone: '010-1234-5678',
-      organizationName: '사랑나눔재단',
-      businessNumber: '123-45-67890',
-      representativeName: '김대표',
-      documents: ['사업자등록증.pdf', '법인등기부등본.pdf', '통장사본.pdf'],
-      status: 'pending',
-      appliedDate: '2024-03-15 10:30',
-    },
-    {
-      id: 2,
-      userId: 102,
-      userName: '박복지',
-      email: 'park@welfare.org',
-      phone: '010-2345-6789',
-      organizationName: '희망복지센터',
-      businessNumber: '234-56-78901',
-      representativeName: '박센터장',
-      documents: ['사업자등록증.pdf', '법인등기부등본.pdf'],
-      status: 'pending',
-      appliedDate: '2024-03-16 14:20',
-    },
-    {
-      id: 3,
-      userId: 103,
-      userName: '이나눔',
-      email: 'lee@sharing.or.kr',
-      phone: '010-3456-7890',
-      organizationName: '나눔의집',
-      businessNumber: '345-67-89012',
-      representativeName: '이대표',
-      documents: ['사업자등록증.pdf', '통장사본.pdf'],
-      status: 'approved',
-      appliedDate: '2024-03-10 09:15',
-      processedDate: '2024-03-11 11:30',
-    },
-    {
-      id: 4,
-      userId: 104,
-      userName: '최봉사',
-      email: 'choi@volunteer.com',
-      phone: '010-4567-8901',
-      organizationName: '봉사활동협회',
-      businessNumber: '456-78-90123',
-      representativeName: '최회장',
-      documents: ['사업자등록증.pdf'],
-      status: 'rejected',
-      appliedDate: '2024-03-12 16:45',
-      processedDate: '2024-03-13 10:00',
-      rejectionReason: '제출 서류 미비 (법인등기부등본 누락)',
-    },
-  ];
+  // API 데이터
+  const [approvals, setApprovals] = useState<OrganizationApproval[]>([]);
+  const [stats, setStats] = useState<ApprovalStats>({ pending: 0, approved: 0, rejected: 0 });
+  const [loading, setLoading] = useState(true);
+
+  // 데이터 로딩
+  useEffect(() => {
+    loadApprovals();
+  }, [statusFilter]);
+
+  const loadApprovals = async () => {
+    try {
+      setLoading(true);
+      const response = await getOrganizationApprovals({ status: statusFilter });
+      setApprovals(response.content || []);
+      setStats(response.stats || { pending: 0, approved: 0, rejected: 0 });
+    } catch (error) {
+      console.error('기관 목록 조회 실패:', error);
+      alert('기관 목록을 불러오는데 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusLabel = (status: string): string => {
     switch (status) {
@@ -107,42 +79,55 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
     }
   };
 
-  const handleApprove = () => {
-    if (selectedApproval) {
-      console.log('승인:', selectedApproval.id, approvalNote);
+  const handleApprove = async () => {
+    if (!selectedApproval) return;
+
+    try {
+      await approveOrganization({
+        userId: selectedApproval.userId,
+        approvalNote: approvalNote || undefined,
+      });
       alert('기관 회원가입이 승인되었습니다.');
       setShowApproveModal(false);
       setShowDetailModal(false);
       setApprovalNote('');
+      loadApprovals(); // 목록 새로고침
+    } catch (error) {
+      console.error('승인 처리 실패:', error);
+      alert('승인 처리에 실패했습니다.');
     }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!rejectionReason.trim()) {
       alert('거절 사유를 입력해주세요.');
       return;
     }
-    if (selectedApproval) {
-      console.log('거절:', selectedApproval.id, rejectionReason);
+    if (!selectedApproval) return;
+
+    try {
+      await rejectOrganization({
+        userId: selectedApproval.userId,
+        rejectionReason,
+      });
       alert('기관 회원가입이 거절되었습니다.');
       setShowRejectModal(false);
       setShowDetailModal(false);
       setRejectionReason('');
+      loadApprovals(); // 목록 새로고침
+    } catch (error) {
+      console.error('거절 처리 실패:', error);
+      alert('거절 처리에 실패했습니다.');
     }
   };
 
   const filteredApprovals = approvals.filter(approval => {
-    const statusMatch = statusFilter === 'all' || approval.status === statusFilter;
     const searchMatch = searchTerm === '' ||
       approval.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       approval.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       approval.email.toLowerCase().includes(searchTerm.toLowerCase());
-    return statusMatch && searchMatch;
+    return searchMatch;
   });
-
-  const pendingCount = approvals.filter(a => a.status === 'pending').length;
-  const approvedCount = approvals.filter(a => a.status === 'approved').length;
-  const rejectedCount = approvals.filter(a => a.status === 'rejected').length;
 
   return (
     <>
@@ -399,7 +384,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm mb-1">승인 대기</p>
-                <p className="text-3xl font-bold text-yellow-600">{pendingCount}건</p>
+                <p className="text-3xl font-bold text-yellow-600">{stats.pending}건</p>
               </div>
               <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
                 <FileText className="text-yellow-600" size={24} />
@@ -410,7 +395,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm mb-1">승인 완료</p>
-                <p className="text-3xl font-bold text-green-600">{approvedCount}건</p>
+                <p className="text-3xl font-bold text-green-600">{stats.approved}건</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                 <Check className="text-green-600" size={24} />
@@ -421,7 +406,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm mb-1">거절</p>
-                <p className="text-3xl font-bold text-red-600">{rejectedCount}건</p>
+                <p className="text-3xl font-bold text-red-600">{stats.rejected}건</p>
               </div>
               <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
                 <X className="text-red-600" size={24} />
@@ -468,8 +453,21 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredApprovals.map((approval) => (
-                  <tr key={approval.id} className="hover:bg-gray-50">
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                      로딩 중...
+                    </td>
+                  </tr>
+                ) : filteredApprovals.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                      기관이 없습니다.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredApprovals.map((approval) => (
+                  <tr key={approval.orgId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-800">{approval.organizationName}</td>
                     <td className="px-6 py-4 text-gray-600">{approval.representativeName}</td>
                     <td className="px-6 py-4 text-gray-600">{approval.userName}</td>
@@ -519,7 +517,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
                       </div>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>
