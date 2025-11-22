@@ -678,6 +678,8 @@ import BoardPage from './pages/community/BoardPage';
 import PostDetailPage from './pages/community/PostDetailPage';
 import EditPostPage from './pages/community/EditPostPage';
 import ProfilePage from './pages/user/ProfilePage';
+import OrganizationDashboardPage from './pages/organization/OrganizationDashboardPage';
+import PiggyBankManagementPage from './pages/organization/PiggyBankManagementPage';
 import DashboardPage from './pages/admin/DashboardPage';
 import UserManagementPage from './pages/admin/UserManagementPage';
 import ProjectManagementPage from './pages/admin/ProjectManagementPage';
@@ -1404,6 +1406,16 @@ const AppRoutes: React.FC = () => {
                     setFavoriteProjectIds={setFavoriteProjectIds}
                     setSelectedProject={setSelectedProject}
                   />
+                </ProtectedRoute>
+              } />
+              <Route path="/organization/dashboard" element={
+                <ProtectedRoute allowedUserTypes={['organization']}>
+                  <OrganizationDashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/organization/projects/:projectId/piggybank" element={
+                <ProtectedRoute allowedUserTypes={['organization']}>
+                  <PiggyBankManagementPage />
                 </ProtectedRoute>
               } />
             </Routes>

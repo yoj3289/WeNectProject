@@ -64,6 +64,7 @@ const ProjectDetailContainer: React.FC<ProjectDetailContainerProps> = ({
 
   // 프로젝트 상태에 따라 다른 페이지 렌더링
   const isSettlementPhase =
+    project.status?.toLowerCase() === 'completed' ||
     project.status?.toLowerCase() === 'settlement' ||
     project.status?.toLowerCase() === 'closed';
 

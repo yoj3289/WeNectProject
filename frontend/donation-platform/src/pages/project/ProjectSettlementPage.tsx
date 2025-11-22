@@ -101,6 +101,50 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
   const categoryKo = getCategoryLabel(project.category);
   const categoryInfo = getCategoryIcon(categoryKo);
 
+  // 프로젝트 상태에 따른 표시 정보
+  const getStatusInfo = () => {
+    switch (project.status.toUpperCase()) {
+      case 'COMPLETED':
+        return {
+          badge: '모금 완료',
+          badgeColor: 'bg-blue-100 text-blue-600 border-blue-500',
+          title: '모금 완료',
+          message: '정산 대기 중입니다',
+          iconColor: 'text-blue-600',
+          bgColor: 'bg-blue-50'
+        };
+      case 'SETTLEMENT':
+        return {
+          badge: '결산 진행 중',
+          badgeColor: 'bg-purple-100 text-purple-600 border-purple-500',
+          title: '결산 진행 중',
+          message: '저금통 관리 중입니다',
+          iconColor: 'text-purple-600',
+          bgColor: 'bg-purple-50'
+        };
+      case 'CLOSED':
+        return {
+          badge: '프로젝트 완료',
+          badgeColor: 'bg-green-100 text-green-600 border-green-500',
+          title: '프로젝트 완료',
+          message: '성공적으로 종료되었습니다',
+          iconColor: 'text-green-600',
+          bgColor: 'bg-green-50'
+        };
+      default:
+        return {
+          badge: '프로젝트 완료',
+          badgeColor: 'bg-green-100 text-green-600 border-green-500',
+          title: '프로젝트 완료',
+          message: '성공적으로 종료되었습니다',
+          iconColor: 'text-green-600',
+          bgColor: 'bg-green-50'
+        };
+    }
+  };
+
+  const statusInfo = getStatusInfo();
+
   // 탭 컨텐츠 렌더링 (결산 프로젝트 전용)
   const renderTabContent = () => {
     switch (activeTab) {
@@ -239,9 +283,9 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
                   <span className="px-2 md:px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs md:text-sm font-semibold">
                     {categoryKo}
                   </span>
-                  <span className="px-2 md:px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1">
+                  <span className={`px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1 ${statusInfo.badgeColor}`}>
                     <CheckCircle size={14} />
-                    프로젝트 완료
+                    {statusInfo.badge}
                   </span>
                 </div>
                 <div className="flex items-start justify-between gap-4">
@@ -326,12 +370,12 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
                 </div>
               </div>
 
-              {/* 프로젝트 완료 안내 */}
-              <div className="mb-3 p-4 bg-green-50 border-2 border-green-500 rounded-lg text-center">
-                <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                <p className="font-bold text-green-700 mb-1">프로젝트 완료</p>
-                <p className="text-sm text-green-600">
-                  성공적으로 종료되었습니다
+              {/* 프로젝트 상태 안내 */}
+              <div className={`mb-3 p-4 ${statusInfo.bgColor} border-2 ${statusInfo.badgeColor.split(' ').find(c => c.startsWith('border-')) || 'border-green-500'} rounded-lg text-center`}>
+                <CheckCircle className={`w-8 h-8 ${statusInfo.iconColor} mx-auto mb-2`} />
+                <p className={`font-bold mb-1 ${statusInfo.iconColor}`}>{statusInfo.title}</p>
+                <p className={`text-sm ${statusInfo.iconColor}`}>
+                  {statusInfo.message}
                 </p>
               </div>
 

@@ -52,6 +52,10 @@ public class ProjectResponse {
     @JsonProperty("organization")
     private String organization; // 기관명 (나중에 JOIN으로 가져올 예정)
 
+    // Settlement 정보 추가
+    private String settlementStatus; // Settlement 상태 (PENDING, APPROVED, COMPLETED, REJECTED, null)
+    private Long settlementId; // Settlement ID
+
     /**
      * Entity -> DTO 변환
      */

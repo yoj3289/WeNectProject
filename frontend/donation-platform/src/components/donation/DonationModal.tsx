@@ -247,7 +247,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
                       onClick={() => setCustomAmount(amount.toString())}
                       className="py-2.5 px-3 border-2 border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 transition-all text-sm font-medium"
                     >
-                      {(amount / 10000).toFixed(amount >= 10000 ? 0 : 1)}만원
+                      {amount === 5000 ? '5천원' : `${(amount / 10000).toFixed(0)}만원`}
                     </button>
                   ))}
                 </div>

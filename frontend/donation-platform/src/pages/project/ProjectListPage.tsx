@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Heart, FileText, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2, AlertCircle } from 'lucide-react';
-import { useProjects, useToggleFavoriteProject, useUserFavoriteProjects } from '../../hooks/useProjects';
+import { useProjects, useSettlementProjects, useToggleFavoriteProject, useUserFavoriteProjects } from '../../hooks/useProjects';
 import type { Project } from '../../types';
 import { getCategoryLabel } from '../../types';
+import Pagination from '../../components/common/Pagination';
 
 interface ProjectListPageProps {
   isLoggedIn: boolean;
@@ -19,27 +20,54 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
   onNavigateToLogin
 }) => {
   // State
+  const [activeTab, setActiveTab] = useState<'active' | 'settlement'>('active');
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [sortOption, setSortOption] = useState<string>('최신순');
   const [searchKeyword, setSearchKeyword] = useState<string>(''); // 사용자 입력
   const [debouncedSearchKeyword, setDebouncedSearchKeyword] = useState<string>(''); // API 호출용
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 12; // 한 페이지에 표시할 프로젝트 수
 
   // Debounce: 사용자 입력 500ms 후 검색 실행
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchKeyword(searchKeyword);
+      setCurrentPage(1); // 검색 시 첫 페이지로 이동
     }, 500);
 
     return () => clearTimeout(timer);
   }, [searchKeyword]);
 
-  // API: 프로젝트 목록 조회
-  const { data: projects, isLoading, isError, error, refetch } = useProjects({
+  // 필터 변경 시 첫 페이지로 이동
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, sortOption, activeTab]);
+
+  // API: 진행 중인 프로젝트 목록 조회 (ACTIVE)
+  const { data: activeProjects, isLoading: isActiveLoading, isError: isActiveError, error: activeError, refetch: refetchActive } = useProjects({
     status: 'approved',
     category: selectedCategory === '전체' ? undefined : selectedCategory,
     search: debouncedSearchKeyword.trim() || undefined,
     sortBy: sortOption === '최신순' ? 'latest' : sortOption === '마감임박순' ? 'deadline' : 'fundingRate',
+    page: currentPage - 1, // 백엔드는 0부터 시작
+    size: pageSize,
   });
+
+  // API: 결산 중/종료된 프로젝트 목록 조회 (COMPLETED, SETTLEMENT, CLOSED)
+  const { data: settlementProjects, isLoading: isSettlementLoading, isError: isSettlementError, error: settlementError, refetch: refetchSettlement } = useSettlementProjects({
+    category: selectedCategory === '전체' ? undefined : selectedCategory,
+    search: debouncedSearchKeyword.trim() || undefined,
+    sortBy: sortOption === '최신순' ? 'latest' : sortOption === '마감임박순' ? 'deadline' : 'fundingRate',
+    page: currentPage - 1, // 백엔드는 0부터 시작
+    size: pageSize,
+  });
+
+  // 현재 탭에 따라 데이터 및 상태 선택
+  const projects = activeTab === 'active' ? activeProjects : settlementProjects;
+  const isLoading = activeTab === 'active' ? isActiveLoading : isSettlementLoading;
+  const isError = activeTab === 'active' ? isActiveError : isSettlementError;
+  const error = activeTab === 'active' ? activeError : settlementError;
+  const refetch = activeTab === 'active' ? refetchActive : refetchSettlement;
 
   // API: 관심 프로젝트 토글
   const toggleFavoriteMutation = useToggleFavoriteProject();
@@ -120,6 +148,30 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
       <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
         {/* 정적 콘텐츠 - 즉시 렌더링 */}
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 md:mb-8 lg:mb-10">프로젝트 둘러보기</h1>
+
+        {/* 탭 메뉴 */}
+        <div className="flex gap-2 mb-6 md:mb-8 border-b border-gray-300">
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`px-6 py-3 font-semibold transition-colors relative ${
+              activeTab === 'active'
+                ? 'text-red-500 border-b-2 border-red-500'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            진행 중인 프로젝트
+          </button>
+          <button
+            onClick={() => setActiveTab('settlement')}
+            className={`px-6 py-3 font-semibold transition-colors relative ${
+              activeTab === 'settlement'
+                ? 'text-red-500 border-b-2 border-red-500'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            결산 중 프로젝트
+          </button>
+        </div>
 
         <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 md:mb-8">
           {/* 검색창 */}
@@ -239,79 +291,94 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                {displayProjects.map(project => {
-                  const progress = calculatePercentage(project.currentAmount, project.targetAmount);
-                  // 서버에서 가져온 실제 관심 프로젝트 목록 사용 (로그인 시에만)
-                  const isFavorite = isLoggedIn ? actualFavoriteIds.has(project.id) : false;
-                  const categoryKo = getCategoryLabel(project.category); // 영어 -> 한글 변환
-                  const categoryInfo = getCategoryIcon(categoryKo);
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                  {displayProjects.map(project => {
+                    const progress = calculatePercentage(project.currentAmount, project.targetAmount);
+                    // 서버에서 가져온 실제 관심 프로젝트 목록 사용 (로그인 시에만)
+                    const isFavorite = isLoggedIn ? actualFavoriteIds.has(project.id) : false;
+                    const categoryKo = getCategoryLabel(project.category); // 영어 -> 한글 변환
+                    const categoryInfo = getCategoryIcon(categoryKo);
 
-                  return (
-                    <div
-                      key={project.id}
-                      className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow bg-white relative"
-                    >
-                      {/* 관심 프로젝트 하트 버튼 */}
-                      <button
-                        onClick={(e) => handleFavoriteClick(e, project.id)}
-                        className="absolute top-3 right-3 md:top-4 md:right-4 z-10 p-1.5 md:p-2 bg-white rounded-full shadow-lg hover:scale-110 transition-transform"
+                    return (
+                      <div
+                        key={project.id}
+                        className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow bg-white relative"
                       >
-                        <Heart
-                          size={20}
-                          className={`md:w-6 md:h-6 ${isFavorite ? 'text-red-500' : 'text-gray-400'}`}
-                          fill={isFavorite ? 'currentColor' : 'none'}
-                        />
-                      </button>
+                        {/* 관심 프로젝트 하트 버튼 */}
+                        <button
+                          onClick={(e) => handleFavoriteClick(e, project.id)}
+                          className="absolute top-3 right-3 md:top-4 md:right-4 z-10 p-1.5 md:p-2 bg-white rounded-full shadow-lg hover:scale-110 transition-transform"
+                        >
+                          <Heart
+                            size={20}
+                            className={`md:w-6 md:h-6 ${isFavorite ? 'text-red-500' : 'text-gray-400'}`}
+                            fill={isFavorite ? 'currentColor' : 'none'}
+                          />
+                        </button>
 
-                      <Link
-                        to={`/projects/${project.id}`}
-                        className="block"
-                      >
-                        {project.image ? (
-                          <div className="h-40 md:h-48 bg-gray-900 overflow-hidden flex items-center justify-center">
-                            <img
-                              src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.image}`}
-                              alt={project.title}
-                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                              onError={(e) => {
-                                // 이미지 로드 실패 시 숨김
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        ) : (
-                          <div className={`h-40 md:h-48 bg-gradient-to-br ${categoryInfo.bgColor} flex items-center justify-center text-gray-400`}>
-                            {categoryInfo.icon}
-                          </div>
-                        )}
-                        <div className="p-4 md:p-5">
-                          <div className="text-xs md:text-sm text-red-500 font-semibold mb-2">{categoryKo}</div>
-                          <h4 className="text-base md:text-lg font-bold mb-3 line-clamp-2">{project.title}</h4>
-
-                          <div className="mb-4">
-                            <div className="flex justify-between text-xs md:text-sm mb-2">
-                              <span className="font-bold text-red-500">{progress}%</span>
-                              <span className="text-gray-600">D-{project.dday}</span>
+                        <Link
+                          to={`/projects/${project.id}`}
+                          className="block"
+                        >
+                          {project.image ? (
+                            <div className="h-40 md:h-48 bg-gray-900 overflow-hidden flex items-center justify-center">
+                              <img
+                                src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.image}`}
+                                alt={project.title}
+                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  // 이미지 로드 실패 시 숨김
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-red-500 h-2 rounded-full"
-                                style={{ width: `${Math.min(progress, 100)}%` }}
-                              ></div>
+                          ) : (
+                            <div className={`h-40 md:h-48 bg-gradient-to-br ${categoryInfo.bgColor} flex items-center justify-center text-gray-400`}>
+                              {categoryInfo.icon}
+                            </div>
+                          )}
+                          <div className="p-4 md:p-5">
+                            <div className="text-xs md:text-sm text-red-500 font-semibold mb-2">{categoryKo}</div>
+                            <h4 className="text-base md:text-lg font-bold mb-3 line-clamp-2">{project.title}</h4>
+
+                            <div className="mb-4">
+                              <div className="flex justify-between text-xs md:text-sm mb-2">
+                                <span className="font-bold text-red-500">{progress}%</span>
+                                <span className="text-gray-600">D-{project.dday}</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="bg-red-500 h-2 rounded-full"
+                                  style={{ width: `${Math.min(progress, 100)}%` }}
+                                ></div>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-between text-xs md:text-sm text-gray-600">
+                              <span>{formatAmount(project.currentAmount)}원</span>
+                              <span>{project.donors}명 참여</span>
                             </div>
                           </div>
+                        </Link>
+                      </div>
+                    );
+                  })}
+                </div>
 
-                          <div className="flex justify-between text-xs md:text-sm text-gray-600">
-                            <span>{formatAmount(project.currentAmount)}원</span>
-                            <span>{project.donors}명 참여</span>
-                          </div>
-                        </div>
-                      </Link>
-                    </div>
-                  );
-                })}
-              </div>
+                {/* 페이지네이션 */}
+                {projects && projects.totalPages > 1 && (
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={projects.totalPages}
+                    onPageChange={(page) => {
+                      setCurrentPage(page);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="mt-8"
+                  />
+                )}
+              </>
             )}
           </>
         )}

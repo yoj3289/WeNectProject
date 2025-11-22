@@ -2,6 +2,8 @@ package com.wenect.donation_paltform.domain.project.repository;
 
 import com.wenect.donation_paltform.domain.project.entity.Project;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -30,4 +32,42 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     // 상태, 카테고리, 제목으로 검색
     List<Project> findByStatusAndCategoryIdAndTitleContainingIgnoreCase(
             Project.ProjectStatus status, Integer categoryId, String keyword);
+
+    // ==================== 정산 프로젝트 조회 ====================
+
+    /**
+     * 정산 프로젝트 전체 조회 (COMPLETED, SETTLEMENT, CLOSED)
+     */
+    @Query("SELECT p FROM Project p WHERE p.status IN ('COMPLETED', 'SETTLEMENT', 'CLOSED')")
+    List<Project> findSettlementProjects();
+
+    /**
+     * 카테고리별 정산 프로젝트 조회
+     */
+    @Query("SELECT p FROM Project p WHERE p.status IN ('COMPLETED', 'SETTLEMENT', 'CLOSED') AND p.categoryId = :categoryId")
+    List<Project> findSettlementProjectsByCategoryId(@Param("categoryId") Integer categoryId);
+
+    /**
+     * 키워드로 정산 프로젝트 검색
+     */
+    @Query("SELECT p FROM Project p WHERE p.status IN ('COMPLETED', 'SETTLEMENT', 'CLOSED') AND LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    List<Project> findSettlementProjectsByTitleContaining(@Param("keyword") String keyword);
+
+    /**
+     * 카테고리 + 키워드로 정산 프로젝트 검색
+     */
+    @Query("SELECT p FROM Project p WHERE p.status IN ('COMPLETED', 'SETTLEMENT', 'CLOSED') AND p.categoryId = :categoryId AND LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    List<Project> findSettlementProjectsByCategoryIdAndTitleContaining(
+            @Param("categoryId") Integer categoryId,
+            @Param("keyword") String keyword);
+
+    // ==================== 스케줄러용 쿼리 ====================
+
+    /**
+     * 만료된 ACTIVE 프로젝트 조회 (스케줄러 최적화)
+     * - 종료일이 지난 ACTIVE 프로젝트만 조회
+     * - 메모리 낭비 방지
+     */
+    @Query("SELECT p FROM Project p WHERE p.status = 'ACTIVE' AND p.endDate < :today")
+    List<Project> findExpiredActiveProjects(@Param("today") java.time.LocalDate today);
 }

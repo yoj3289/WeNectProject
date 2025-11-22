@@ -5,6 +5,8 @@ import com.wenect.donation_paltform.domain.donation.dto.DonationResponse;
 import com.wenect.donation_paltform.domain.donation.entity.Donation;
 import com.wenect.donation_paltform.domain.donation.repository.DonationRepository;
 import com.wenect.donation_paltform.domain.notification.service.NotificationService;
+import com.wenect.donation_paltform.domain.piggybank.entity.PiggyBank;
+import com.wenect.donation_paltform.domain.piggybank.repository.PiggyBankRepository;
 import com.wenect.donation_paltform.domain.project.entity.Project;
 import com.wenect.donation_paltform.domain.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ public class DonationService {
     private final DonationRepository donationRepository;
     private final ProjectRepository projectRepository;
     private final NotificationService notificationService;
+    private final PiggyBankRepository piggyBankRepository;
 
     /**
      * 기부 내역 생성 (결제 준비 단계)
@@ -157,6 +160,33 @@ public class DonationService {
 
         log.info("프로젝트 통계 업데이트 완료 - projectId: {}, currentAmount: {}, donorCount: {}",
                 projectId, newAmount, project.getDonorCount());
+
+        // 모금액이 목표 금액의 100% 이상 달성 시 프로젝트 완료 처리
+        if (newAmount.compareTo(project.getTargetAmount()) >= 0 &&
+            project.getStatus() == Project.ProjectStatus.ACTIVE) {
+
+            project.setStatus(Project.ProjectStatus.COMPLETED);
+            projectRepository.save(project);
+
+            // 저금통 자동 생성 (초기 금액 0)
+            boolean piggyBankExists = piggyBankRepository.findByProjectId(projectId).isPresent();
+            if (!piggyBankExists) {
+                PiggyBank piggyBank = PiggyBank.builder()
+                        .projectId(projectId)
+                        .totalAmount(BigDecimal.ZERO)
+                        .withdrawnAmount(BigDecimal.ZERO)
+                        .balance(BigDecimal.ZERO)
+                        .status(PiggyBank.PiggyBankStatus.ACTIVE)
+                        .build();
+                piggyBankRepository.save(piggyBank);
+
+                log.info("모금액 100% 달성으로 프로젝트 완료 처리 및 저금통 생성 - projectId: {}, currentAmount: {}, targetAmount: {}, piggyId: {}",
+                        projectId, newAmount, project.getTargetAmount(), piggyBank.getPiggyId());
+            } else {
+                log.info("모금액 100% 달성으로 프로젝트 완료 처리 - projectId: {}, currentAmount: {}, targetAmount: {} (저금통 이미 존재)",
+                        projectId, newAmount, project.getTargetAmount());
+            }
+        }
     }
 
     /**
@@ -243,5 +273,57 @@ public class DonationService {
 
         log.info("프로젝트 통계 재계산 완료 - projectId: {}, currentAmount: {}, donorCount: {}",
                 projectId, totalAmount, donorCount);
+    }
+
+    /**
+     * 100% 달성 프로젝트 일괄 완료 처리 (임시 마이그레이션용 - 사용 후 삭제)
+     */
+    @Transactional
+    public com.wenect.donation_paltform.domain.donation.controller.DonationController.MigrationResult migrateFundedProjects() {
+        List<Project> activeProjects = projectRepository.findByStatus(Project.ProjectStatus.ACTIVE);
+        List<Long> completedProjectIds = new java.util.ArrayList<>();
+        int completedCount = 0;
+        int piggyBankCreatedCount = 0;
+
+        for (Project project : activeProjects) {
+            // 100% 이상 달성한 프로젝트 찾기
+            if (project.getCurrentAmount().compareTo(project.getTargetAmount()) >= 0) {
+                // 프로젝트 상태 변경
+                project.setStatus(Project.ProjectStatus.COMPLETED);
+                projectRepository.save(project);
+                completedProjectIds.add(project.getProjectId());
+                completedCount++;
+
+                // 저금통 생성 (중복 체크)
+                boolean piggyBankExists = piggyBankRepository.findByProjectId(project.getProjectId()).isPresent();
+                if (!piggyBankExists) {
+                    PiggyBank piggyBank = PiggyBank.builder()
+                            .projectId(project.getProjectId())
+                            .totalAmount(java.math.BigDecimal.ZERO)
+                            .withdrawnAmount(java.math.BigDecimal.ZERO)
+                            .balance(java.math.BigDecimal.ZERO)
+                            .status(PiggyBank.PiggyBankStatus.ACTIVE)
+                            .build();
+                    piggyBankRepository.save(piggyBank);
+                    piggyBankCreatedCount++;
+
+                    log.info("프로젝트 완료 처리 및 저금통 생성 - projectId: {}, title: {}, currentAmount: {}, targetAmount: {}, piggyId: {}",
+                            project.getProjectId(), project.getTitle(),
+                            project.getCurrentAmount(), project.getTargetAmount(),
+                            piggyBank.getPiggyId());
+                } else {
+                    log.info("프로젝트 완료 처리 - projectId: {}, title: {}, currentAmount: {}, targetAmount: {} (저금통 이미 존재)",
+                            project.getProjectId(), project.getTitle(),
+                            project.getCurrentAmount(), project.getTargetAmount());
+                }
+            }
+        }
+
+        log.info("완료 처리: {}개, 저금통 생성: {}개", completedCount, piggyBankCreatedCount);
+        return new com.wenect.donation_paltform.domain.donation.controller.DonationController.MigrationResult(
+                completedCount,
+                piggyBankCreatedCount,
+                completedProjectIds
+        );
     }
 }

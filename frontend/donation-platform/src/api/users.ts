@@ -21,6 +21,11 @@ export interface UpdateNotificationSettingsRequest {
   deadline?: { enabled: boolean; email: boolean; sms: boolean; push: boolean };
 }
 
+export interface DeleteAccountRequest {
+  password: string;
+  reason?: string;
+}
+
 // ==================== 응답 타입 ====================
 export interface UserProfileResponse {
   userId: number;
@@ -83,4 +88,13 @@ export const updateNotificationSettings = async (
   data: UpdateNotificationSettingsRequest
 ): Promise<NotificationSettingsResponse> => {
   return apiClient.put<NotificationSettingsResponse>('/users/notification-settings', data);
+};
+
+/**
+ * 회원 탈퇴
+ * - 비밀번호 확인 필수
+ * - 30일간 유예 기간 (소프트 삭제)
+ */
+export const deleteAccount = async (data: DeleteAccountRequest): Promise<void> => {
+  return apiClient.delete<void>('/users/me', { data });
 };

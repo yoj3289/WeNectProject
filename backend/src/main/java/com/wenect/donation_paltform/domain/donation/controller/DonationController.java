@@ -2,9 +2,11 @@ package com.wenect.donation_paltform.domain.donation.controller;
 
 import com.wenect.donation_paltform.domain.donation.dto.DonationResponse;
 import com.wenect.donation_paltform.domain.donation.service.DonationService;
+import com.wenect.donation_paltform.global.util.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +22,19 @@ import java.util.List;
 public class DonationController {
 
     private final DonationService donationService;
+    private final JwtTokenProvider jwtTokenProvider;
+
+    /**
+     * 내 기부 내역 조회 (JWT 토큰 기반)
+     */
+    @GetMapping("/my")
+    public ResponseEntity<List<DonationResponse>> getMyDonations(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Long userId = getUserIdFromToken(authHeader);
+        log.info("내 기부 내역 조회 요청 - userId: {}", userId);
+        List<DonationResponse> donations = donationService.getDonationsByUserId(userId);
+        return ResponseEntity.ok(donations);
+    }
 
     /**
      * 프로젝트별 기부 내역 목록 조회
@@ -74,5 +89,38 @@ public class DonationController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    /**
+     * 100% 달성 프로젝트 일괄 완료 처리 (임시 마이그레이션용 - 사용 후 삭제)
+     * 관리자만 실행 가능
+     */
+    @PostMapping("/migrate-funded-projects")
+    public ResponseEntity<MigrationResult> migrateFundedProjects() {
+        log.info("=== 100% 달성 프로젝트 일괄 완료 처리 시작 ===");
+        MigrationResult result = donationService.migrateFundedProjects();
+        log.info("=== 완료: {}개, 저금통: {}개 ===", result.completedProjectCount(), result.piggyBankCreatedCount());
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * 마이그레이션 결과 DTO (임시 - 사용 후 삭제)
+     */
+    public record MigrationResult(
+            int completedProjectCount,
+            int piggyBankCreatedCount,
+            java.util.List<Long> completedProjectIds
+    ) {}
+
+    /**
+     * JWT 토큰에서 userId 추출
+     */
+    private Long getUserIdFromToken(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new IllegalArgumentException("인증 토큰이 필요합니다");
+        }
+
+        String token = authHeader.substring(7); // "Bearer " 제거
+        return jwtTokenProvider.getUserId(token);
     }
 }

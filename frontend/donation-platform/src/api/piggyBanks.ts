@@ -1,72 +1,125 @@
 import { apiClient } from '../lib/apiClient';
 
+// ==================== 요청 타입 ====================
+export interface WithdrawalRequest {
+  amount: number;
+  category: string;
+  description: string;
+  expenseDate: string; // YYYY-MM-DD
+}
+
 // ==================== 응답 타입 ====================
 export interface PiggyBankResponse {
-  piggyBankId: number;
+  piggyId: number;
+  projectId: number;
+  projectTitle?: string;
+  totalAmount: number;
+  withdrawnAmount: number;
+  balance: number;
+  status: 'ACTIVE' | 'WITHDRAWN' | 'LOCKED';
+  lastUpdated: string;
+  createdAt: string;
+}
+
+export interface CategoryStat {
+  category: string;
+  amount: number;
+  count: number;
+  percentage: number;
+}
+
+export interface ExpenseResponse {
+  expenseId: number;
+  projectId: number;
+  expenseDate: string;
+  category: string;
+  description: string;
+  amount: number;
+  receiptUrl: string;
+  receiptThumbnailUrl?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PiggyBankDetailResponse {
+  piggyId: number;
   projectId: number;
   projectTitle: string;
   totalAmount: number;
   withdrawnAmount: number;
   balance: number;
-  status: 'ACTIVE' | 'LOCKED' | 'CLOSED';
-  createdAt: string;
+  status: string;
   lastUpdated: string;
-  // 추가 정보
-  targetAmount?: number;
-  achievementRate?: number;
-  donorCount?: number;
-  recentDonations?: number;
-}
-
-export interface TransactionResponse {
-  id: number;
-  type: 'deposit' | 'withdrawal';
-  amount: number;
-  donor?: string;
-  message?: string;
-  note?: string;
-  timestamp: string;
-  receiptNumber?: string;
-  settlementId?: string;
-}
-
-export interface TransactionFilters {
-  type?: 'all' | 'deposit' | 'withdrawal';
-  date?: 'all' | 'today' | 'week' | 'month';
-  page?: number;
-  size?: number;
+  createdAt: string;
+  withdrawalHistory: ExpenseResponse[];
+  categoryStats: CategoryStat[];
 }
 
 // ==================== API 함수 ====================
 
 /**
- * 나의 저금통 목록
+ * 프로젝트 ID로 저금통 조회
  */
-export const getMyPiggyBanks = async (): Promise<PiggyBankResponse[]> => {
-  return apiClient.get<PiggyBankResponse[]>('/piggy-banks');
+export const getPiggyBankByProject = async (projectId: number): Promise<PiggyBankResponse> => {
+  const response = await apiClient.get<{ success: boolean; data: PiggyBankResponse }>(
+    `/piggy-banks/project/${projectId}`
+  );
+  return response.data;
 };
 
 /**
- * 저금통 상세 조회
+ * 저금통 상세 정보 조회 (지출 내역 포함)
  */
-export const getPiggyBank = async (id: number): Promise<PiggyBankResponse> => {
-  return apiClient.get<PiggyBankResponse>(`/piggy-banks/${id}`);
+export const getPiggyBankDetail = async (piggyId: number): Promise<PiggyBankDetailResponse> => {
+  const response = await apiClient.get<{ success: boolean; data: PiggyBankDetailResponse }>(
+    `/piggy-banks/${piggyId}/detail`
+  );
+  return response.data;
 };
 
 /**
- * 저금통 거래 내역
+ * 저금통 인출 (기관 사용자)
  */
-export const getPiggyBankTransactions = async (
-  id: number,
-  filters: TransactionFilters = {}
-): Promise<{ content: TransactionResponse[]; totalPages: number; currentPage: number }> => {
-  const params = new URLSearchParams();
+export const withdrawFromPiggyBank = async (
+  piggyId: number,
+  data: WithdrawalRequest,
+  receiptFile: File
+): Promise<PiggyBankResponse> => {
+  const formData = new FormData();
 
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      params.append(key, String(value));
-    }
-  });
+  const jsonBlob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+  formData.append('data', jsonBlob);
+  formData.append('receiptFile', receiptFile);
 
-  return apiClient.get(`/piggy-banks/${id}/transactions?${params.toString()}`);
+  const response = await apiClient.post<{ success: boolean; data: PiggyBankResponse }>(
+    `/piggy-banks/${piggyId}/withdraw`,
+    formData
+  );
+  return response.data;
+};
+
+/**
+ * 기관의 모든 저금통 조회
+ */
+export const getPiggyBanksByOrganization = async (
+  projectIds: number[]
+): Promise<PiggyBankResponse[]> => {
+  const response = await apiClient.post<{ success: boolean; data: PiggyBankResponse[] }>(
+    '/piggy-banks/organization',
+    projectIds
+  );
+  return response.data;
+};
+
+/**
+ * 전체 저금통 잔액 합계 (기관 대시보드용)
+ */
+export const getTotalBalance = async (projectIds: number[]): Promise<number> => {
+  const response = await apiClient.post<{ success: boolean; data: number }>(
+    '/piggy-banks/total-balance',
+    projectIds
+  );
+  return response.data;
 };

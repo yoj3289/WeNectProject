@@ -37,6 +37,8 @@ export interface Project {
   donationOptions?: DonationOption[]; // 기부 옵션 목록
   startDate?: string;               // 프로젝트 시작일
   endDate?: string;                 // 프로젝트 종료일
+  settlementStatus?: 'PENDING' | 'APPROVED' | 'COMPLETED' | 'REJECTED'; // Settlement 상태
+  settlementId?: number;            // Settlement ID
 }
 
 // 기부 관련 타입

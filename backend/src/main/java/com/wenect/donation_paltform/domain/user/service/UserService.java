@@ -5,14 +5,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wenect.donation_paltform.domain.auth.entity.User;
 import com.wenect.donation_paltform.domain.auth.repository.UserRepository;
 import com.wenect.donation_paltform.domain.user.dto.ChangePasswordRequest;
+import com.wenect.donation_paltform.domain.user.dto.DeleteAccountRequestDto;
 import com.wenect.donation_paltform.domain.user.dto.NotificationSettingsDto;
 import com.wenect.donation_paltform.domain.user.dto.UpdateProfileRequest;
 import com.wenect.donation_paltform.domain.user.dto.UserProfileResponse;
+import com.wenect.donation_paltform.domain.user.entity.UserDeletionLog;
+import com.wenect.donation_paltform.domain.user.repository.UserDeletionLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +27,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
+    private final UserDeletionLogRepository userDeletionLogRepository;
 
     /**
      * 사용자 프로필 조회
@@ -133,5 +139,57 @@ public class UserService {
             log.error("알림 설정 저장 실패 - userId: {}", userId, e);
             throw new RuntimeException("알림 설정 저장 중 오류가 발생했습니다", e);
         }
+    }
+
+    /**
+     * 회원 탈퇴
+     * - 비밀번호 확인 필수
+     * - 30일간 유예 기간 (소프트 삭제)
+     * - 탈퇴 로그 기록 (법적 증거용)
+     *
+     * @param userId 사용자 ID
+     * @param request 탈퇴 요청 (비밀번호, 사유)
+     * @param ipAddress 요청 IP 주소
+     * @param userAgent User Agent (브라우저 정보)
+     */
+    @Transactional
+    public void deleteAccount(Long userId, DeleteAccountRequestDto request, String ipAddress, String userAgent) {
+        // 사용자 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+
+        // 이미 탈퇴한 사용자인지 확인
+        if (user.getStatus() == User.UserStatus.DELETED) {
+            throw new IllegalStateException("이미 탈퇴 처리된 계정입니다");
+        }
+
+        // 비밀번호 확인 (본인 확인)
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("비밀번호가 올바르지 않습니다");
+        }
+
+        // 탈퇴 처리
+        LocalDateTime now = LocalDateTime.now();
+        user.setStatus(User.UserStatus.DELETED);
+        user.setDeletedAt(now);
+        user.setDeleteReason(request.getReason());
+        userRepository.save(user);
+
+        // 탈퇴 로그 기록 (법적 증거용)
+        UserDeletionLog deletionLog = UserDeletionLog.builder()
+                .userId(userId)
+                .email(user.getEmail())
+                .userName(user.getUserName())
+                .deleteReason(request.getReason())
+                .deletedAt(now)
+                .ipAddress(ipAddress)
+                .userAgent(userAgent)
+                .scheduledDeletionDate(now.plusDays(30)) // 30일 후
+                .isPermanentlyDeleted(false)
+                .build();
+        userDeletionLogRepository.save(deletionLog);
+
+        log.info("회원 탈퇴 처리 완료 - userId: {}, email: {}, ip: {}",
+                userId, user.getEmail(), ipAddress);
     }
 }

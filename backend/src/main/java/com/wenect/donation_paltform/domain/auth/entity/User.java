@@ -44,6 +44,18 @@ public class User {
     private LocalDateTime updatedAt;
 
     /**
+     * 탈퇴 요청 일시 (30일 후 완전 삭제)
+     */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    /**
+     * 탈퇴 사유 (선택사항)
+     */
+    @Column(name = "delete_reason", length = 500)
+    private String deleteReason;
+
+    /**
      * 알림 설정 (JSON 형식)
      */
     @Column(name = "notification_settings", columnDefinition = "TEXT")
@@ -65,6 +77,9 @@ public class User {
     }
     
     public enum UserStatus {
-        ACTIVE, INACTIVE, SUSPENDED
+        ACTIVE,     // 정상
+        INACTIVE,   // 비활성
+        SUSPENDED,  // 정지
+        DELETED     // 탈퇴 (30일간 유예)
     }
 }

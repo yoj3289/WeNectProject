@@ -135,6 +135,8 @@ export interface AuthResponse {
     userType: UserType;
     phone?: string;
     profileImageUrl?: string;
+    organizationName?: string;
+    createdAt?: string;
   };
 }
 

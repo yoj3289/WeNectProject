@@ -1,12 +1,14 @@
 package com.wenect.donation_paltform.domain.user.controller;
 
 import com.wenect.donation_paltform.domain.user.dto.ChangePasswordRequest;
+import com.wenect.donation_paltform.domain.user.dto.DeleteAccountRequestDto;
 import com.wenect.donation_paltform.domain.user.dto.NotificationSettingsDto;
 import com.wenect.donation_paltform.domain.user.dto.UpdateProfileRequest;
 import com.wenect.donation_paltform.domain.user.dto.UserProfileResponse;
 import com.wenect.donation_paltform.domain.user.service.UserService;
 import com.wenect.donation_paltform.global.common.ApiResponse;
 import com.wenect.donation_paltform.global.util.JwtTokenProvider;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -92,6 +94,28 @@ public class UserController {
     }
 
     /**
+     * 회원 탈퇴
+     * - 비밀번호 확인 필수
+     * - 30일간 유예 기간 (소프트 삭제)
+     * - IP 주소 및 User Agent 로깅 (법적 증거용)
+     */
+    @DeleteMapping("/me")
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @Valid @RequestBody DeleteAccountRequestDto request,
+            HttpServletRequest httpServletRequest) {
+
+        Long userId = extractUserIdFromToken(authorizationHeader);
+        String ipAddress = getClientIpAddress(httpServletRequest);
+        String userAgent = httpServletRequest.getHeader("User-Agent");
+
+        userService.deleteAccount(userId, request, ipAddress, userAgent);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(null, "회원 탈퇴가 완료되었습니다. 30일 후 데이터가 영구 삭제됩니다."));
+    }
+
+    /**
      * Authorization 헤더에서 사용자 ID 추출
      */
     private Long extractUserIdFromToken(String authorizationHeader) {
@@ -101,5 +125,36 @@ public class UserController {
 
         String token = authorizationHeader.substring(7);
         return jwtTokenProvider.getUserId(token);
+    }
+
+    /**
+     * 클라이언트의 실제 IP 주소 추출
+     * 프록시나 로드 밸런서를 통한 요청도 고려
+     */
+    private String getClientIpAddress(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+
+        // X-Forwarded-For에 여러 IP가 있는 경우 첫 번째 IP 사용
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+
+        return ip;
     }
 }

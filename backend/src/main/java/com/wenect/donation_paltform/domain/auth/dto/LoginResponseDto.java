@@ -26,6 +26,7 @@ public class LoginResponseDto {
         private String userType;
         private String phone;
         private String organizationName; // 기관명 (기관 사용자인 경우)
+        private String createdAt; // 가입일 (함께한 일수 계산용)
     }
     
     public static LoginResponseDto of(String token, User user, String organizationName) {
@@ -38,6 +39,7 @@ public class LoginResponseDto {
                         .userType(user.getUserType().name().toLowerCase()) // 소문자로 변환
                         .phone(user.getPhone())
                         .organizationName(organizationName)
+                        .createdAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() : null)
                         .build())
                 .build();
     }

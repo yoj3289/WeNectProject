@@ -14,4 +14,7 @@ public interface ProjectImageRepository extends JpaRepository<ProjectImage, Long
 
     // 프로젝트 ID로 이미지 삭제
     void deleteByProjectId(Long projectId);
+
+    // 여러 프로젝트의 이미지를 한 번에 조회 (N+1 문제 해결용)
+    List<ProjectImage> findByProjectIdIn(List<Long> projectIds);
 }

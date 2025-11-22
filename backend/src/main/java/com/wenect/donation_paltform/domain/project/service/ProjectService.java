@@ -12,6 +12,7 @@ import com.wenect.donation_paltform.domain.project.repository.ProjectDocumentRep
 import com.wenect.donation_paltform.domain.project.repository.ProjectImageRepository;
 import com.wenect.donation_paltform.domain.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
@@ -36,6 +38,7 @@ public class ProjectService {
     private final com.wenect.donation_paltform.global.service.RemoteFileStorageService fileStorageService;
     private final com.wenect.donation_paltform.domain.favorite.service.FavoriteProjectService favoriteProjectService;
     private final DonationOptionService donationOptionService;
+    private final com.wenect.donation_paltform.domain.settlement.repository.SettlementRepository settlementRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -400,5 +403,176 @@ public class ProjectService {
         // CASCADE 설정으로 project_images, project_documents, favorite_projects는 자동 삭제
         // donations의 project_id는 NULL로 변경됨
         projectRepository.delete(project);
+    }
+
+    /**
+     * 기관의 프로젝트 목록 조회 (기관 대시보드용)
+     */
+    @Transactional(readOnly = true)
+    public List<ProjectResponse> searchOrganizationProjects(
+            Long orgId,
+            String statusFilter,
+            String category,
+            String keyword,
+            String sortBy) {
+
+        // 1. 기관의 모든 프로젝트 조회
+        List<Project> projects = projectRepository.findByOrgId(orgId);
+
+        // 2. 상태 필터링
+        if (statusFilter != null && !statusFilter.isEmpty()) {
+            try {
+                Project.ProjectStatus status = Project.ProjectStatus.valueOf(statusFilter.toUpperCase());
+                projects = projects.stream()
+                        .filter(p -> p.getStatus() == status)
+                        .collect(Collectors.toList());
+            } catch (IllegalArgumentException e) {
+                // 잘못된 상태값은 무시
+            }
+        }
+
+        // 3. 카테고리 필터링
+        if (category != null && !category.isEmpty()) {
+            Integer categoryId = getCategoryId(category);
+            projects = projects.stream()
+                    .filter(p -> p.getCategoryId().equals(categoryId))
+                    .collect(Collectors.toList());
+        }
+
+        // 4. 검색 필터링
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String lowerKeyword = keyword.toLowerCase();
+            projects = projects.stream()
+                    .filter(p -> p.getTitle().toLowerCase().contains(lowerKeyword))
+                    .collect(Collectors.toList());
+        }
+
+        // 5. 정렬 및 변환
+        return convertToResponseList(projects, sortBy);
+    }
+
+    /**
+     * 정산 프로젝트 검색 (COMPLETED, SETTLEMENT, CLOSED 상태만)
+     */
+    @Transactional(readOnly = true)
+    public List<ProjectResponse> searchSettlementProjects(String category, String keyword, String sortBy) {
+        List<Project> projects = new ArrayList<>();
+
+        // 결산 관련 상태 조회
+        List<Project> completedProjects = projectRepository.findByStatus(Project.ProjectStatus.COMPLETED);
+        List<Project> settlementProjects = projectRepository.findByStatus(Project.ProjectStatus.SETTLEMENT);
+        List<Project> closedProjects = projectRepository.findByStatus(Project.ProjectStatus.CLOSED);
+
+        projects.addAll(completedProjects);
+        projects.addAll(settlementProjects);
+        projects.addAll(closedProjects);
+
+        // 카테고리 필터링
+        if (category != null && !category.isEmpty()) {
+            Integer categoryId = getCategoryId(category);
+            projects = projects.stream()
+                    .filter(p -> p.getCategoryId().equals(categoryId))
+                    .collect(Collectors.toList());
+        }
+
+        // 검색 필터링
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String lowerKeyword = keyword.toLowerCase();
+            projects = projects.stream()
+                    .filter(p -> p.getTitle().toLowerCase().contains(lowerKeyword))
+                    .collect(Collectors.toList());
+        }
+
+        return convertToResponseList(projects, sortBy);
+    }
+
+    /**
+     * 프로젝트 결산 완료
+     */
+    @Transactional
+    public void closeSettlement(Long projectId) {
+        // 1. 프로젝트 조회
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+
+        // 2. 프로젝트 상태 확인 (SETTLEMENT 상태여야 함)
+        if (project.getStatus() != Project.ProjectStatus.SETTLEMENT) {
+            throw new IllegalStateException("결산 중인 프로젝트만 결산 완료가 가능합니다.");
+        }
+
+        // 3. 저금통 잔액 확인 (Native SQL)
+        Long balanceCount = ((Number) entityManager.createNativeQuery(
+                        "SELECT COUNT(*) FROM piggy_banks WHERE project_id = :projectId AND balance > 0")
+                .setParameter("projectId", projectId)
+                .getSingleResult()).longValue();
+
+        if (balanceCount > 0) {
+            throw new IllegalStateException("저금통 잔액이 남아있어 결산을 완료할 수 없습니다.");
+        }
+
+        // 4. 프로젝트 상태를 CLOSED로 변경
+        project.setStatus(Project.ProjectStatus.CLOSED);
+        projectRepository.save(project);
+
+        // 5. 저금통 상태를 WITHDRAWN으로 변경 (Native SQL)
+        entityManager.createNativeQuery(
+                        "UPDATE piggy_banks SET status = 'WITHDRAWN' WHERE project_id = :projectId")
+                .setParameter("projectId", projectId)
+                .executeUpdate();
+
+        log.info("프로젝트 결산 완료 - projectId: {}", projectId);
+    }
+
+    /**
+     * 프로젝트 목록을 정렬하고 ProjectResponse로 변환
+     */
+    private List<ProjectResponse> convertToResponseList(List<Project> projects, String sortBy) {
+        // 1. 정렬
+        if (sortBy != null) {
+            switch (sortBy) {
+                case "deadline":
+                    projects.sort((p1, p2) -> p1.getEndDate().compareTo(p2.getEndDate()));
+                    break;
+                case "fundingRate":
+                    projects.sort((p1, p2) -> {
+                        BigDecimal rate1 = p1.getCurrentAmount()
+                                .multiply(BigDecimal.valueOf(100))
+                                .divide(p1.getTargetAmount(), 2, BigDecimal.ROUND_HALF_UP);
+                        BigDecimal rate2 = p2.getCurrentAmount()
+                                .multiply(BigDecimal.valueOf(100))
+                                .divide(p2.getTargetAmount(), 2, BigDecimal.ROUND_HALF_UP);
+                        return rate2.compareTo(rate1);
+                    });
+                    break;
+                case "latest":
+                default:
+                    projects.sort((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()));
+                    break;
+            }
+        }
+
+        // 2. DTO 변환
+        return projects.stream()
+                .map(project -> {
+                    List<String> imageUrls = projectImageRepository.findByProjectIdOrderByDisplayOrder(project.getProjectId())
+                            .stream()
+                            .map(ProjectImage::getFilePath)
+                            .collect(Collectors.toList());
+
+                    String categoryName = getCategoryName(project.getCategoryId());
+                    ProjectResponse response = ProjectResponse.from(project, categoryName, imageUrls);
+
+                    // COMPLETED 상태인 경우 Settlement 정보 추가
+                    if (project.getStatus() == Project.ProjectStatus.COMPLETED) {
+                        settlementRepository.findFirstByProjectIdOrderByRequestedAtDesc(project.getProjectId())
+                                .ifPresent(settlement -> {
+                                    response.setSettlementId(settlement.getSettlementId());
+                                    response.setSettlementStatus(settlement.getStatus().name());
+                                });
+                    }
+
+                    return response;
+                })
+                .collect(Collectors.toList());
     }
 }

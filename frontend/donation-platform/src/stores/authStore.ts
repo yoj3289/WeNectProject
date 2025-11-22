@@ -10,6 +10,7 @@ interface User {
   phone?: string;
   profileImageUrl?: string;
   organizationName?: string; // 기관명 (기관 사용자인 경우)
+  createdAt?: string; // 가입일 (함께한 일수 계산용)
 }
 
 interface AuthState {

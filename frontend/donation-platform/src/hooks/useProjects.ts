@@ -27,6 +27,20 @@ export function usePopularProjects(limit: number = 4) {
 }
 
 /**
+ * 결산 중/종료된 프로젝트 목록 조회
+ * COMPLETED, SETTLEMENT, CLOSED 상태의 프로젝트
+ */
+export function useSettlementProjects(filters: projectsApi.ProjectFilters = {}) {
+  return useQuery({
+    queryKey: ['settlement-projects', filters],
+    queryFn: () => projectsApi.getSettlementProjects(filters),
+    staleTime: 5 * 60 * 1000, // 5분간 캐시
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+  });
+}
+
+/**
  * 프로젝트 상세 조회
  */
 export function useProject(id: number) {
