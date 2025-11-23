@@ -363,31 +363,6 @@ ALTER TABLE donations
   REFERENCES donation_options(option_id)
   ON DELETE SET NULL;
 
--- 3-8. expenses (지출 내역)
-CREATE TABLE IF NOT EXISTS expenses (
-  expense_id             BIGINT AUTO_INCREMENT COMMENT '지출 ID',
-  project_id             BIGINT NOT NULL COMMENT '프로젝트 ID',
-  expense_date           DATE NOT NULL COMMENT '지출 날짜',
-  category               VARCHAR(50) NOT NULL COMMENT '지출 카테고리',
-  description            TEXT NOT NULL COMMENT '지출 설명',
-  amount                 DECIMAL(15,2) NOT NULL COMMENT '지출 금액(원)',
-  receipt_url            VARCHAR(500) NOT NULL COMMENT '영수증 파일 경로',
-  receipt_thumbnail_url  VARCHAR(500) NULL COMMENT '영수증 썸네일 경로',
-  status                 ENUM('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING' COMMENT '승인 상태',
-  rejection_reason       TEXT NULL COMMENT '반려 사유',
-  created_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-  updated_at             TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-  PRIMARY KEY (expense_id),
-  INDEX IDX_expenses_project (project_id, status),
-  INDEX IDX_expenses_status (status, created_at DESC),
-  INDEX IDX_expenses_date (expense_date DESC),
-  CONSTRAINT CHK_expenses_amount CHECK (amount > 0),
-  CONSTRAINT FK_expenses_project
-    FOREIGN KEY (project_id) REFERENCES projects(project_id)
-    ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='프로젝트 지출 내역';
-
 -- ========================================
 -- 4. 커뮤니티 영역
 -- ========================================
@@ -621,3 +596,30 @@ ADD COLUMN rejection_reason TEXT NULL COMMENT '거부 사유' AFTER approval_sta
 ADD COLUMN rejection_fields VARCHAR(500) NULL COMMENT '거부된 필드 목록(JSON)' AFTER rejection_reason,
 ADD COLUMN reapply_count INT NOT NULL DEFAULT 0 COMMENT '재신청 횟수' AFTER rejection_fields,
 ADD COLUMN last_rejected_at TIMESTAMP NULL COMMENT '마지막 거부 일시' AFTER reapply_count;
+
+
+
+-- 3-8. expenses (지출 내역)
+CREATE TABLE IF NOT EXISTS expenses (
+  expense_id             BIGINT AUTO_INCREMENT COMMENT '지출 ID',
+  project_id             BIGINT NOT NULL COMMENT '프로젝트 ID',
+  expense_date           DATE NOT NULL COMMENT '지출 날짜',
+  category               VARCHAR(50) NOT NULL COMMENT '지출 카테고리',
+  description            TEXT NOT NULL COMMENT '지출 설명',
+  amount                 DECIMAL(15,2) NOT NULL COMMENT '지출 금액(원)',
+  receipt_url            VARCHAR(500) NOT NULL COMMENT '영수증 파일 경로',
+  receipt_thumbnail_url  VARCHAR(500) NULL COMMENT '영수증 썸네일 경로',
+  status                 ENUM('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING' COMMENT '승인 상태',
+  rejection_reason       TEXT NULL COMMENT '반려 사유',
+  created_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  updated_at             TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+  PRIMARY KEY (expense_id),
+  INDEX IDX_expenses_project (project_id, status),
+  INDEX IDX_expenses_status (status, created_at DESC),
+  INDEX IDX_expenses_date (expense_date DESC),
+  CONSTRAINT CHK_expenses_amount CHECK (amount > 0),
+  CONSTRAINT FK_expenses_project
+    FOREIGN KEY (project_id) REFERENCES projects(project_id)
+    ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='프로젝트 지출 내역';
