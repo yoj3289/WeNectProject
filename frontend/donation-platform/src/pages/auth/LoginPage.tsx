@@ -21,11 +21,22 @@ const LoginPage: React.FC = () => {
 
     try {
       setErrorMessage('');
-      await login({
+      const result = await login({
         email: loginEmail,
         password: loginPassword,
         rememberMe,
       });
+
+      // 거부된 사용자인 경우 재심사 요청 페이지로 이동
+      if (result.isRejected && result.rejectionInfo) {
+        navigate('/reapply', {
+          state: {
+            user: result.user,
+            rejectionInfo: result.rejectionInfo,
+          },
+        });
+        return;
+      }
 
       // 로그인 성공 시 redirect URL이 있으면 해당 페이지로, 없으면 홈으로 이동
       const redirect = searchParams.get('redirect');

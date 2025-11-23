@@ -70,12 +70,14 @@ public class AdminOrganizationService {
      * 기관 거부
      */
     @Transactional
-    public void rejectOrganization(Long userId, String rejectionReason) {
+    public void rejectOrganization(Long userId, String rejectionReason, String rejectionFields) {
         Organization org = organizationRepository.findByUser_UserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
 
         org.setApprovalStatus(Organization.ApprovalStatus.REJECTED);
-        // TODO: 거절 사유는 나중에 Organization 엔티티에 필드 추가 시 저장
+        org.setRejectionReason(rejectionReason);
+        org.setRejectionFields(rejectionFields);  // JSON 형식으로 저장
+        org.setLastRejectedAt(java.time.LocalDateTime.now());
         organizationRepository.save(org);
     }
 }

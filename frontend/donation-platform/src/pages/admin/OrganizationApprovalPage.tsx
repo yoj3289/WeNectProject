@@ -36,6 +36,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [approvalNote, setApprovalNote] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [selectedFields, setSelectedFields] = useState<string[]>([]);  // 거부된 필드 목록
 
   // API 데이터
   const [approvals, setApprovals] = useState<OrganizationApproval[]>([]);
@@ -109,16 +110,26 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
       await rejectOrganization({
         userId: selectedApproval.userId,
         rejectionReason,
+        rejectionFields: JSON.stringify(selectedFields),  // JSON 문자열로 전송
       });
       alert('기관 회원가입이 거절되었습니다.');
       setShowRejectModal(false);
       setShowDetailModal(false);
       setRejectionReason('');
+      setSelectedFields([]);
       loadApprovals(); // 목록 새로고침
     } catch (error) {
       console.error('거절 처리 실패:', error);
       alert('거절 처리에 실패했습니다.');
     }
+  };
+
+  const toggleField = (field: string) => {
+    setSelectedFields(prev =>
+      prev.includes(field)
+        ? prev.filter(f => f !== field)
+        : [...prev, field]
+    );
   };
 
   const filteredApprovals = approvals.filter(approval => {
@@ -190,9 +201,9 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
-                      <User size={18} className="text-gray-400" />
+                      <Building2 size={18} className="text-gray-400" />
                       <div>
-                        <p className="text-xs text-gray-500">담당자명</p>
+                        <p className="text-xs text-gray-500">기관명 (회원가입 입력)</p>
                         <p className="text-sm font-semibold text-gray-800">{selectedApproval.userName}</p>
                       </div>
                     </div>
@@ -340,14 +351,39 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
                 <p className="text-sm text-gray-700">
                   <strong>{selectedApproval.organizationName}</strong>의 회원가입을 거절하시겠습니까?
                 </p>
-                <p className="text-xs text-gray-600 mt-2">거절 사유는 신청자에게 이메일로 전달됩니다.</p>
+                <p className="text-xs text-gray-600 mt-2">거절 사유는 신청자에게 전달됩니다.</p>
               </div>
+
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">거절 사유 <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">문제가 있는 항목 선택 (중복 선택 가능)</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {['기관명', '연락처', '사업자번호', '대표자명', '제출서류'].map((field) => (
+                    <label
+                      key={field}
+                      className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${
+                        selectedFields.includes(field)
+                          ? 'bg-red-50 border-red-500'
+                          : 'border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedFields.includes(field)}
+                        onChange={() => toggleField(field)}
+                        className="w-4 h-4 text-red-500 focus:ring-red-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">{field}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">상세 거절 사유 <span className="text-red-500">*</span></label>
                 <textarea
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
-                  placeholder="거절 사유를 입력하세요..."
+                  placeholder="거절 사유를 상세히 입력하세요... (예: 사업자등록증이 만료되었습니다)"
                   rows={4}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 resize-none"
                 />
@@ -423,7 +459,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="기관명, 담당자명, 이메일로 검색..."
+                placeholder="기관명, 대표자명, 이메일로 검색..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
@@ -444,8 +480,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기관명</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">대표자</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">담당자</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">대표자명</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">연락처</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">신청일</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">상태</th>
@@ -455,22 +490,21 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
               <tbody className="divide-y divide-gray-200">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                       로딩 중...
                     </td>
                   </tr>
                 ) : filteredApprovals.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                       기관이 없습니다.
                     </td>
                   </tr>
                 ) : (
                   filteredApprovals.map((approval) => (
                   <tr key={approval.orgId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium text-gray-800">{approval.organizationName}</td>
+                    <td className="px-6 py-4 font-medium text-gray-800">{approval.userName}</td>
                     <td className="px-6 py-4 text-gray-600">{approval.representativeName}</td>
-                    <td className="px-6 py-4 text-gray-600">{approval.userName}</td>
                     <td className="px-6 py-4 text-gray-600 text-sm">{approval.phone}</td>
                     <td className="px-6 py-4 text-gray-600 text-sm">{approval.appliedDate}</td>
                     <td className="px-6 py-4">

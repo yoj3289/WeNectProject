@@ -571,3 +571,28 @@ INSERT INTO project_categories (category_name, description, display_order) VALUE
 -- ========================================
 -- 복구/초기화 완료
 -- ========================================
+
+-- ========================================
+-- 8. 추가 스키마 변경 (JPA 자동 생성 필드 문서화)
+-- ========================================
+
+-- organizations 테이블에 approval_status 컬럼 추가
+-- (JPA가 자동으로 생성하지만 문서화 목적으로 기록)
+ALTER TABLE organizations
+ADD COLUMN IF NOT EXISTS approval_status ENUM('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING' COMMENT '승인 상태' AFTER representative,
+ADD INDEX IF NOT EXISTS IDX_organizations_approval (approval_status);
+
+-- organizations 테이블에 거부 관련 필드 추가 (재심사 요청 기능)
+ALTER TABLE organizations
+ADD COLUMN IF NOT EXISTS rejection_reason TEXT NULL COMMENT '거부 사유' AFTER approval_status,
+ADD COLUMN IF NOT EXISTS rejection_fields VARCHAR(500) NULL COMMENT '거부된 필드 목록(JSON)' AFTER rejection_reason,
+ADD COLUMN IF NOT EXISTS reapply_count INT NOT NULL DEFAULT 0 COMMENT '재신청 횟수' AFTER rejection_fields,
+ADD COLUMN IF NOT EXISTS last_rejected_at TIMESTAMP NULL COMMENT '마지막 거부 일시' AFTER reapply_count;
+
+
+if not exist안되면
+ALTER TABLE organizations
+ADD COLUMN rejection_reason TEXT NULL COMMENT '거부 사유' AFTER approval_status,
+ADD COLUMN rejection_fields VARCHAR(500) NULL COMMENT '거부된 필드 목록(JSON)' AFTER rejection_reason,
+ADD COLUMN reapply_count INT NOT NULL DEFAULT 0 COMMENT '재신청 횟수' AFTER rejection_fields,
+ADD COLUMN last_rejected_at TIMESTAMP NULL COMMENT '마지막 거부 일시' AFTER reapply_count;

@@ -162,8 +162,17 @@ public class AuthService {
                     throw new IllegalStateException("승인 대기 중인 계정입니다. 관리자의 승인을 기다려주세요");
                 }
 
+                // REJECTED 상태인 경우 거부 정보 반환
                 if (organization.getApprovalStatus() == Organization.ApprovalStatus.REJECTED) {
-                    throw new IllegalStateException("승인이 거부된 계정입니다. 관리자에게 문의하세요");
+                    return LoginResponseDto.ofRejected(
+                            user,
+                            organization.getOrgName(),
+                            organization.getRegistrationNumber(),
+                            organization.getRepresentative(),
+                            organization.getRejectionReason(),
+                            organization.getRejectionFields(),
+                            organization.getLastRejectedAt()
+                    );
                 }
 
                 organizationName = organization.getOrgName();
