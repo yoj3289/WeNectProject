@@ -18,11 +18,16 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: authApi.login,
     onSuccess: (data) => {
+      // 거부된 사용자는 토큰 설정 안 함 (LoginPage에서 처리)
+      if (data.isRejected) {
+        return;
+      }
+
       // Zustand 스토어 업데이트
-      setLogin(data.token, data.user);
+      setLogin(data.token!, data.user);
 
       // API 클라이언트에 토큰 설정
-      apiClient.setToken(data.token);
+      apiClient.setToken(data.token!);
 
       // 쿼리 캐시 무효화 (새로운 사용자 데이터로 갱신)
       queryClient.invalidateQueries();

@@ -127,7 +127,7 @@ export interface ChangePasswordRequest {
 
 // ==================== 응답 타입 ====================
 export interface AuthResponse {
-  token: string;
+  token: string | null;
   user: {
     userId: number;
     email: string;
@@ -136,7 +136,15 @@ export interface AuthResponse {
     phone?: string;
     profileImageUrl?: string;
     organizationName?: string;
+    businessNumber?: string;
+    representativeName?: string;
     createdAt?: string;
+  };
+  isRejected?: boolean; // 승인 거부 여부
+  rejectionInfo?: {
+    rejectionReason: string; // 거부 사유
+    rejectionFields: string; // 거부된 필드 목록 (JSON)
+    lastRejectedAt: string; // 마지막 거부 일시
   };
 }
 

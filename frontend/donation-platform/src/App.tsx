@@ -670,6 +670,7 @@ import type { UserType, Project, CommunityPost, UserProfile, AdminUser, Notifica
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
+import ReapplyPage from './pages/auth/ReapplyPage';
 import ProjectListPage from './pages/project/ProjectListPage';
 import ProjectDetailContainer from './pages/project/ProjectDetailContainer';
 import ProjectCreatePage from './pages/project/ProjectCreatePage';
@@ -1065,6 +1066,11 @@ const AppRoutes: React.FC = () => {
         <Route path="/signup" element={
           <AuthLayout>
             <SignupPage />
+          </AuthLayout>
+        } />
+        <Route path="/reapply" element={
+          <AuthLayout>
+            <ReapplyPage />
           </AuthLayout>
         } />
 

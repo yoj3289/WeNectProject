@@ -13,8 +13,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 기관 관리 컨트롤러
@@ -97,6 +99,55 @@ public class OrganizationController {
         } catch (Exception e) {
             log.error("프로젝트 조회 중 오류 발생", e);
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * 재심사 요청
+     * POST /api/organization/reapply
+     *
+     * @param userId 사용자 ID
+     * @param userName 담당자명
+     * @param phone 연락처
+     * @param organizationName 기관명
+     * @param businessNumber 사업자번호
+     * @param representativeName 대표자명
+     * @param password 비밀번호 (본인 확인용)
+     * @param file 제출서류 파일
+     * @return 재심사 요청 결과
+     */
+    @PostMapping("/reapply")
+    public ResponseEntity<Map<String, String>> reapplyOrganization(
+            @RequestParam Long userId,
+            @RequestParam String userName,
+            @RequestParam String phone,
+            @RequestParam String organizationName,
+            @RequestParam String businessNumber,
+            @RequestParam String representativeName,
+            @RequestParam String password,
+            @RequestParam(required = false) MultipartFile file
+    ) {
+        try {
+            organizationService.reapplyOrganization(
+                    userId, userName, phone, organizationName,
+                    businessNumber, representativeName, password, file
+            );
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "재심사 요청이 완료되었습니다.",
+                    "status", "success"
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message", e.getMessage(),
+                    "status", "error"
+            ));
+        } catch (Exception e) {
+            log.error("재심사 요청 중 오류 발생", e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "message", "재심사 요청 중 오류가 발생했습니다.",
+                    "status", "error"
+            ));
         }
     }
 

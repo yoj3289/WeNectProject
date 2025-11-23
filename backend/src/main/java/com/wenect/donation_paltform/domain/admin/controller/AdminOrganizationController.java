@@ -68,9 +68,10 @@ public class AdminOrganizationController {
     @PutMapping("/{userId}/reject")
     public ResponseEntity<Map<String, String>> rejectOrganization(
             @PathVariable Long userId,
-            @RequestBody Map<String, String> request
+            @RequestBody Map<String, Object> request
     ) {
-        String rejectionReason = request.get("rejectionReason");
+        String rejectionReason = (String) request.get("rejectionReason");
+        String rejectionFields = (String) request.get("rejectionFields");  // JSON 문자열
 
         if (rejectionReason == null || rejectionReason.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of(
@@ -79,7 +80,7 @@ public class AdminOrganizationController {
             ));
         }
 
-        organizationService.rejectOrganization(userId, rejectionReason);
+        organizationService.rejectOrganization(userId, rejectionReason, rejectionFields);
 
         return ResponseEntity.ok(Map.of(
                 "message", "기관 승인이 거부되었습니다.",
