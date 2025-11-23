@@ -144,8 +144,18 @@ public class SettlementManagementService {
             .orElseThrow(() -> new IllegalArgumentException("저금통을 찾을 수 없습니다."));
 
         // 4. 저금통에 모금액 입금
+        log.info("입금 전 저금통 상태 - piggyId: {}, projectId: {}, totalAmount: {}, balance: {}",
+            piggyBank.getPiggyId(), piggyBank.getProjectId(), piggyBank.getTotalAmount(), piggyBank.getBalance());
+
         piggyBank.deposit(settlement.getSettlementAmount());
-        piggyBankRepository.save(piggyBank);
+
+        log.info("입금 후 저금통 상태 - piggyId: {}, projectId: {}, totalAmount: {}, balance: {}",
+            piggyBank.getPiggyId(), piggyBank.getProjectId(), piggyBank.getTotalAmount(), piggyBank.getBalance());
+
+        PiggyBank savedPiggyBank = piggyBankRepository.save(piggyBank);
+
+        log.info("저장 후 저금통 상태 - piggyId: {}, projectId: {}, totalAmount: {}, balance: {}",
+            savedPiggyBank.getPiggyId(), savedPiggyBank.getProjectId(), savedPiggyBank.getTotalAmount(), savedPiggyBank.getBalance());
 
         // 5. 정산 승인 처리
         settlement.approve(piggyBank.getPiggyId(), approveDto.getAdminMemo());
@@ -258,16 +268,24 @@ public class SettlementManagementService {
     /**
      * 파일 확장자로 서류 타입 결정
      */
-    private String determineDocumentType(String filename) {
-        if (filename == null) return "기타";
+    private SettlementDocument.DocumentType determineDocumentType(String filename) {
+        if (filename == null) return SettlementDocument.DocumentType.OTHER;
 
         String extension = filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
+        String lowerName = filename.toLowerCase();
 
-        return switch (extension) {
-            case "pdf" -> "PDF 문서";
-            case "jpg", "jpeg", "png" -> "이미지";
-            case "doc", "docx" -> "워드 문서";
-            default -> "기타";
-        };
+        // 파일명 기반 판단
+        if (lowerName.contains("통장") || lowerName.contains("account") || lowerName.contains("copy")) {
+            return SettlementDocument.DocumentType.ACCOUNT_COPY;
+        }
+        if (lowerName.contains("보고서") || lowerName.contains("report") || lowerName.contains("usage")) {
+            return SettlementDocument.DocumentType.USAGE_REPORT;
+        }
+        if (lowerName.contains("영수증") || lowerName.contains("invoice") || lowerName.contains("receipt")) {
+            return SettlementDocument.DocumentType.INVOICE;
+        }
+
+        // 기본값: OTHER
+        return SettlementDocument.DocumentType.OTHER;
     }
 }

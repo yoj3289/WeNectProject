@@ -72,4 +72,20 @@ public class Expense {
         APPROVED,  // 승인됨
         REJECTED   // 반려됨
     }
+
+    /**
+     * 지출 승인
+     */
+    public void approve() {
+        this.status = ExpenseStatus.APPROVED;
+        this.rejectionReason = null;
+    }
+
+    /**
+     * 지출 반려
+     */
+    public void reject(String reason) {
+        this.status = ExpenseStatus.REJECTED;
+        this.rejectionReason = reason;
+    }
 }

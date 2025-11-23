@@ -45,7 +45,7 @@ public class ExpenseResponse {
                 .amount(expense.getAmount())
                 .receiptUrl(expense.getReceiptUrl())
                 .receiptThumbnailUrl(expense.getReceiptThumbnailUrl())
-                .status(expense.getStatus().name().toLowerCase())
+                .status(expense.getStatus().name())
                 .rejectionReason(expense.getRejectionReason())
                 .createdAt(expense.getCreatedAt())
                 .updatedAt(expense.getUpdatedAt())

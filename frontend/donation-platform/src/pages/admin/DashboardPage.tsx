@@ -52,7 +52,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     newUsers: 0,
     userChange: 0,
     pendingApprovals: 0,
-    pendingSettlements: 0
+    pendingSettlements: 0,
+    pendingExpenses: 0
   };
 
   const recentProjects: any[] = [];  // 목업 데이터 - 아직 미구현
@@ -68,7 +69,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-4 gap-6">
+      <div className="grid grid-cols-5 gap-6">
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-gradient-to-br from-red-100 to-pink-100 rounded-lg flex items-center justify-center">
@@ -125,6 +126,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
           <p className="text-gray-600 text-sm mb-1">정산 요청</p>
           <p className="text-3xl font-bold text-gray-800">{stats.pendingSettlements}건</p>
           <p className="text-xs text-gray-500 mt-2">처리 대기중</p>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveMenu('expenses')}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
+              <FileText className="text-blue-600" size={24} />
+            </div>
+            <button className="text-blue-600 hover:text-blue-700 font-semibold text-sm">
+              보기 →
+            </button>
+          </div>
+          <p className="text-gray-600 text-sm mb-1">지출 승인 대기</p>
+          <p className="text-3xl font-bold text-gray-800">{stats.pendingExpenses}건</p>
+          <p className="text-xs text-gray-500 mt-2">검토 필요</p>
         </div>
       </div>
 

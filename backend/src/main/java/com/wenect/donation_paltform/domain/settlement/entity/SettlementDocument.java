@@ -22,11 +22,11 @@ public class SettlementDocument {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "document_id")
+    @Column(name = "doc_id")
     private Long documentId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "settlement_id", nullable = false, foreignKey = @ForeignKey(name = "FK_settlement_documents"))
+    @JoinColumn(name = "settlement_id", nullable = false, foreignKey = @ForeignKey(name = "FK_settlement_docs"))
     private Settlement settlement;
 
     @Column(name = "file_name", nullable = false, length = 255)
@@ -35,11 +35,12 @@ public class SettlementDocument {
     @Column(name = "file_path", nullable = false, length = 500)
     private String filePath;
 
-    @Column(name = "file_size")
+    @Column(name = "file_size", nullable = false)
     private Long fileSize; // bytes
 
-    @Column(name = "document_type", length = 50)
-    private String documentType; // 서류 유형 (예: 사업자등록증, 통장사본 등)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "doc_type", nullable = false, length = 50)
+    private DocumentType documentType; // 서류 유형
 
     @Column(name = "uploaded_at", nullable = false, updatable = false)
     private LocalDateTime uploadedAt;
@@ -47,5 +48,15 @@ public class SettlementDocument {
     @PrePersist
     protected void onCreate() {
         uploadedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 정산 서류 유형
+     */
+    public enum DocumentType {
+        ACCOUNT_COPY,   // 통장사본
+        USAGE_REPORT,   // 사용 보고서
+        INVOICE,        // 지출 증빙서류
+        OTHER           // 기타
     }
 }

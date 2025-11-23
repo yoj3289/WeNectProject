@@ -28,6 +28,7 @@ public class AdminDashboardService {
     private final DonationRepository donationRepository;
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
+    private final com.wenect.donation_paltform.domain.expense.repository.ExpenseRepository expenseRepository;
 
     /**
      * 대시보드 통계 조회
@@ -91,6 +92,11 @@ public class AdminDashboardService {
             userChange = 100.0;
         }
 
+        // 7. 지출 승인 대기 건수 (PENDING 상태)
+        Long pendingExpenses = expenseRepository.findByStatusOrderByCreatedAtDesc(
+                com.wenect.donation_paltform.domain.expense.entity.Expense.ExpenseStatus.PENDING
+        ).stream().count();
+
         return DashboardStatsResponse.builder()
                 .todayDonation(todayDonation)
                 .donationChange(donationChange)
@@ -98,6 +104,7 @@ public class AdminDashboardService {
                 .userChange(userChange)
                 .pendingApprovals(0)  // 목업 데이터
                 .pendingSettlements(0)  // 목업 데이터
+                .pendingExpenses(pendingExpenses)
                 .build();
     }
 

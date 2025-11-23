@@ -4,6 +4,8 @@ import com.wenect.donation_paltform.domain.expense.dto.ExpenseRequest;
 import com.wenect.donation_paltform.domain.expense.dto.ExpenseResponse;
 import com.wenect.donation_paltform.domain.expense.entity.Expense;
 import com.wenect.donation_paltform.domain.expense.repository.ExpenseRepository;
+import com.wenect.donation_paltform.domain.piggybank.entity.PiggyBank;
+import com.wenect.donation_paltform.domain.piggybank.repository.PiggyBankRepository;
 import com.wenect.donation_paltform.domain.project.entity.Project;
 import com.wenect.donation_paltform.domain.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
     private final ProjectRepository projectRepository;
+    private final PiggyBankRepository piggyBankRepository;
 
     /**
      * 지출 내역 등록
@@ -67,6 +70,18 @@ public class ExpenseService {
     public List<ExpenseResponse> getExpensesByProjectAndStatus(Long projectId, String status) {
         Expense.ExpenseStatus expenseStatus = Expense.ExpenseStatus.valueOf(status.toUpperCase());
         return expenseRepository.findByProjectIdAndStatus(projectId, expenseStatus)
+                .stream()
+                .map(ExpenseResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 전체 지출 내역 상태별 조회 (관리자)
+     */
+    @Transactional(readOnly = true)
+    public List<ExpenseResponse> getAllExpensesByStatus(String status) {
+        Expense.ExpenseStatus expenseStatus = Expense.ExpenseStatus.valueOf(status.toUpperCase());
+        return expenseRepository.findByStatusOrderByCreatedAtDesc(expenseStatus)
                 .stream()
                 .map(ExpenseResponse::from)
                 .collect(Collectors.toList());
@@ -127,22 +142,38 @@ public class ExpenseService {
     }
 
     /**
-     * 지출 승인 (관리자)
+     * 지출 승인 (관리자) - 저금통에서 실제 차감
      */
     @Transactional
     public ExpenseResponse approveExpense(Long expenseId) {
+        // 1. 지출 내역 조회
         Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new IllegalArgumentException("지출 내역을 찾을 수 없습니다."));
 
+        // 2. 상태 검증
         if (expense.getStatus() != Expense.ExpenseStatus.PENDING) {
-            throw new IllegalStateException("대기 상태의 지출 내역만 승인할 수 있습니다.");
+            throw new IllegalStateException("대기 중인 지출만 승인 가능합니다.");
         }
 
-        expense.setStatus(Expense.ExpenseStatus.APPROVED);
-        expense.setRejectionReason(null); // 승인 시 반려 사유 제거
+        // 3. 저금통 조회
+        PiggyBank piggyBank = piggyBankRepository.findByProjectId(expense.getProjectId())
+                .orElseThrow(() -> new IllegalArgumentException("저금통을 찾을 수 없습니다."));
 
+        // 4. 잔액 확인
+        if (piggyBank.getBalance().compareTo(expense.getAmount()) < 0) {
+            throw new IllegalArgumentException("저금통 잔액이 부족합니다.");
+        }
+
+        // 5. 저금통에서 인출
+        piggyBank.withdraw(expense.getAmount());
+        piggyBankRepository.save(piggyBank);
+
+        // 6. 지출 승인 처리
+        expense.approve();
         Expense approvedExpense = expenseRepository.save(expense);
-        log.info("지출 승인 완료 - expenseId: {}, projectId: {}", expenseId, expense.getProjectId());
+
+        log.info("지출 승인 완료 - expenseId: {}, piggyId: {}, amount: {}, 잔액: {}",
+                expenseId, piggyBank.getPiggyId(), expense.getAmount(), piggyBank.getBalance());
 
         return ExpenseResponse.from(approvedExpense);
     }
@@ -152,21 +183,24 @@ public class ExpenseService {
      */
     @Transactional
     public ExpenseResponse rejectExpense(Long expenseId, String rejectionReason) {
+        // 1. 지출 내역 조회
         Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new IllegalArgumentException("지출 내역을 찾을 수 없습니다."));
 
+        // 2. 상태 검증
         if (expense.getStatus() != Expense.ExpenseStatus.PENDING) {
-            throw new IllegalStateException("대기 상태의 지출 내역만 반려할 수 있습니다.");
+            throw new IllegalStateException("대기 중인 지출만 반려 가능합니다.");
         }
 
+        // 3. 반려 사유 검증
         if (rejectionReason == null || rejectionReason.isBlank()) {
             throw new IllegalArgumentException("반려 사유는 필수입니다.");
         }
 
-        expense.setStatus(Expense.ExpenseStatus.REJECTED);
-        expense.setRejectionReason(rejectionReason);
-
+        // 4. 지출 반려 처리
+        expense.reject(rejectionReason);
         Expense rejectedExpense = expenseRepository.save(expense);
+
         log.info("지출 반려 완료 - expenseId: {}, reason: {}", expenseId, rejectionReason);
 
         return ExpenseResponse.from(rejectedExpense);

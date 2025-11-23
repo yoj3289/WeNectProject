@@ -54,7 +54,7 @@ public class SettlementManagementController {
      */
     @PostMapping("/{settlementId}/approve")
     public ResponseEntity<ApiResponse<SettlementResponseDto>> approveSettlement(
-        @PathVariable Long settlementId,
+        @PathVariable("settlementId") Long settlementId,
         @RequestBody SettlementApproveDto approveDto
     ) {
         try {
@@ -74,7 +74,7 @@ public class SettlementManagementController {
      */
     @PostMapping("/{settlementId}/reject")
     public ResponseEntity<ApiResponse<SettlementResponseDto>> rejectSettlement(
-        @PathVariable Long settlementId,
+        @PathVariable("settlementId") Long settlementId,
         @RequestBody SettlementRejectDto rejectDto
     ) {
         try {
@@ -93,7 +93,7 @@ public class SettlementManagementController {
      * 정산 상세 조회
      */
     @GetMapping("/{settlementId}")
-    public ResponseEntity<ApiResponse<SettlementResponseDto>> getSettlement(@PathVariable Long settlementId) {
+    public ResponseEntity<ApiResponse<SettlementResponseDto>> getSettlement(@PathVariable("settlementId") Long settlementId) {
         try {
             SettlementResponseDto response = settlementService.getSettlement(settlementId);
             return ResponseEntity.ok(ApiResponse.success(response));
@@ -108,7 +108,7 @@ public class SettlementManagementController {
      * 프로젝트별 정산 목록 조회
      */
     @GetMapping("/project/{projectId}")
-    public ResponseEntity<ApiResponse<List<SettlementResponseDto>>> getSettlementsByProject(@PathVariable Long projectId) {
+    public ResponseEntity<ApiResponse<List<SettlementResponseDto>>> getSettlementsByProject(@PathVariable("projectId") Long projectId) {
         List<SettlementResponseDto> response = settlementService.getSettlementsByProject(projectId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }

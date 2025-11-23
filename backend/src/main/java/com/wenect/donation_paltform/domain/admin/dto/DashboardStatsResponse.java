@@ -28,6 +28,9 @@ public class DashboardStatsResponse {
     // 승인 대기 (목업 데이터)
     private Integer pendingApprovals;
 
-    // 승인 대기 프로젝트 (목업 데이터)
+    // 정산 승인 대기 (목업 데이터)
     private Integer pendingSettlements;
+
+    // 지출 승인 대기
+    private Long pendingExpenses;
 }

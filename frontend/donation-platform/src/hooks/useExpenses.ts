@@ -15,11 +15,22 @@ export function useExpenses(projectId: number, enabled: boolean = true) {
 /**
  * 프로젝트별 + 상태별 지출 내역 조회
  */
-export function useExpensesByStatus(projectId: number, status: string) {
+export function useExpensesByProjectAndStatus(projectId: number, status: string) {
   return useQuery({
     queryKey: ['expenses', projectId, status],
     queryFn: () => expensesApi.getExpensesByProjectAndStatus(projectId, status),
     enabled: !!projectId && !!status,
+  });
+}
+
+/**
+ * 전체 지출 내역 상태별 조회 (관리자)
+ */
+export function useExpensesByStatus(status: string) {
+  return useQuery({
+    queryKey: ['expenses', 'all', status],
+    queryFn: () => expensesApi.getAllExpensesByStatus(status),
+    enabled: !!status,
   });
 }
 

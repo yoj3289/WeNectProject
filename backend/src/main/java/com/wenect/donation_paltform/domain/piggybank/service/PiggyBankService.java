@@ -41,11 +41,18 @@ public class PiggyBankService {
      */
     @Transactional(readOnly = true)
     public PiggyBankResponseDto getPiggyBankByProject(Long projectId) {
+        log.info("프로젝트로 저금통 조회 요청 - projectId: {}", projectId);
+
         PiggyBank piggyBank = piggyBankRepository.findByProjectId(projectId)
             .orElseThrow(() -> new IllegalArgumentException("해당 프로젝트의 저금통을 찾을 수 없습니다."));
 
+        log.info("조회된 저금통 - piggyId: {}, projectId: {}, totalAmount: {}, balance: {}",
+            piggyBank.getPiggyId(), piggyBank.getProjectId(), piggyBank.getTotalAmount(), piggyBank.getBalance());
+
         Project project = projectRepository.findById(projectId)
             .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+
+        log.info("조회된 프로젝트 - projectId: {}, title: {}", project.getProjectId(), project.getTitle());
 
         return PiggyBankResponseDto.fromEntityWithProject(piggyBank, project.getTitle());
     }
@@ -55,24 +62,37 @@ public class PiggyBankService {
      */
     @Transactional(readOnly = true)
     public PiggyBankDetailDto getPiggyBankDetail(Long piggyId) {
+        log.info("저금통 상세 조회 요청 - piggyId: {}", piggyId);
+
         PiggyBank piggyBank = piggyBankRepository.findById(piggyId)
             .orElseThrow(() -> new IllegalArgumentException("저금통을 찾을 수 없습니다."));
+
+        log.info("조회된 저금통 - piggyId: {}, projectId: {}, totalAmount: {}, withdrawnAmount: {}, balance: {}, status: {}",
+            piggyBank.getPiggyId(), piggyBank.getProjectId(), piggyBank.getTotalAmount(),
+            piggyBank.getWithdrawnAmount(), piggyBank.getBalance(), piggyBank.getStatus());
 
         Project project = projectRepository.findById(piggyBank.getProjectId())
             .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
 
-        // 승인된 지출 내역만 조회
-        List<Expense> expenses = expenseRepository.findByProjectIdAndStatus(
-            piggyBank.getProjectId(),
-            Expense.ExpenseStatus.APPROVED
+        log.info("조회된 프로젝트 - projectId: {}, title: {}, status: {}",
+            project.getProjectId(), project.getTitle(), project.getStatus());
+
+        // 모든 지출 내역 조회 (상태 무관, 지출일 기준 내림차순)
+        List<Expense> allExpenses = expenseRepository.findByProjectIdOrderByExpenseDateDesc(
+            piggyBank.getProjectId()
         );
 
-        List<ExpenseResponse> withdrawalHistory = expenses.stream()
+        List<ExpenseResponse> withdrawalHistory = allExpenses.stream()
             .map(ExpenseResponse::from)
             .collect(Collectors.toList());
 
-        // 카테고리별 통계 계산
-        List<CategoryStatDto> categoryStats = calculateCategoryStats(expenses, piggyBank.getWithdrawnAmount());
+        // 승인된 지출만 필터링 (카테고리 통계용)
+        List<Expense> approvedExpenses = allExpenses.stream()
+            .filter(e -> e.getStatus() == Expense.ExpenseStatus.APPROVED)
+            .collect(Collectors.toList());
+
+        // 카테고리별 통계 계산 (승인된 지출만)
+        List<CategoryStatDto> categoryStats = calculateCategoryStats(approvedExpenses, piggyBank.getWithdrawnAmount());
 
         return PiggyBankDetailDto.builder()
             .piggyId(piggyBank.getPiggyId())
@@ -90,7 +110,7 @@ public class PiggyBankService {
     }
 
     /**
-     * 저금통 인출 (지출 내역 생성)
+     * 저금통 인출 요청 (지출 내역 생성 - 관리자 승인 대기)
      */
     @Transactional
     public PiggyBankResponseDto withdraw(Long piggyId, WithdrawalRequestDto requestDto, MultipartFile receiptFile) throws IOException {
@@ -98,9 +118,16 @@ public class PiggyBankService {
         PiggyBank piggyBank = piggyBankRepository.findById(piggyId)
             .orElseThrow(() -> new IllegalArgumentException("저금통을 찾을 수 없습니다."));
 
-        // 2. 인출 가능 여부 확인
-        if (!piggyBank.canWithdraw()) {
-            throw new IllegalStateException("인출 가능한 상태가 아닙니다.");
+        // 2. 인출 가능 여부 확인 (잔액 확인)
+        if (piggyBank.getStatus() != PiggyBank.PiggyBankStatus.ACTIVE) {
+            throw new IllegalStateException("활성 상태의 저금통만 인출 요청이 가능합니다.");
+        }
+
+        if (piggyBank.getBalance().compareTo(requestDto.getAmount()) < 0) {
+            throw new IllegalArgumentException(
+                String.format("잔액이 부족합니다. 현재 잔액: %s원, 요청 금액: %s원",
+                    piggyBank.getBalance(), requestDto.getAmount())
+            );
         }
 
         // 3. 영수증 파일 업로드
@@ -110,11 +137,7 @@ public class PiggyBankService {
 
         String receiptUrl = fileStorageService.saveFile(receiptFile);
 
-        // 4. 저금통에서 인출
-        piggyBank.withdraw(requestDto.getAmount());
-        PiggyBank savedPiggyBank = piggyBankRepository.save(piggyBank);
-
-        // 5. 지출 내역 생성 (Expense 엔티티 재활용)
+        // 4. 지출 내역 생성 (PENDING 상태 - 관리자 승인 대기)
         Expense expense = Expense.builder()
             .projectId(piggyBank.getProjectId())
             .expenseDate(requestDto.getExpenseDate())
@@ -122,23 +145,20 @@ public class PiggyBankService {
             .description(requestDto.getDescription())
             .amount(requestDto.getAmount())
             .receiptUrl(receiptUrl)
-            .status(Expense.ExpenseStatus.APPROVED) // 저금통 인출은 자동 승인
+            .status(Expense.ExpenseStatus.PENDING) // 관리자 승인 대기
             .build();
 
         expenseRepository.save(expense);
 
-        log.info("저금통 인출 완료 - piggyId: {}, amount: {}, balance: {}",
-            piggyId, requestDto.getAmount(), savedPiggyBank.getBalance());
+        log.info("저금통 인출 요청 생성 - piggyId: {}, amount: {}, status: PENDING (관리자 승인 대기)",
+            piggyId, requestDto.getAmount());
 
-        // 6. 잔액이 0이 되면 프로젝트 상태를 SETTLEMENT로 유지 (결산 완료 대기)
-        if (savedPiggyBank.isBalanceZero()) {
-            log.info("저금통 잔액 0원 - 프로젝트 결산 완료 가능 상태");
-        }
+        // NOTE: 관리자 승인 전까지는 저금통에서 실제로 차감하지 않음
 
         Project project = projectRepository.findById(piggyBank.getProjectId())
             .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
 
-        return PiggyBankResponseDto.fromEntityWithProject(savedPiggyBank, project.getTitle());
+        return PiggyBankResponseDto.fromEntityWithProject(piggyBank, project.getTitle());
     }
 
     /**

@@ -42,8 +42,8 @@ public class Settlement {
     private String bankName; // 입금 은행명
 
     @Column(name = "account_number", nullable = false, length = 255)
-    @Convert(converter = com.wenect.donation_paltform.global.converter.AccountNumberConverter.class)
-    private String accountNumber; // 입금 계좌번호 (AES 암호화 저장)
+    // @Convert(converter = com.wenect.donation_paltform.global.converter.AccountNumberConverter.class) // TODO: 나중에 암호화 적용
+    private String accountNumber; // 입금 계좌번호 (현재 평문 저장)
 
     @Column(name = "account_holder", nullable = false, length = 50)
     private String accountHolder; // 예금주명

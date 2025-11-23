@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Wallet, TrendingDown, Calendar, FileText, Download, AlertCircle } from 'lucide-react';
-import { usePiggyBankDetail } from '../../hooks/usePiggyBanks';
+import { usePiggyBankByProject, usePiggyBankDetail } from '../../hooks/usePiggyBanks';
 import { WithdrawalModal } from '../../components/piggybank/WithdrawalModal';
 import { SettlementRequestModal } from '../../components/settlement/SettlementRequestModal';
 
@@ -20,13 +20,23 @@ const PiggyBankManagementPage: React.FC = () => {
   const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
   const [isSettlementModalOpen, setIsSettlementModalOpen] = useState(false);
 
-  // API: 저금통 상세 정보 조회
+  // API: projectId로 먼저 저금통 조회하여 piggyId를 얻음
+  const {
+    data: basicPiggyBank,
+    isLoading: isLoadingBasic,
+    isError: isErrorBasic
+  } = usePiggyBankByProject(Number(projectId));
+
+  // API: piggyId로 저금통 상세 정보 조회 (지출 내역 포함)
   const {
     data: piggyBank,
-    isLoading,
-    isError,
+    isLoading: isLoadingDetail,
+    isError: isErrorDetail,
     refetch
-  } = usePiggyBankDetail(Number(projectId));
+  } = usePiggyBankDetail(basicPiggyBank?.piggyId ?? null);
+
+  const isLoading = isLoadingBasic || isLoadingDetail;
+  const isError = isErrorBasic || isErrorDetail;
 
   const formatAmount = (amount: number): string => {
     return Math.floor(amount).toLocaleString('ko-KR');
@@ -95,7 +105,7 @@ const PiggyBankManagementPage: React.FC = () => {
                 onClick={() => setIsWithdrawalModalOpen(true)}
                 className="px-4 py-2 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 transition-colors"
               >
-                인출하기
+                지출 내역 등록
               </button>
             )}
             {canRequestSettlement && (
@@ -184,10 +194,10 @@ const PiggyBankManagementPage: React.FC = () => {
           </div>
         )}
 
-        {/* 인출 내역 */}
+        {/* 지출 내역 */}
         <div className="bg-white rounded-xl p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">인출 내역</h2>
+            <h2 className="text-xl font-bold">지출 내역</h2>
             <p className="text-sm text-gray-600">
               총 {piggyBank.withdrawalHistory.length}건
             </p>
@@ -196,13 +206,13 @@ const PiggyBankManagementPage: React.FC = () => {
           {piggyBank.withdrawalHistory.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">아직 인출 내역이 없습니다.</p>
+              <p className="text-gray-500">아직 지출 내역이 없습니다.</p>
               {canWithdraw && (
                 <button
                   onClick={() => setIsWithdrawalModalOpen(true)}
                   className="mt-4 px-6 py-3 bg-orange-500 text-white rounded-lg font-bold hover:bg-orange-600"
                 >
-                  첫 인출하기
+                  지출 내역 등록
                 </button>
               )}
             </div>
@@ -261,17 +271,32 @@ const PiggyBankManagementPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-4 px-4 text-center">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-semibold ${
-                            expense.status === 'APPROVED'
-                              ? 'bg-green-100 text-green-700'
+                        <div className="flex flex-col items-center gap-1">
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-semibold ${
+                              expense.status === 'APPROVED'
+                                ? 'bg-green-100 text-green-700'
+                                : expense.status === 'PENDING'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : expense.status === 'REJECTED'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            {expense.status === 'APPROVED'
+                              ? '승인됨'
                               : expense.status === 'PENDING'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}
-                        >
-                          {expense.status === 'APPROVED' ? '승인됨' : expense.status}
-                        </span>
+                              ? '대기중'
+                              : expense.status === 'REJECTED'
+                              ? '반려됨'
+                              : expense.status}
+                          </span>
+                          {expense.status === 'REJECTED' && expense.rejectionReason && (
+                            <p className="text-xs text-red-600 mt-1">
+                              {expense.rejectionReason}
+                            </p>
+                          )}
+                        </div>
                       </td>
                       <td className="py-4 px-4 text-center">
                         {expense.receiptUrl ? (

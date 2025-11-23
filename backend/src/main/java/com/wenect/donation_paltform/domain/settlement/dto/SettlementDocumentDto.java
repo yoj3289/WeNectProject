@@ -33,7 +33,7 @@ public class SettlementDocumentDto {
             .fileName(document.getFileName())
             .filePath(document.getFilePath())
             .fileSize(document.getFileSize())
-            .documentType(document.getDocumentType())
+            .documentType(document.getDocumentType().name()) // ENUM → String 변환
             .uploadedAt(document.getUploadedAt())
             .build();
     }

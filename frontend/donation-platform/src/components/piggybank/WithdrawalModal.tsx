@@ -18,6 +18,7 @@ export function WithdrawalModal({
 }: WithdrawalModalProps) {
   const [formData, setFormData] = useState({
     amount: 0,
+    category: '',
     description: '',
     expenseDate: new Date().toISOString().split('T')[0],
   });
@@ -34,12 +35,17 @@ export function WithdrawalModal({
     }
 
     if (formData.amount <= 0) {
-      alert('인출 금액을 입력해주세요.');
+      alert('지출 금액을 입력해주세요.');
       return;
     }
 
     if (formData.amount > currentBalance) {
-      alert(`잔액이 부족합니다. 현재 잔액: ${currentBalance.toLocaleString()}원`);
+      alert(`저금통 잔액이 부족합니다. 현재 잔액: ${currentBalance.toLocaleString()}원`);
+      return;
+    }
+
+    if (!formData.category.trim()) {
+      alert('지출 카테고리를 선택해주세요.');
       return;
     }
 
@@ -49,10 +55,7 @@ export function WithdrawalModal({
     }
 
     try {
-      const requestData = {
-        ...formData,
-        category: formData.description.substring(0, 50), // 설명의 처음 50자를 카테고리로 사용
-      };
+      const requestData = formData;
 
       await withdrawMutation.mutateAsync({
         piggyId,
@@ -60,18 +63,19 @@ export function WithdrawalModal({
         receiptFile,
       });
 
-      alert('인출이 완료되었습니다.');
+      alert('지출 내역이 등록되었습니다. 관리자 승인 후 저금통에서 차감됩니다.');
       onClose();
 
       // 폼 초기화
       setFormData({
         amount: 0,
+        category: '',
         description: '',
         expenseDate: new Date().toISOString().split('T')[0],
       });
       setReceiptFile(null);
     } catch (error: any) {
-      alert(error.message || '인출에 실패했습니다.');
+      alert(error.message || '지출 내역 등록에 실패했습니다.');
     }
   };
 
@@ -96,7 +100,14 @@ export function WithdrawalModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <h2 className="text-2xl font-bold mb-4">저금통 인출</h2>
+        <h2 className="text-2xl font-bold mb-4">지출 내역 등록</h2>
+
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+          <p className="text-sm text-yellow-800 font-semibold mb-2">💡 안내</p>
+          <p className="text-xs text-yellow-700">
+            등록하신 지출 내역은 관리자 승인 후 저금통에서 차감됩니다.
+          </p>
+        </div>
 
         <div className="mb-4 p-4 bg-gray-50 rounded">
           <p className="text-sm text-gray-600">프로젝트</p>
@@ -108,10 +119,10 @@ export function WithdrawalModal({
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* 인출 금액 */}
+          {/* 지출 금액 */}
           <div className="mb-4">
             <label className="block text-sm font-medium mb-2">
-              인출 금액 <span className="text-red-500">*</span>
+              지출 금액 <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -174,6 +185,27 @@ export function WithdrawalModal({
             />
           </div>
 
+          {/* 지출 카테고리 */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">
+              지출 카테고리 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.category}
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="예: 식비, 교통비, 물품구입, 인건비 등"
+              maxLength={50}
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              간단한 카테고리명을 입력하세요 (최대 50자)
+            </p>
+          </div>
+
           {/* 지출 내역 설명 */}
           <div className="mb-4">
             <label className="block text-sm font-medium mb-2">
@@ -231,7 +263,7 @@ export function WithdrawalModal({
               disabled={withdrawMutation.isPending}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
             >
-              {withdrawMutation.isPending ? '처리 중...' : '인출하기'}
+              {withdrawMutation.isPending ? '처리 중...' : '등록하기'}
             </button>
           </div>
         </form>

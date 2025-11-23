@@ -685,6 +685,7 @@ import UserManagementPage from './pages/admin/UserManagementPage';
 import ProjectManagementPage from './pages/admin/ProjectManagementPage';
 import SettlementManagementPage from './pages/admin/SettlementManagementPage';
 import OrganizationApprovalPage from './pages/admin/OrganizationApprovalPage';
+import ExpenseApprovalPage from './pages/admin/ExpenseApprovalPage';
 import NotificationPageWithAPI from './pages/notification/NotificationPageWithAPI';
 import PaymentSuccessPage from './pages/payment/PaymentSuccessPage';
 import PaymentCancelPage from './pages/payment/PaymentCancelPage';
@@ -1292,6 +1293,7 @@ const AppRoutes: React.FC = () => {
                   setRejectReason={setRejectReason}
                 />
               } />
+              <Route path="expenses" element={<ExpenseApprovalPage />} />
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
             </Routes>
             </AdminLayout>
