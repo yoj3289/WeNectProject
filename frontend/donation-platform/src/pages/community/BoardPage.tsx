@@ -268,51 +268,56 @@ const BoardPage: React.FC<BoardPageProps> = ({
               <div
                 key={post.id}
                 onClick={() => handlePostClick(post)}
-                className="p-6 hover:bg-gray-50 cursor-pointer transition-colors group"
+                className="p-5 hover:bg-gray-50 cursor-pointer transition-colors"
               >
                 <div className="flex items-start gap-4">
-                  {post.isPinned && (
-                    <Pin className="text-red-500 flex-shrink-0 mt-1" size={20} />
-                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className={`${getCategoryColor(post.type)} text-white text-xs px-3 py-1 rounded-full font-medium`}>
+                      {post.isPinned && (
+                        <Pin className="text-red-500" size={16} />
+                      )}
+                      <span className={`${getCategoryColor(post.type)} text-white text-xs px-2.5 py-0.5 rounded font-medium`}>
                         {POST_TYPE_LABELS[post.type]}
                       </span>
                       {post.authorType === 'organization' && (
-                        <span className="bg-purple-100 text-purple-600 text-xs px-2 py-1 rounded font-medium">
+                        <span className="bg-purple-100 text-purple-600 text-xs px-2 py-0.5 rounded font-medium">
                           기관
                         </span>
                       )}
-                      {post.images && post.images.length > 0 && (
-                        <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded font-medium flex items-center gap-1">
-                          <ImageIcon size={12} />
-                          {post.images.length}
-                        </span>
-                      )}
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-red-600 transition-colors">
+                    <h3 className="text-base font-bold text-gray-900 mb-2 line-clamp-1">
                       {post.title}
-                      {post.comments && post.comments.length > 0 && (
-                        <span className="ml-2 text-red-500 text-sm">
-                          [{post.comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0)}]
-                        </span>
-                      )}
                     </h3>
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-3 text-xs text-gray-500">
                       <span className="font-medium">{post.author}</span>
+                      <span>•</span>
                       <span>{post.date}</span>
+                      <span>•</span>
                       <div className="flex items-center gap-1">
-                        <Eye size={14} />
-                        {postViews.get(post.id) || post.views}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Heart size={14} />
+                        <Heart size={13} />
                         {post.likes || 0}
+                      </div>
+                      <span>•</span>
+                      <div className="flex items-center gap-1">
+                        <MessageSquare size={13} />
+                        {post.comments ? post.comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0) : 0}
+                      </div>
+                      <span>•</span>
+                      <div className="flex items-center gap-1">
+                        <Eye size={13} />
+                        {postViews.get(post.id) || post.views}
                       </div>
                     </div>
                   </div>
-                  <ChevronRight className="text-gray-400 flex-shrink-0 mt-2 group-hover:text-red-500 transition-colors" size={20} />
+                  {post.images && post.images.length > 0 && (
+                    <div className="flex-shrink-0">
+                      <img
+                        src={post.images[0]}
+                        alt="썸네일"
+                        className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
