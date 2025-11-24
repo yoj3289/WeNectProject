@@ -21,6 +21,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -266,8 +267,8 @@ public class ProjectService {
             // 모금률순 (currentAmount / targetAmount 내림차순)
             projects = projects.stream()
                     .sorted((p1, p2) -> {
-                        double rate1 = p1.getCurrentAmount().divide(p1.getTargetAmount(), 4, BigDecimal.ROUND_HALF_UP).doubleValue();
-                        double rate2 = p2.getCurrentAmount().divide(p2.getTargetAmount(), 4, BigDecimal.ROUND_HALF_UP).doubleValue();
+                        double rate1 = p1.getCurrentAmount().divide(p1.getTargetAmount(), 4, RoundingMode.HALF_UP).doubleValue();
+                        double rate2 = p2.getCurrentAmount().divide(p2.getTargetAmount(), 4, RoundingMode.HALF_UP).doubleValue();
                         return Double.compare(rate2, rate1);
                     })
                     .collect(Collectors.toList());
@@ -537,10 +538,10 @@ public class ProjectService {
                     projects.sort((p1, p2) -> {
                         BigDecimal rate1 = p1.getCurrentAmount()
                                 .multiply(BigDecimal.valueOf(100))
-                                .divide(p1.getTargetAmount(), 2, BigDecimal.ROUND_HALF_UP);
+                                .divide(p1.getTargetAmount(), 2, RoundingMode.HALF_UP);
                         BigDecimal rate2 = p2.getCurrentAmount()
                                 .multiply(BigDecimal.valueOf(100))
-                                .divide(p2.getTargetAmount(), 2, BigDecimal.ROUND_HALF_UP);
+                                .divide(p2.getTargetAmount(), 2, RoundingMode.HALF_UP);
                         return rate2.compareTo(rate1);
                     });
                     break;
