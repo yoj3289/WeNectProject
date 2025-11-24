@@ -53,6 +53,7 @@ public class Comment {
 
     // 대댓글 리스트 (메모리상에서만 관리, DB에는 parent_comment_id로 연결)
     @Transient
+    @Builder.Default
     private List<Comment> replies = new ArrayList<>();
 
     @PrePersist

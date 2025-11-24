@@ -24,7 +24,7 @@ public class AdminUserService {
      * 사용자 목록 조회 (페이징, 검색, 필터링)
      */
     public Page<UserListResponse> getUserList(String search, String userType, String status, Pageable pageable) {
-        Specification<User> spec = Specification.where(null);
+        Specification<User> spec = (root, query, cb) -> cb.conjunction();
 
         // 검색 조건 (이름 또는 이메일)
         if (search != null && !search.trim().isEmpty()) {
