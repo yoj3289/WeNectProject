@@ -70,4 +70,16 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
      */
     @Query("SELECT p FROM Project p WHERE p.status = 'ACTIVE' AND p.endDate < :today")
     List<Project> findExpiredActiveProjects(@Param("today") java.time.LocalDate today);
+
+    // ==================== 홈페이지용 쿼리 ====================
+
+    /**
+     * 모금액 순 프로젝트 조회 (홈페이지용)
+     * - ACTIVE 상태이면서 모금액이 0원보다 큰 프로젝트만 조회
+     * - 모금액 내림차순, 모금액이 같으면 생성일 오름차순 (먼저 생성된 것부터)
+     */
+    @Query("SELECT p FROM Project p " +
+            "WHERE p.status = 'ACTIVE' AND p.currentAmount > 0 " +
+            "ORDER BY p.currentAmount DESC, p.createdAt ASC")
+    List<Project> findTopByCurrentAmountDesc();
 }

@@ -108,10 +108,17 @@ export const getProjects = async (
 };
 
 /**
- * 인기 프로젝트 조회 (홈페이지용)
+ * 인기 프로젝트 조회 (홈페이지용 - 관심 등록 수 기준)
  */
 export const getPopularProjects = async (limit: number = 4): Promise<Project[]> => {
   return apiClient.get<Project[]>(`/projects/popular?limit=${limit}`);
+};
+
+/**
+ * 모금액 순 프로젝트 조회 (홈페이지용)
+ */
+export const getTopFundedProjects = async (limit: number = 8): Promise<Project[]> => {
+  return apiClient.get<Project[]>(`/projects/top-funded?limit=${limit}`);
 };
 
 /**

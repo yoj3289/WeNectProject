@@ -134,12 +134,22 @@ public class ProjectController {
     }
 
     /**
-     * 인기 프로젝트 조회 (홈페이지용)
+     * 인기 프로젝트 조회 (홈페이지용 - 관심 등록 수 기준)
      */
     @GetMapping("/popular")
     public ResponseEntity<List<ProjectResponse>> getPopularProjects(
             @RequestParam(value = "limit", defaultValue = "4") int limit) {
         List<ProjectResponse> responses = projectService.getPopularProjects(limit);
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * 모금액 순 프로젝트 조회 (홈페이지용)
+     */
+    @GetMapping("/top-funded")
+    public ResponseEntity<List<ProjectResponse>> getTopFundedProjects(
+            @RequestParam(value = "limit", defaultValue = "8") int limit) {
+        List<ProjectResponse> responses = projectService.getTopFundedProjects(limit);
         return ResponseEntity.ok(responses);
     }
 

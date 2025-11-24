@@ -15,12 +15,24 @@ export function useProjects(filters: projectsApi.ProjectFilters = {}) {
 }
 
 /**
- * 인기 프로젝트 조회 (홈페이지용)
+ * 인기 프로젝트 조회 (홈페이지용 - 관심 등록 수 기준)
  */
 export function usePopularProjects(limit: number = 4) {
   return useQuery({
     queryKey: ['popular-projects', limit],
     queryFn: () => projectsApi.getPopularProjects(limit),
+    // 5분간 캐시 유지
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * 모금액 순 프로젝트 조회 (홈페이지용)
+ */
+export function useTopFundedProjects(limit: number = 8) {
+  return useQuery({
+    queryKey: ['top-funded-projects', limit],
+    queryFn: () => projectsApi.getTopFundedProjects(limit),
     // 5분간 캐시 유지
     staleTime: 5 * 60 * 1000,
   });

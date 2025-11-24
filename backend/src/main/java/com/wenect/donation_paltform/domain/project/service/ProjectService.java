@@ -326,6 +326,30 @@ public class ProjectService {
     }
 
     /**
+     * 모금액 순 프로젝트 조회 (current_amount 기준 정렬)
+     * - 모금액이 0원인 프로젝트는 제외
+     * - 모금액이 같으면 생성일(created_at) 기준 오름차순 (먼저 생성된 것부터)
+     */
+    @Transactional(readOnly = true)
+    public List<ProjectResponse> getTopFundedProjects(int limit) {
+        // ACTIVE 상태이면서 모금액이 0원보다 큰 프로젝트를 모금액 내림차순, 생성일 오름차순으로 조회
+        List<Project> projects = projectRepository.findTopByCurrentAmountDesc();
+
+        return projects.stream()
+                .limit(limit) // Stream에서 limit 적용
+                .map(project -> {
+                    List<String> imageUrls = projectImageRepository.findByProjectIdOrderByDisplayOrder(project.getProjectId())
+                            .stream()
+                            .map(ProjectImage::getFilePath)
+                            .collect(Collectors.toList());
+
+                    String categoryName = getCategoryName(project.getCategoryId());
+                    return ProjectResponse.from(project, categoryName, imageUrls);
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
      * 프로젝트 삭제
      *
      * 삭제 로직:
