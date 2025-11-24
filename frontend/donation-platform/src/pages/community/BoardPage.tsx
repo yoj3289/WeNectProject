@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MessageSquare, Eye, Heart, ChevronRight, Search, Reply, Image as ImageIcon, Send, X, Pin, Loader2 } from 'lucide-react';
 import type { CommunityPost, PostType } from '../../types';
 import { POST_TYPE_LABELS } from '../../types';
-import { usePosts, useLikePost, useCreateComment } from '../../hooks/useCommunity';
+import { usePosts, useLikePost, useCreateComment, useComments } from '../../hooks/useCommunity';
 import { createPost } from '../../api/community';
 
 interface BoardPageProps {
@@ -71,6 +71,27 @@ const BoardPage: React.FC<BoardPageProps> = ({
   // 좋아요 및 댓글 mutation
   const likePostMutation = useLikePost();
   const createCommentMutation = useCreateComment();
+
+  // 선택된 게시글의 댓글 조회
+  const { data: commentsData } = useComments(selectedPost?.id || 0);
+
+  // 댓글 데이터 변환 (API 응답 → 로컬 타입)
+  const convertedComments = commentsData
+    ?.filter(c => !c.parentCommentId)
+    .map(comment => ({
+      id: comment.commentId,
+      author: comment.author.userName,
+      content: comment.content,
+      date: new Date(comment.createdAt).toLocaleDateString('ko-KR'),
+      replies: commentsData
+        .filter(r => r.parentCommentId === comment.commentId)
+        .map(reply => ({
+          id: reply.commentId,
+          author: reply.author.userName,
+          content: reply.content,
+          date: new Date(reply.createdAt).toLocaleDateString('ko-KR')
+        }))
+    })) || [];
 
   // API 응답을 ExtendedPost 형식으로 변환
   const extendedPosts: ExtendedPost[] = postsData?.content.map(post => ({
@@ -419,7 +440,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
         {/* 댓글 섹션 */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-bold mb-4">
-            댓글 {selectedPost.comments ? selectedPost.comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0) : 0}개
+            댓글 {convertedComments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0)}개
           </h3>
 
           {/* 댓글 입력 */}
@@ -457,7 +478,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
 
           {/* 댓글 목록 */}
           <div className="space-y-4">
-            {selectedPost.comments && selectedPost.comments.map(comment => (
+            {convertedComments.map(comment => (
               <div key={comment.id} className="border-l-2 border-gray-200 pl-4">
                 <div className="flex items-start justify-between mb-2">
                   <div>
