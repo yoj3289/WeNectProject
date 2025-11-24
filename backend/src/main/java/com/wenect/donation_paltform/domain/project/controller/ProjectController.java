@@ -120,7 +120,7 @@ public class ProjectController {
      *
      * @param category 카테고리 (선택, 예: "아동복지", "환경보호")
      * @param search 검색 키워드 (선택, 프로젝트 제목에서 검색)
-     * @param sortBy 정렬 기준 (선택, latest/deadline/fundingRate, 기본값: latest)
+     * @param sortBy 정렬 기준 (선택, latest/deadline/mostDonated/leastDonated/mostFavorited/leastFavorited, 기본값: latest)
      */
     @GetMapping
     public ResponseEntity<PageResponse<ProjectResponse>> getAllProjects(
@@ -160,7 +160,7 @@ public class ProjectController {
      *
      * @param category 카테고리 (선택)
      * @param search 검색 키워드 (선택)
-     * @param sortBy 정렬 기준 (선택, latest/deadline/fundingRate, 기본값: latest)
+     * @param sortBy 정렬 기준 (선택, latest/deadline/mostDonated/leastDonated/mostFavorited/leastFavorited, 기본값: latest)
      */
     @GetMapping("/settlement")
     public ResponseEntity<PageResponse<ProjectResponse>> getSettlementProjects(

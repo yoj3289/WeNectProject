@@ -263,13 +263,44 @@ public class ProjectService {
             projects = projects.stream()
                     .sorted((p1, p2) -> p1.getEndDate().compareTo(p2.getEndDate()))
                     .collect(Collectors.toList());
-        } else if ("fundingRate".equals(sortBy)) {
-            // 모금률순 (currentAmount / targetAmount 내림차순)
+        } else if ("mostDonated".equals(sortBy)) {
+            // 가장 많이 후원받은 프로젝트 순 (currentAmount 내림차순, 동점이면 최신순)
             projects = projects.stream()
                     .sorted((p1, p2) -> {
-                        double rate1 = p1.getCurrentAmount().divide(p1.getTargetAmount(), 4, RoundingMode.HALF_UP).doubleValue();
-                        double rate2 = p2.getCurrentAmount().divide(p2.getTargetAmount(), 4, RoundingMode.HALF_UP).doubleValue();
-                        return Double.compare(rate2, rate1);
+                        int amountCompare = p2.getCurrentAmount().compareTo(p1.getCurrentAmount());
+                        if (amountCompare != 0) return amountCompare;
+                        return p2.getCreatedAt().compareTo(p1.getCreatedAt()); // 동점이면 최신순
+                    })
+                    .collect(Collectors.toList());
+        } else if ("leastDonated".equals(sortBy)) {
+            // 가장 적게 후원받은 프로젝트 순 (currentAmount 오름차순, 동점이면 최신순)
+            projects = projects.stream()
+                    .sorted((p1, p2) -> {
+                        int amountCompare = p1.getCurrentAmount().compareTo(p2.getCurrentAmount());
+                        if (amountCompare != 0) return amountCompare;
+                        return p2.getCreatedAt().compareTo(p1.getCreatedAt()); // 동점이면 최신순
+                    })
+                    .collect(Collectors.toList());
+        } else if ("mostFavorited".equals(sortBy)) {
+            // 가장 관심을 많이 받은 프로젝트 순 (favoriteCount 내림차순, 동점이면 최신순)
+            projects = projects.stream()
+                    .sorted((p1, p2) -> {
+                        Long count1 = favoriteProjectService.getFavoriteCount(p1.getProjectId());
+                        Long count2 = favoriteProjectService.getFavoriteCount(p2.getProjectId());
+                        int countCompare = count2.compareTo(count1);
+                        if (countCompare != 0) return countCompare;
+                        return p2.getCreatedAt().compareTo(p1.getCreatedAt()); // 동점이면 최신순
+                    })
+                    .collect(Collectors.toList());
+        } else if ("leastFavorited".equals(sortBy)) {
+            // 가장 관심을 적게 받은 프로젝트 순 (favoriteCount 오름차순, 동점이면 최신순)
+            projects = projects.stream()
+                    .sorted((p1, p2) -> {
+                        Long count1 = favoriteProjectService.getFavoriteCount(p1.getProjectId());
+                        Long count2 = favoriteProjectService.getFavoriteCount(p2.getProjectId());
+                        int countCompare = count1.compareTo(count2);
+                        if (countCompare != 0) return countCompare;
+                        return p2.getCreatedAt().compareTo(p1.getCreatedAt()); // 동점이면 최신순
                     })
                     .collect(Collectors.toList());
         } else {
@@ -558,15 +589,40 @@ public class ProjectService {
                 case "deadline":
                     projects.sort((p1, p2) -> p1.getEndDate().compareTo(p2.getEndDate()));
                     break;
-                case "fundingRate":
+                case "mostDonated":
+                    // 가장 많이 후원받은 프로젝트 순 (currentAmount 내림차순, 동점이면 최신순)
                     projects.sort((p1, p2) -> {
-                        BigDecimal rate1 = p1.getCurrentAmount()
-                                .multiply(BigDecimal.valueOf(100))
-                                .divide(p1.getTargetAmount(), 2, RoundingMode.HALF_UP);
-                        BigDecimal rate2 = p2.getCurrentAmount()
-                                .multiply(BigDecimal.valueOf(100))
-                                .divide(p2.getTargetAmount(), 2, RoundingMode.HALF_UP);
-                        return rate2.compareTo(rate1);
+                        int amountCompare = p2.getCurrentAmount().compareTo(p1.getCurrentAmount());
+                        if (amountCompare != 0) return amountCompare;
+                        return p2.getCreatedAt().compareTo(p1.getCreatedAt()); // 동점이면 최신순
+                    });
+                    break;
+                case "leastDonated":
+                    // 가장 적게 후원받은 프로젝트 순 (currentAmount 오름차순, 동점이면 최신순)
+                    projects.sort((p1, p2) -> {
+                        int amountCompare = p1.getCurrentAmount().compareTo(p2.getCurrentAmount());
+                        if (amountCompare != 0) return amountCompare;
+                        return p2.getCreatedAt().compareTo(p1.getCreatedAt()); // 동점이면 최신순
+                    });
+                    break;
+                case "mostFavorited":
+                    // 가장 관심을 많이 받은 프로젝트 순 (favoriteCount 내림차순, 동점이면 최신순)
+                    projects.sort((p1, p2) -> {
+                        Long count1 = favoriteProjectService.getFavoriteCount(p1.getProjectId());
+                        Long count2 = favoriteProjectService.getFavoriteCount(p2.getProjectId());
+                        int countCompare = count2.compareTo(count1);
+                        if (countCompare != 0) return countCompare;
+                        return p2.getCreatedAt().compareTo(p1.getCreatedAt()); // 동점이면 최신순
+                    });
+                    break;
+                case "leastFavorited":
+                    // 가장 관심을 적게 받은 프로젝트 순 (favoriteCount 오름차순, 동점이면 최신순)
+                    projects.sort((p1, p2) -> {
+                        Long count1 = favoriteProjectService.getFavoriteCount(p1.getProjectId());
+                        Long count2 = favoriteProjectService.getFavoriteCount(p2.getProjectId());
+                        int countCompare = count1.compareTo(count2);
+                        if (countCompare != 0) return countCompare;
+                        return p2.getCreatedAt().compareTo(p1.getCreatedAt()); // 동점이면 최신순
                     });
                     break;
                 case "latest":

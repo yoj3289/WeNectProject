@@ -22,7 +22,7 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
   // State
   const [activeTab, setActiveTab] = useState<'active' | 'settlement'>('active');
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
-  const [sortOption, setSortOption] = useState<string>('최신순');
+  const [sortOption, setSortOption] = useState<string>('latest');
   const [searchKeyword, setSearchKeyword] = useState<string>(''); // 사용자 입력
   const [debouncedSearchKeyword, setDebouncedSearchKeyword] = useState<string>(''); // API 호출용
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -48,7 +48,7 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
     status: 'approved',
     category: selectedCategory === '전체' ? undefined : selectedCategory,
     search: debouncedSearchKeyword.trim() || undefined,
-    sortBy: sortOption === '최신순' ? 'latest' : sortOption === '마감임박순' ? 'deadline' : 'fundingRate',
+    sortBy: sortOption,
     page: currentPage - 1, // 백엔드는 0부터 시작
     size: pageSize,
   });
@@ -57,7 +57,7 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
   const { data: settlementProjects, isLoading: isSettlementLoading, isError: isSettlementError, error: settlementError, refetch: refetchSettlement } = useSettlementProjects({
     category: selectedCategory === '전체' ? undefined : selectedCategory,
     search: debouncedSearchKeyword.trim() || undefined,
-    sortBy: sortOption === '최신순' ? 'latest' : sortOption === '마감임박순' ? 'deadline' : 'fundingRate',
+    sortBy: sortOption,
     page: currentPage - 1, // 백엔드는 0부터 시작
     size: pageSize,
   });
@@ -211,9 +211,12 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
             onChange={(e) => setSortOption(e.target.value)}
             className="px-4 md:px-6 py-3 md:py-4 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 cursor-pointer text-sm md:text-base"
           >
-            <option>최신순</option>
-            <option>마감임박순</option>
-            <option>모금률순</option>
+            <option value="latest">최신순</option>
+            <option value="deadline">마감임박순</option>
+            <option value="mostDonated">가장 많이 후원받은 순</option>
+            <option value="leastDonated">가장 적게 후원받은 순</option>
+            <option value="mostFavorited">가장 관심 많이 받은 순</option>
+            <option value="leastFavorited">가장 관심 적게 받은 순</option>
           </select>
         </div>
 
