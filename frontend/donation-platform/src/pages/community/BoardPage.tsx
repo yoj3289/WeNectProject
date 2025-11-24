@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MessageSquare, Eye, Heart, ChevronRight, Search, Reply, Image as ImageIcon, Send, X, Pin, Loader2 } from 'lucide-react';
 import type { CommunityPost, PostType } from '../../types';
 import { POST_TYPE_LABELS } from '../../types';
-import { usePosts } from '../../hooks/useCommunity';
+import { usePosts, useLikePost, useCreateComment } from '../../hooks/useCommunity';
 import { createPost } from '../../api/community';
 
 interface BoardPageProps {
@@ -67,6 +67,10 @@ const BoardPage: React.FC<BoardPageProps> = ({
     keyword: searchTerm
   });
 
+  // 좋아요 및 댓글 mutation
+  const likePostMutation = useLikePost();
+  const createCommentMutation = useCreateComment();
+
   // API 응답을 ExtendedPost 형식으로 변환
   const extendedPosts: ExtendedPost[] = postsData?.content.map(post => ({
     id: post.postId,
@@ -95,11 +99,43 @@ const BoardPage: React.FC<BoardPageProps> = ({
     setCurrentView('detail');
   };
 
-  const handleAddComment = () => {
-    if (!commentText.trim()) return;
-    alert('댓글이 등록되었습니다.');
-    setCommentText('');
-    setReplyTo(null);
+  const handleLikePost = async () => {
+    if (!selectedPost) return;
+    if (!isLoggedIn) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    try {
+      await likePostMutation.mutateAsync(selectedPost.id);
+    } catch (error) {
+      console.error('좋아요 처리 실패:', error);
+      alert('좋아요 처리에 실패했습니다.');
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!commentText.trim()) {
+      alert('댓글 내용을 입력해주세요.');
+      return;
+    }
+    if (!selectedPost) return;
+
+    try {
+      await createCommentMutation.mutateAsync({
+        postId: selectedPost.id,
+        data: {
+          content: commentText,
+          parentCommentId: replyTo?.id
+        }
+      });
+      alert('댓글이 등록되었습니다.');
+      setCommentText('');
+      setReplyTo(null);
+    } catch (error) {
+      alert('댓글 등록에 실패했습니다.');
+      console.error(error);
+    }
   };
 
   const handleSubmitPost = async () => {
@@ -358,7 +394,11 @@ const BoardPage: React.FC<BoardPageProps> = ({
 
           {/* 액션 버튼 */}
           <div className="px-6 pb-6 flex gap-2">
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+            <button
+              onClick={handleLikePost}
+              disabled={likePostMutation.isPending}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <Heart size={16} />
               좋아요
             </button>
@@ -395,7 +435,8 @@ const BoardPage: React.FC<BoardPageProps> = ({
                 />
                 <button
                   onClick={handleAddComment}
-                  className="px-6 bg-red-500 text-white rounded-lg hover:shadow-lg transition-shadow"
+                  disabled={createCommentMutation.isPending}
+                  className="px-6 bg-red-500 text-white rounded-lg hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send size={20} />
                 </button>

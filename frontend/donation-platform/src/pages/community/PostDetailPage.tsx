@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Eye, Edit, Trash2, Reply, Send, X, Loader2 } from 'lucide-react';
+import { Eye, Edit, Trash2, Reply, Send, X, Loader2, Heart } from 'lucide-react';
 import type { CommunityPost, Comment, PostType } from '../../types';
 import { POST_TYPE_LABELS } from '../../types';
-import { usePost, useComments, useCreateComment, useDeleteComment, useUpdateComment } from '../../hooks/useCommunity';
+import { usePost, useComments, useCreateComment, useDeleteComment, useUpdateComment, useLikePost } from '../../hooks/useCommunity';
 
 interface PostDetailPageProps {
   selectedPost: CommunityPost | null;
@@ -44,6 +44,7 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
   const createCommentMutation = useCreateComment();
   const updateCommentMutation = useUpdateComment();
   const deleteCommentMutation = useDeleteComment();
+  const likePostMutation = useLikePost();
 
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -94,6 +95,22 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
       onIncrementView(post.id);
     }
   }, [post?.id]);
+
+  // 게시글 좋아요
+  const handleLikePost = async () => {
+    if (!post) return;
+    if (!isLoggedIn) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    try {
+      await likePostMutation.mutateAsync(post.id);
+    } catch (error) {
+      console.error('좋아요 처리 실패:', error);
+      alert('좋아요 처리에 실패했습니다.');
+    }
+  };
 
   // 댓글 추가
   const addComment = async (content: string, parentId?: number) => {
@@ -311,6 +328,20 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
               </div>
             </div>
           )}
+
+          {/* 좋아요 버튼 */}
+          <div className="flex gap-2 pb-6 mb-6 border-b border-gray-200">
+            {isLoggedIn && (
+              <button
+                onClick={handleLikePost}
+                disabled={likePostMutation.isPending}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Heart size={16} />
+                좋아요
+              </button>
+            )}
+          </div>
 
           {/* 댓글 섹션 */}
           <div className="mt-8 border-t pt-8">
