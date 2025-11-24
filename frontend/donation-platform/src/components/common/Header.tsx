@@ -33,34 +33,34 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-[1400px] mx-auto px-8 py-5 flex items-center justify-between">
+      <div className="max-w-[1400px] mx-auto px-3 md:px-6 lg:px-8 py-3 md:py-4 lg:py-5 flex items-center justify-between gap-2 md:gap-4">
         {/* 로고 */}
         <Link
           to="/"
-          className="flex items-center gap-2"
+          className="flex items-center gap-1 md:gap-2 flex-shrink-0"
         >
-          <Heart className="text-red-500" size={32} fill="currentColor" />
-          <span className="text-2xl font-bold">위넥트</span>
+          <Heart className="text-red-500" size={24} fill="currentColor" />
+          <span className="text-lg md:text-xl lg:text-2xl font-bold">위넥트</span>
         </Link>
 
         {/* 네비게이션 메뉴 */}
-        <nav className="flex items-center gap-8">
+        <nav className="flex items-center gap-3 md:gap-6 lg:gap-8">
           <Link
             to="/projects"
-            className="text-lg font-semibold hover:text-red-500 transition-colors"
+            className="text-sm md:text-base lg:text-lg font-semibold hover:text-red-500 transition-colors whitespace-nowrap"
           >
             프로젝트
           </Link>
           <Link
             to="/community"
-            className="text-lg font-semibold hover:text-red-500 transition-colors"
+            className="text-sm md:text-base lg:text-lg font-semibold hover:text-red-500 transition-colors whitespace-nowrap"
           >
             커뮤니티
           </Link>
           {isLoggedIn && userType === 'admin' && (
             <Link
               to="/admin"
-              className="text-lg font-semibold hover:text-red-500 transition-colors"
+              className="text-sm md:text-base lg:text-lg font-semibold hover:text-red-500 transition-colors whitespace-nowrap"
             >
               관리자
             </Link>
@@ -68,18 +68,18 @@ const Header: React.FC<HeaderProps> = ({
         </nav>
 
         {/* 사용자 메뉴 */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1 md:gap-2 lg:gap-4 flex-shrink-0">
           {isLoggedIn ? (
             <>
               {/* 알림 버튼 */}
               <div className="relative">
                 <button
                   onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                  className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="relative p-1.5 md:p-2 hover:bg-gray-100 rounded-full transition-colors"
                 >
-                  <Bell size={24} />
+                  <Bell size={20} className="md:w-6 md:h-6" />
                   {unreadData && unreadData.count > 0 && (
-                    <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    <span className="absolute top-0 right-0 w-4 h-4 md:w-5 md:h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                       {unreadData.count}
                     </span>
                   )}
@@ -95,26 +95,26 @@ const Header: React.FC<HeaderProps> = ({
               {/* 마이페이지 버튼 */}
               <Link
                 to="/profile"
-                className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="flex items-center gap-1 md:gap-2 px-2 md:px-3 lg:px-4 py-1.5 md:py-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <User size={24} />
-                <span className="font-semibold">{userProfile.name}</span>
+                <User size={20} className="md:w-6 md:h-6 flex-shrink-0" />
+                <span className="font-semibold text-sm md:text-base whitespace-nowrap">{userProfile.name}</span>
               </Link>
 
               {/* 로그아웃 버튼 */}
               <button
                 onClick={handleLogout}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1.5 md:p-2 hover:bg-gray-100 rounded-full transition-colors"
                 title="로그아웃"
               >
-                <LogOut size={24} />
+                <LogOut size={20} className="md:w-6 md:h-6" />
               </button>
             </>
           ) : (
             /* 로그인 버튼 */
             <Link
               to="/login"
-              className="px-6 py-3 font-semibold hover:bg-gray-100 rounded-lg transition-colors inline-block"
+              className="px-3 py-2 md:px-4 md:py-2.5 lg:px-6 lg:py-3 text-sm md:text-base font-semibold hover:bg-gray-100 rounded-lg transition-colors inline-block whitespace-nowrap"
             >
               로그인
             </Link>

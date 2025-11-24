@@ -290,21 +290,21 @@ const ProjectActivePage: React.FC<ProjectActivePageProps> = ({
             ) : (
               <>
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="p-6 bg-gradient-to-br from-red-50 to-pink-50 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-2">기부자 수</p>
+                  <div className="p-6 bg-white rounded-lg border border-gray-300">
+                    <p className="text-sm text-gray-900 mb-2">기부자 수</p>
                     <p className="text-3xl font-bold text-red-600">{donors.length}명</p>
                   </div>
-                  <div className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-2">총 기부액</p>
+                  <div className="p-6 bg-white rounded-lg border border-gray-300">
+                    <p className="text-sm text-gray-900 mb-2">총 기부액</p>
                     <p className="text-3xl font-bold text-blue-600">
                       {donors.length > 0
                         ? formatAmount(donors.reduce((sum, d) => sum + d.amount, 0))
                         : 0}원
                     </p>
                   </div>
-                  <div className="p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-2">최고 기부액</p>
-                    <p className="text-3xl font-bold text-purple-600">
+                  <div className="p-6 bg-white rounded-lg border border-gray-300">
+                    <p className="text-sm text-gray-900 mb-2">최고 기부액</p>
+                    <p className="text-3xl font-bold text-orange-600">
                       {donors.length > 0
                         ? formatAmount(Math.max(...donors.map(d => d.amount)))
                         : 0}원

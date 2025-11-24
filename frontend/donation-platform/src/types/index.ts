@@ -207,6 +207,6 @@ export interface SettlementSummary {
   expenseCount: number;          // 지출 건수
   donorCount: number;            // 기부자 수
   completedDate: string;         // 프로젝트 종료일
-  settlementStatus: 'pending' | 'in_progress' | 'completed';  // 결산 상태
+  settlementStatus: 'no_request' | 'pending' | 'in_progress' | 'completed';  // 결산 상태
   remainingPlan?: string;        // 잔여금 처리 계획
 }

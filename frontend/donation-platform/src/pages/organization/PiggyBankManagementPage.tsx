@@ -165,41 +165,41 @@ const PiggyBankManagementPage: React.FC = () => {
         {/* 저금통 요약 카드 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {/* 총 금액 */}
-          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-200">
+          <div className="bg-white rounded-xl p-6 border border-gray-300">
             <div className="flex items-center gap-2 mb-3">
-              <Wallet className="text-blue-600" size={20} />
-              <p className="text-sm text-blue-700 font-medium">총 저금통 금액</p>
+              <Wallet className="text-red-600" size={20} />
+              <p className="text-sm text-gray-900 font-medium">총 저금통 금액</p>
             </div>
-            <p className="text-3xl font-bold text-blue-900 mb-1">
+            <p className="text-3xl font-bold text-red-600 mb-1">
               {formatAmount(piggyBank.totalAmount)}원
             </p>
-            <p className="text-xs text-blue-600">정산 승인 금액</p>
+            <p className="text-xs text-gray-500">정산 승인 금액</p>
           </div>
 
           {/* 인출 금액 */}
-          <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-200">
+          <div className="bg-white rounded-xl p-6 border border-gray-300">
             <div className="flex items-center gap-2 mb-3">
-              <TrendingDown className="text-orange-600" size={20} />
-              <p className="text-sm text-orange-700 font-medium">총 인출 금액</p>
+              <TrendingDown className="text-green-600" size={20} />
+              <p className="text-sm text-gray-900 font-medium">총 인출 금액</p>
             </div>
-            <p className="text-3xl font-bold text-orange-900 mb-1">
+            <p className="text-3xl font-bold text-green-600 mb-1">
               {formatAmount(piggyBank.withdrawnAmount)}원
             </p>
-            <p className="text-xs text-orange-600">
+            <p className="text-xs text-gray-500">
               {piggyBank.withdrawalHistory.length}건 인출
             </p>
           </div>
 
           {/* 잔액 */}
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+          <div className="bg-white rounded-xl p-6 border border-gray-300">
             <div className="flex items-center gap-2 mb-3">
-              <Wallet className="text-green-600" size={20} />
-              <p className="text-sm text-green-700 font-medium">현재 잔액</p>
+              <Wallet className="text-orange-600" size={20} />
+              <p className="text-sm text-gray-900 font-medium">현재 잔액</p>
             </div>
-            <p className="text-3xl font-bold text-green-900 mb-1">
+            <p className="text-3xl font-bold text-orange-600 mb-1">
               {formatAmount(piggyBank.balance)}원
             </p>
-            <p className="text-xs text-green-600">
+            <p className="text-xs text-gray-500">
               {piggyBank.balance === 0 ? '정산 요청 가능' : '인출 가능'}
             </p>
           </div>
@@ -299,10 +299,10 @@ const PiggyBankManagementPage: React.FC = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[640px]">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    <th className="text-left py-3 px-3 md:px-4 font-semibold text-gray-700 whitespace-nowrap w-[110px] md:w-auto">
                       <button
                         onClick={() => handleSort('date')}
                         className="flex items-center gap-1 hover:text-gray-900"
@@ -313,10 +313,10 @@ const PiggyBankManagementPage: React.FC = () => {
                         )}
                       </button>
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    <th className="text-left py-3 px-3 md:px-4 font-semibold text-gray-700 whitespace-nowrap">
                       카테고리
                     </th>
-                    <th className="text-right py-3 px-4 font-semibold text-gray-700">
+                    <th className="text-right py-3 px-3 md:px-4 font-semibold text-gray-700 whitespace-nowrap w-[120px] md:w-auto">
                       <button
                         onClick={() => handleSort('amount')}
                         className="flex items-center gap-1 hover:text-gray-900 ml-auto"
@@ -327,10 +327,10 @@ const PiggyBankManagementPage: React.FC = () => {
                         )}
                       </button>
                     </th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">
+                    <th className="text-center py-3 px-3 md:px-4 font-semibold text-gray-700 whitespace-nowrap w-[80px] md:w-auto">
                       상태
                     </th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">
+                    <th className="text-center py-3 px-3 md:px-4 font-semibold text-gray-700 whitespace-nowrap w-[100px] md:w-auto">
                       상세 정보
                     </th>
                   </tr>
@@ -341,27 +341,27 @@ const PiggyBankManagementPage: React.FC = () => {
                       key={expense.expenseId}
                       className="border-b border-gray-100 hover:bg-gray-50"
                     >
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-2">
-                          <Calendar size={16} className="text-gray-400" />
-                          <span className="text-sm">
+                      <td className="py-3 px-3 md:py-4 md:px-4 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 md:gap-2">
+                          <Calendar size={14} className="text-gray-400 flex-shrink-0 md:w-4 md:h-4" />
+                          <span className="text-xs md:text-sm">
                             {formatDate(expense.expenseDate)}
                           </span>
                         </div>
                       </td>
-                      <td className="py-4 px-4">
-                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">
+                      <td className="py-3 px-3 md:py-4 md:px-4">
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium whitespace-nowrap inline-block max-w-[200px] md:max-w-none truncate md:truncate-none">
                           {expense.category}
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-right">
-                        <span className="font-bold text-orange-600">
+                      <td className="py-3 px-3 md:py-4 md:px-4 text-right whitespace-nowrap">
+                        <span className="font-bold text-orange-600 text-sm md:text-base">
                           {formatAmount(expense.amount)}원
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-center">
+                      <td className="py-3 px-3 md:py-4 md:px-4 text-center">
                         <span
-                          className={`px-2 py-1 rounded text-xs font-semibold ${
+                          className={`px-2 py-0.5 md:py-1 rounded text-xs font-semibold whitespace-nowrap ${
                             expense.status === 'APPROVED'
                               ? 'bg-green-100 text-green-700'
                               : expense.status === 'PENDING'
@@ -380,12 +380,12 @@ const PiggyBankManagementPage: React.FC = () => {
                             : expense.status}
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-center">
+                      <td className="py-3 px-3 md:py-4 md:px-4 text-center">
                         <button
                           onClick={() => setSelectedExpense(expense)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 md:px-3 md:py-1.5 bg-blue-600 text-white rounded md:rounded-lg text-xs md:text-sm font-medium hover:bg-blue-700 transition-colors whitespace-nowrap"
                         >
-                          <Eye size={16} />
+                          <Eye size={14} className="md:w-4 md:h-4" />
                           상세보기
                         </button>
                       </td>

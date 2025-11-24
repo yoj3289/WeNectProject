@@ -23,7 +23,7 @@ public class SettlementController {
      * 프로젝트 결산 요약 조회
      */
     @GetMapping("/project/{projectId}")
-    public ResponseEntity<SettlementSummaryResponse> getSettlementSummary(@PathVariable Long projectId) {
+    public ResponseEntity<SettlementSummaryResponse> getSettlementSummary(@PathVariable("projectId") Long projectId) {
         log.info("프로젝트 결산 요약 조회 요청 - projectId: {}", projectId);
         SettlementSummaryResponse summary = settlementService.getSettlementSummary(projectId);
         return ResponseEntity.ok(summary);

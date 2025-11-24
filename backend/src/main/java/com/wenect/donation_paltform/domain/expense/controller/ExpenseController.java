@@ -79,7 +79,7 @@ public class ExpenseController {
      * 프로젝트별 지출 내역 목록 조회
      */
     @GetMapping("/project/{projectId}")
-    public ResponseEntity<List<ExpenseResponse>> getExpensesByProject(@PathVariable Long projectId) {
+    public ResponseEntity<List<ExpenseResponse>> getExpensesByProject(@PathVariable("projectId") Long projectId) {
         log.info("프로젝트별 지출 내역 조회 요청 - projectId: {}", projectId);
         List<ExpenseResponse> expenses = expenseService.getAllExpensesByProject(projectId);
         return ResponseEntity.ok(expenses);
