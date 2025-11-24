@@ -359,8 +359,11 @@ const PiggyBankManagementPage: React.FC = () => {
       {/* 정산 요청 모달 */}
       {isSettlementModalOpen && (
         <SettlementRequestModal
-          isOpen={isSettlementModalOpen}
           onClose={() => setIsSettlementModalOpen(false)}
+          onSuccess={() => {
+            setIsSettlementModalOpen(false);
+            refetch();
+          }}
           projectId={piggyBank.projectId}
           projectTitle={piggyBank.projectTitle}
           totalAmount={piggyBank.totalAmount}

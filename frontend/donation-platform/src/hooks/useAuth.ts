@@ -45,9 +45,11 @@ export function useAuth() {
     mutationFn: authApi.signup,
     onSuccess: (data) => {
       // 회원가입 성공 시 자동 로그인
-      setLogin(data.token, data.user);
-      apiClient.setToken(data.token);
-      queryClient.invalidateQueries();
+      if (data.token) {
+        setLogin(data.token, data.user);
+        apiClient.setToken(data.token);
+        queryClient.invalidateQueries();
+      }
     },
     onError: (error: any) => {
       console.error('회원가입 실패:', error);

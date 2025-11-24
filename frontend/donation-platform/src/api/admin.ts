@@ -33,6 +33,7 @@ export interface ApproveOrganizationRequest {
 export interface RejectOrganizationRequest {
   userId: number;
   rejectionReason: string;
+  rejectionFields?: string;
 }
 
 export interface AdminSettlementFilters {
@@ -70,6 +71,7 @@ export interface AdminDashboardResponse {
   userChange: number;
   pendingApprovals: number;
   pendingSettlements: number;
+  pendingExpenses: number;
 }
 
 export interface CategoryDistributionResponse {

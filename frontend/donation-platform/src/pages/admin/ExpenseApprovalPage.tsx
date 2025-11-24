@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, DollarSign, FileText, CheckCircle, XCircle, Eye, Loader2, AlertCircle } from 'lucide-react';
 import { useExpensesByStatus, useApproveExpense, useRejectExpense } from '../../hooks/useExpenses';
-import type { ExpenseResponse } from '../../types/expense';
+import type { ExpenseResponse } from '../../api/piggyBanks';
 
 /**
  * 관리자 지출 승인 관리 페이지

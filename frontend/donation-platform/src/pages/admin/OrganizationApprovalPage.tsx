@@ -1,25 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Eye, Check, X, FileText, Building2, User, Phone, Mail, Calendar, Download } from 'lucide-react';
 import type { AdminDashboardProps } from '../../types/admin';
-import { getOrganizationApprovals, approveOrganization, rejectOrganization } from '../../api/admin';
+import { getOrganizationApprovals, approveOrganization, rejectOrganization, type OrganizationApprovalResponse } from '../../api/admin';
 
 interface OrganizationApprovalPageProps extends AdminDashboardProps {}
-
-interface OrganizationApproval {
-  orgId: number;
-  userId: number;
-  userName: string;
-  email: string;
-  phone: string;
-  organizationName: string;
-  businessNumber: string;
-  representativeName: string;
-  documents: string[];
-  status: 'pending' | 'approved' | 'rejected';
-  appliedDate: string;
-  processedDate?: string;
-  rejectionReason?: string;
-}
 
 interface ApprovalStats {
   pending: number;
@@ -30,7 +14,7 @@ interface ApprovalStats {
 const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
-  const [selectedApproval, setSelectedApproval] = useState<OrganizationApproval | null>(null);
+  const [selectedApproval, setSelectedApproval] = useState<OrganizationApprovalResponse | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -39,7 +23,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
   const [selectedFields, setSelectedFields] = useState<string[]>([]);  // 거부된 필드 목록
 
   // API 데이터
-  const [approvals, setApprovals] = useState<OrganizationApproval[]>([]);
+  const [approvals, setApprovals] = useState<OrganizationApprovalResponse[]>([]);
   const [stats, setStats] = useState<ApprovalStats>({ pending: 0, approved: 0, rejected: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +37,6 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
       setLoading(true);
       const response = await getOrganizationApprovals({ status: statusFilter });
       setApprovals(response.content || []);
-      setStats(response.stats || { pending: 0, approved: 0, rejected: 0 });
     } catch (error) {
       console.error('기관 목록 조회 실패:', error);
       alert('기관 목록을 불러오는데 실패했습니다.');

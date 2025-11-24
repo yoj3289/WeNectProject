@@ -57,9 +57,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 
   // ✅ 실제 API로 기부 내역 조회
-  const { data: donationHistoryData = [], isLoading: isDonationsLoading } = useMyDonations({});
+  const { data: donationHistoryData, isLoading: isDonationsLoading } = useMyDonations({});
   const donationHistory = React.useMemo(() => {
-    return donationHistoryData.map((d: any) => ({
+    if (!donationHistoryData?.content) return [];
+    return donationHistoryData.content.map((d: any) => ({
       id: d.id,
       projectTitle: d.projectTitle || d.projectName || '프로젝트',
       amount: d.amount,
@@ -368,7 +369,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
     // 참여한 고유 프로젝트 개수 계산
     const getUniqueProjectCount = () => {
-      const uniqueProjects = new Set(donationHistory.map(d => d.projectTitle));
+      const uniqueProjects = new Set(donationHistory.map((d: any) => d.projectTitle));
       return uniqueProjects.size;
     };
 
@@ -378,7 +379,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
       const thisMonth = today.getMonth();
       const thisYear = today.getFullYear();
 
-      return donationHistory.filter(donation => {
+      return donationHistory.filter((donation: any) => {
         const donationDate = new Date(donation.date);
         return donationDate.getMonth() === thisMonth && donationDate.getFullYear() === thisYear;
       }).length;
