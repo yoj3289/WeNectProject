@@ -22,6 +22,7 @@ interface BoardPageProps {
 interface ExtendedPost extends CommunityPost {
   content?: string;
   likes?: number;
+  isLiked?: boolean; // 현재 사용자가 좋아요를 눌렀는지 여부
   isPinned?: boolean;
   authorType?: 'individual' | 'organization';
   images?: string[];
@@ -82,6 +83,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
     date: new Date(post.createdAt).toLocaleDateString('ko-KR'),
     views: post.viewCount,
     likes: post.likeCount,
+    isLiked: post.isLiked,
     isPinned: post.isPinned,
     images: post.images?.map(img => img.imageUrl) || [],
     comments: []
@@ -402,10 +404,14 @@ const BoardPage: React.FC<BoardPageProps> = ({
             <button
               onClick={handleLikePost}
               disabled={likePostMutation.isPending}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                selectedPost.isLiked
+                  ? 'border-red-500 bg-red-50 text-red-600 hover:bg-red-100'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
             >
-              <Heart size={16} />
-              좋아요
+              <Heart size={16} fill={selectedPost.isLiked ? 'currentColor' : 'none'} />
+              좋아요 {selectedPost.likes || 0}
             </button>
           </div>
         </div>

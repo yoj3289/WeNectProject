@@ -335,10 +335,14 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
               <button
                 onClick={handleLikePost}
                 disabled={likePostMutation.isPending}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  postData?.isLiked
+                    ? 'border-red-500 bg-red-50 text-red-600 hover:bg-red-100'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
               >
-                <Heart size={16} />
-                좋아요
+                <Heart size={16} fill={postData?.isLiked ? 'currentColor' : 'none'} />
+                좋아요 {postData?.likeCount || 0}
               </button>
             )}
           </div>

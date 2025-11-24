@@ -20,6 +20,7 @@ public class PostResponse {
     private Integer likeCount;
     private Long commentCount;
     private Boolean isPinned;
+    private Boolean isLiked; // 현재 사용자가 좋아요를 눌렀는지 여부
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<PostImageDto> images;

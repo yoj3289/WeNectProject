@@ -17,6 +17,7 @@ public class CommentResponse {
     private String content;
     private AuthorDto author;
     private Integer likeCount;
+    private Boolean isLiked; // 현재 사용자가 좋아요를 눌렀는지 여부
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Long parentCommentId;

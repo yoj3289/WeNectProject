@@ -152,13 +152,20 @@ public class CommentService {
         }
 
         comment = commentRepository.save(comment);
-        return convertToResponse(comment, null);
+        return convertToResponse(comment, null, userId);
     }
 
     /**
-     * Comment -> CommentResponse 변환
+     * Comment -> CommentResponse 변환 (userId 없이)
      */
     private CommentResponse convertToResponse(Comment comment, Map<Long, List<Comment>> repliesMap) {
+        return convertToResponse(comment, repliesMap, null);
+    }
+
+    /**
+     * Comment -> CommentResponse 변환 (userId 포함)
+     */
+    private CommentResponse convertToResponse(Comment comment, Map<Long, List<Comment>> repliesMap, Long currentUserId) {
         User user = userRepository.findById(comment.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
@@ -168,12 +175,19 @@ public class CommentService {
                 .userType(user.getUserType().name())
                 .build();
 
+        // 현재 사용자가 좋아요를 눌렀는지 확인
+        boolean isLiked = false;
+        if (currentUserId != null) {
+            isLiked = commentLikeRepository.existsByCommentIdAndUserId(comment.getCommentId(), currentUserId);
+        }
+
         CommentResponse response = CommentResponse.builder()
                 .commentId(comment.getCommentId())
                 .postId(comment.getPost().getPostId())
                 .content(comment.getContent())
                 .author(author)
                 .likeCount(comment.getLikeCount())
+                .isLiked(isLiked)
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .parentCommentId(comment.getParentCommentId())
@@ -183,7 +197,7 @@ public class CommentService {
         // 대댓글 추가
         if (repliesMap != null && repliesMap.containsKey(comment.getCommentId())) {
             List<CommentResponse> replies = repliesMap.get(comment.getCommentId()).stream()
-                    .map(reply -> convertToResponse(reply, null))
+                    .map(reply -> convertToResponse(reply, null, currentUserId))
                     .collect(Collectors.toList());
             response.setReplies(replies);
         }

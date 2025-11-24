@@ -244,13 +244,20 @@ public class PostService {
         }
 
         post = postRepository.save(post);
-        return convertToResponse(post);
+        return convertToResponse(post, userId);
     }
 
     /**
-     * Post -> PostResponse 변환
+     * Post -> PostResponse 변환 (userId 없이 - 목록 조회용)
      */
     private PostResponse convertToResponse(Post post) {
+        return convertToResponse(post, null);
+    }
+
+    /**
+     * Post -> PostResponse 변환 (userId 포함 - 좋아요 상태 확인용)
+     */
+    private PostResponse convertToResponse(Post post, Long currentUserId) {
         User user = userRepository.findById(post.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
@@ -273,6 +280,12 @@ public class PostService {
 
         Long commentCount = commentRepository.countByPostId(post.getPostId());
 
+        // 현재 사용자가 좋아요를 눌렀는지 확인
+        boolean isLiked = false;
+        if (currentUserId != null) {
+            isLiked = postLikeRepository.existsByPostIdAndUserId(post.getPostId(), currentUserId);
+        }
+
         return PostResponse.builder()
                 .postId(post.getPostId())
                 .type(post.getType().name())
@@ -283,6 +296,7 @@ public class PostService {
                 .likeCount(post.getLikeCount())
                 .commentCount(commentCount)
                 .isPinned(post.getIsNotice())
+                .isLiked(isLiked)
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .images(imageDtos)
