@@ -485,7 +485,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
                   </tr>
                 ) : (
                   filteredApprovals.map((approval) => (
-                  <tr key={approval.orgId} className="hover:bg-gray-50">
+                  <tr key={approval.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-800">{approval.userName}</td>
                     <td className="px-6 py-4 text-gray-600">{approval.representativeName}</td>
                     <td className="px-6 py-4 text-gray-600 text-sm">{approval.phone}</td>

@@ -180,7 +180,7 @@ export interface AdminUser {
 }
 
 // 지출 내역 관련 타입
-export type ExpenseStatus = 'pending' | 'approved' | 'rejected';
+export type ExpenseStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface Expense {
   expenseId: number;
