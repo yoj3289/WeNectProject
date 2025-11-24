@@ -42,10 +42,13 @@ public interface FavoriteProjectRepository extends JpaRepository<FavoriteProject
 
     /**
      * 관심 등록 수가 많은 프로젝트 ID 목록 조회
+     * - 관심 등록이 1개 이상인 프로젝트만 반환 (0개 제외)
+     * - 관심 등록 수가 같으면 프로젝트 생성일(created_at) 기준 오름차순 (먼저 생성된 것부터)
      */
     @Query("SELECT f.project.projectId " +
             "FROM FavoriteProject f " +
             "GROUP BY f.project.projectId " +
-            "ORDER BY COUNT(f) DESC")
+            "HAVING COUNT(f) > 0 " +
+            "ORDER BY COUNT(f) DESC, MIN(f.project.createdAt) ASC")
     List<Long> findTopProjectIdsByFavoriteCount();
 }

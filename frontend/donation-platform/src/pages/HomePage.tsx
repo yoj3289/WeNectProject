@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Users, CheckCircle, Eye, Award, Heart, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2 } from 'lucide-react';
+import { Shield, Users, CheckCircle, Eye, Award, Heart, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { UserType } from '../types';
 import { getCategoryLabel } from '../types';
 import { usePopularProjects } from '../hooks/useProjects';
@@ -18,9 +18,28 @@ const HomePage: React.FC<HomePageProps> = ({
   userType,
 }) => {
   // ✅ API 호출로 데이터 가져오기 (하드코딩 제거!)
-  const { data: projects, isLoading: projectsLoading } = usePopularProjects(4);
+  const { data: projects, isLoading: projectsLoading } = usePopularProjects(8);
   const { data: recentDonations, isLoading: donationsLoading } = useRecentDonations(4);
   const { data: stats, isLoading: statsLoading } = useStatisticsSummary();
+
+  // 스크롤 컨테이너 ref
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // 스크롤 함수
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const scrollAmount = container.clientWidth; // 컨테이너 너비만큼 스크롤
+      const targetScroll = direction === 'left'
+        ? container.scrollLeft - scrollAmount
+        : container.scrollLeft + scrollAmount;
+
+      container.scrollTo({
+        left: targetScroll,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   // 카테고리별 아이콘과 색상 매핑
   const getCategoryIcon = (category: string) => {
@@ -125,7 +144,7 @@ const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* Popular Projects Section - 스켈레톤 UI */}
+      {/* Popular Projects Section - 좌우 스크롤 UI */}
       <section className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12 lg:py-16">
         {/* 정적 헤더 - 즉시 렌더링 */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 md:mb-10 gap-4">
@@ -138,7 +157,7 @@ const HomePage: React.FC<HomePageProps> = ({
           </Link>
         </div>
 
-        {/* 동적 프로젝트 목록 - 스켈레톤 UI */}
+        {/* 동적 프로젝트 목록 - 좌우 스크롤 */}
         {projectsLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {[...Array(4)].map((_, idx) => (
@@ -163,64 +182,91 @@ const HomePage: React.FC<HomePageProps> = ({
             ))}
           </div>
         ) : projects && projects.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-            {projects.slice(0, 4).map(project => {
-              const progress = calculatePercentage(project.currentAmount, project.targetAmount);
-              const categoryKo = getCategoryLabel(project.category); // 영어 -> 한글 변환
-              const categoryInfo = getCategoryIcon(categoryKo);
-              return (
-                <Link
-                  key={project.id}
-                  to={`/projects/${project.id}`}
-                  className="block border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow"
-                >
-                  {project.image ? (
-                    <div className="h-40 md:h-48 bg-gray-900 overflow-hidden flex items-center justify-center">
-                      <img
-                        src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.image}`}
-                        alt={project.title}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className={`h-40 md:h-48 bg-gradient-to-br ${categoryInfo.bgColor} flex items-center justify-center text-gray-400`}>
-                      {categoryInfo.icon}
-                    </div>
-                  )}
-                  <div className="p-4 md:p-5">
-                    <div className="text-xs md:text-sm text-red-500 font-semibold mb-2">{categoryKo}</div>
-                    <h4 className="text-base md:text-lg font-bold mb-3 line-clamp-2">{project.title}</h4>
+          <div className="relative group">
+            {/* 좌측 스크롤 버튼 */}
+            <button
+              onClick={() => scroll('left')}
+              className="hidden xl:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-12 h-12 items-center justify-center bg-white rounded-full shadow-lg hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
+              aria-label="이전 프로젝트"
+            >
+              <ChevronLeft size={24} className="text-gray-700" />
+            </button>
 
-                    <div className="mb-4">
-                      <div className="flex justify-between text-xs md:text-sm mb-2">
-                        <span className="font-bold text-red-500">{progress}%</span>
-                        <span className="text-gray-500">D-{project.dday}</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-red-500 h-2 rounded-full transition-all"
-                          style={{ width: `${progress}%` }}
-                        ></div>
-                      </div>
-                    </div>
+            {/* 스크롤 컨테이너 */}
+            <div
+              ref={scrollContainerRef}
+              className="overflow-x-auto scrollbar-hide scroll-smooth"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              <div className="grid grid-flow-col auto-cols-[calc(100%-1rem)] sm:auto-cols-[calc(50%-0.75rem)] lg:auto-cols-[calc(33.333%-1rem)] xl:auto-cols-[calc(25%-1.125rem)] gap-4 md:gap-6">
+                {projects.map(project => {
+                  const progress = calculatePercentage(project.currentAmount, project.targetAmount);
+                  const categoryKo = getCategoryLabel(project.category);
+                  const categoryInfo = getCategoryIcon(categoryKo);
+                  return (
+                    <Link
+                      key={project.id}
+                      to={`/projects/${project.id}`}
+                      className="block border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow"
+                    >
+                      {project.image ? (
+                        <div className="h-40 md:h-48 bg-gray-900 overflow-hidden flex items-center justify-center">
+                          <img
+                            src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.image}`}
+                            alt={project.title}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className={`h-40 md:h-48 bg-gradient-to-br ${categoryInfo.bgColor} flex items-center justify-center text-gray-400`}>
+                          {categoryInfo.icon}
+                        </div>
+                      )}
+                      <div className="p-4 md:p-5">
+                        <div className="text-xs md:text-sm text-red-500 font-semibold mb-2">{categoryKo}</div>
+                        <h4 className="text-base md:text-lg font-bold mb-3 line-clamp-2">{project.title}</h4>
 
-                    <div className="flex justify-between text-xs md:text-sm">
-                      <div>
-                        <span className="font-bold text-gray-900">{formatAmount(project.currentAmount)}</span>
-                        <span className="text-gray-500 ml-1">원</span>
+                        <div className="mb-4">
+                          <div className="flex justify-between text-xs md:text-sm mb-2">
+                            <span className="font-bold text-red-500">{progress}%</span>
+                            <span className="text-gray-500">D-{project.dday}</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-red-500 h-2 rounded-full transition-all"
+                              style={{ width: `${progress}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between text-xs md:text-sm">
+                          <div>
+                            <span className="font-bold text-gray-900">{formatAmount(project.currentAmount)}</span>
+                            <span className="text-gray-500 ml-1">원</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-gray-600">
+                            <Users size={14} className="md:w-4 md:h-4" />
+                            <span>{project.donors}명</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1 text-gray-600">
-                        <Users size={14} className="md:w-4 md:h-4" />
-                        <span>{project.donors}명</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 우측 스크롤 버튼 */}
+            <button
+              onClick={() => scroll('right')}
+              className="hidden xl:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-12 h-12 items-center justify-center bg-white rounded-full shadow-lg hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
+              aria-label="다음 프로젝트"
+            >
+              <ChevronRight size={24} className="text-gray-700" />
+            </button>
           </div>
         ) : (
           <div className="text-center py-12">
