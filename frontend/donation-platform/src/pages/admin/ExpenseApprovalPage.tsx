@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Calendar, DollarSign, FileText, CheckCircle, XCircle, Eye, Loader2, AlertCircle } from 'lucide-react';
 import { useExpensesByStatus, useApproveExpense, useRejectExpense } from '../../hooks/useExpenses';
-import type { ExpenseResponse } from '../../api/piggyBanks';
+import type { Expense } from '../../types';
 
 /**
  * 관리자 지출 승인 관리 페이지
  */
 const ExpenseApprovalPage: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
-  const [selectedExpense, setSelectedExpense] = useState<ExpenseResponse | null>(null);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
 
@@ -47,7 +47,7 @@ const ExpenseApprovalPage: React.FC = () => {
     }
   };
 
-  const handleRejectClick = (expense: ExpenseResponse) => {
+  const handleRejectClick = (expense: Expense) => {
     setSelectedExpense(expense);
     setShowRejectModal(true);
     setRejectReason('');
