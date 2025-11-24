@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wallet, TrendingDown, Calendar, FileText, Download, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Wallet, TrendingDown, Calendar, FileText, Download, AlertCircle, Eye, X, ArrowUpDown } from 'lucide-react';
 import { usePiggyBankByProject, usePiggyBankDetail } from '../../hooks/usePiggyBanks';
 import { WithdrawalModal } from '../../components/piggybank/WithdrawalModal';
 import { SettlementRequestModal } from '../../components/settlement/SettlementRequestModal';
+import type { Expense } from '../../types';
 
 /**
  * 저금통 관리 페이지
@@ -19,6 +20,10 @@ const PiggyBankManagementPage: React.FC = () => {
 
   const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
   const [isSettlementModalOpen, setIsSettlementModalOpen] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [sortField, setSortField] = useState<'date' | 'amount'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
 
   // API: projectId로 먼저 저금통 조회하여 piggyId를 얻음
   const {
@@ -48,6 +53,44 @@ const PiggyBankManagementPage: React.FC = () => {
       month: '2-digit',
       day: '2-digit',
     });
+  };
+
+  // 필터링 및 정렬 기능
+  const filteredAndSortedExpenses = useMemo(() => {
+    if (!piggyBank?.withdrawalHistory) return [];
+
+    // 1. 상태 필터링
+    let expenses = [...piggyBank.withdrawalHistory];
+    if (statusFilter !== 'ALL') {
+      expenses = expenses.filter(expense => expense.status === statusFilter);
+    }
+
+    // 2. 정렬
+    expenses.sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortField) {
+        case 'date':
+          comparison = new Date(a.expenseDate).getTime() - new Date(b.expenseDate).getTime();
+          break;
+        case 'amount':
+          comparison = a.amount - b.amount;
+          break;
+      }
+
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return expenses;
+  }, [piggyBank?.withdrawalHistory, sortField, sortOrder, statusFilter]);
+
+  const handleSort = (field: 'date' | 'amount') => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
   };
 
   if (isLoading) {
@@ -196,18 +239,56 @@ const PiggyBankManagementPage: React.FC = () => {
 
         {/* 지출 내역 */}
         <div className="bg-white rounded-xl p-6 border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <h2 className="text-xl font-bold">지출 내역</h2>
-            <p className="text-sm text-gray-600">
-              총 {piggyBank.withdrawalHistory.length}건
-            </p>
+            <div className="flex items-center gap-4 flex-wrap">
+              <span className="text-sm text-gray-600">
+                총 {piggyBank.withdrawalHistory.length}건
+                {statusFilter !== 'ALL' && ` (필터링: ${filteredAndSortedExpenses.length}건)`}
+              </span>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-600">상태:</span>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                  className="border border-gray-300 rounded px-3 py-1.5 text-sm font-medium"
+                >
+                  <option value="ALL">전체</option>
+                  <option value="PENDING">대기중</option>
+                  <option value="APPROVED">승인됨</option>
+                  <option value="REJECTED">반려됨</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <ArrowUpDown size={16} className="text-gray-600" />
+                <span className="text-gray-600">정렬:</span>
+                <select
+                  value={`${sortField}-${sortOrder}`}
+                  onChange={(e) => {
+                    const [field, order] = e.target.value.split('-') as [typeof sortField, typeof sortOrder];
+                    setSortField(field);
+                    setSortOrder(order);
+                  }}
+                  className="border border-gray-300 rounded px-3 py-1.5 text-sm font-medium"
+                >
+                  <option value="date-desc">날짜 (최신순)</option>
+                  <option value="date-asc">날짜 (오래된순)</option>
+                  <option value="amount-desc">금액 (높은순)</option>
+                  <option value="amount-asc">금액 (낮은순)</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          {piggyBank.withdrawalHistory.length === 0 ? (
+          {filteredAndSortedExpenses.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">아직 지출 내역이 없습니다.</p>
-              {canWithdraw && (
+              <p className="text-gray-500">
+                {statusFilter === 'ALL'
+                  ? '아직 지출 내역이 없습니다.'
+                  : `${statusFilter === 'PENDING' ? '대기중' : statusFilter === 'APPROVED' ? '승인된' : '반려된'} 지출 내역이 없습니다.`}
+              </p>
+              {canWithdraw && statusFilter === 'ALL' && (
                 <button
                   onClick={() => setIsWithdrawalModalOpen(true)}
                   className="mt-4 px-6 py-3 bg-orange-500 text-white rounded-lg font-bold hover:bg-orange-600"
@@ -222,27 +303,40 @@ const PiggyBankManagementPage: React.FC = () => {
                 <thead>
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                      날짜
+                      <button
+                        onClick={() => handleSort('date')}
+                        className="flex items-center gap-1 hover:text-gray-900"
+                      >
+                        날짜
+                        {sortField === 'date' && (
+                          <span className="text-xs">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </button>
                     </th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">
                       카테고리
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                      설명
-                    </th>
                     <th className="text-right py-3 px-4 font-semibold text-gray-700">
-                      금액
+                      <button
+                        onClick={() => handleSort('amount')}
+                        className="flex items-center gap-1 hover:text-gray-900 ml-auto"
+                      >
+                        금액
+                        {sortField === 'amount' && (
+                          <span className="text-xs">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </button>
                     </th>
                     <th className="text-center py-3 px-4 font-semibold text-gray-700">
                       상태
                     </th>
                     <th className="text-center py-3 px-4 font-semibold text-gray-700">
-                      영수증
+                      상세 정보
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {piggyBank.withdrawalHistory.map((expense) => (
+                  {filteredAndSortedExpenses.map((expense) => (
                     <tr
                       key={expense.expenseId}
                       className="border-b border-gray-100 hover:bg-gray-50"
@@ -260,58 +354,40 @@ const PiggyBankManagementPage: React.FC = () => {
                           {expense.category}
                         </span>
                       </td>
-                      <td className="py-4 px-4">
-                        <p className="text-sm text-gray-900 line-clamp-2">
-                          {expense.description}
-                        </p>
-                      </td>
                       <td className="py-4 px-4 text-right">
                         <span className="font-bold text-orange-600">
                           {formatAmount(expense.amount)}원
                         </span>
                       </td>
                       <td className="py-4 px-4 text-center">
-                        <div className="flex flex-col items-center gap-1">
-                          <span
-                            className={`px-2 py-1 rounded text-xs font-semibold ${
-                              expense.status === 'APPROVED'
-                                ? 'bg-green-100 text-green-700'
-                                : expense.status === 'PENDING'
-                                ? 'bg-yellow-100 text-yellow-700'
-                                : expense.status === 'REJECTED'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-gray-100 text-gray-700'
-                            }`}
-                          >
-                            {expense.status === 'APPROVED'
-                              ? '승인됨'
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-semibold ${
+                            expense.status === 'APPROVED'
+                              ? 'bg-green-100 text-green-700'
                               : expense.status === 'PENDING'
-                              ? '대기중'
+                              ? 'bg-yellow-100 text-yellow-700'
                               : expense.status === 'REJECTED'
-                              ? '반려됨'
-                              : expense.status}
-                          </span>
-                          {expense.status === 'REJECTED' && expense.rejectionReason && (
-                            <p className="text-xs text-red-600 mt-1">
-                              {expense.rejectionReason}
-                            </p>
-                          )}
-                        </div>
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          {expense.status === 'APPROVED'
+                            ? '승인됨'
+                            : expense.status === 'PENDING'
+                            ? '대기중'
+                            : expense.status === 'REJECTED'
+                            ? '반려됨'
+                            : expense.status}
+                        </span>
                       </td>
                       <td className="py-4 px-4 text-center">
-                        {expense.receiptUrl ? (
-                          <a
-                            href={`${import.meta.env.VITE_IMAGE_BASE_URL}${expense.receiptUrl}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
-                          >
-                            <Download size={16} />
-                            <span className="text-sm">보기</span>
-                          </a>
-                        ) : (
-                          <span className="text-gray-400 text-sm">-</span>
-                        )}
+                        <button
+                          onClick={() => setSelectedExpense(expense)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                        >
+                          <Eye size={16} />
+                          상세보기
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -344,6 +420,132 @@ const PiggyBankManagementPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* 지출 상세 모달 */}
+      {selectedExpense && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* 모달 헤더 */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">지출 상세 정보</h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {formatDate(selectedExpense.expenseDate)}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedExpense(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            {/* 모달 바디 */}
+            <div className="px-6 py-6 space-y-5">
+              {/* 카테고리 */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  카테고리
+                </label>
+                <div className="px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-base font-medium text-gray-900">{selectedExpense.category}</p>
+                </div>
+              </div>
+
+              {/* 지출 금액 */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  지출 금액
+                </label>
+                <div className="px-3 py-2 bg-orange-50 rounded-lg border border-orange-200">
+                  <p className="text-2xl font-bold text-orange-600">
+                    {formatAmount(selectedExpense.amount)}원
+                  </p>
+                </div>
+              </div>
+
+              {/* 상태 */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  상태
+                </label>
+                <span
+                  className={`inline-block px-4 py-2 rounded-lg text-sm font-semibold ${
+                    selectedExpense.status === 'APPROVED'
+                      ? 'bg-green-100 text-green-700 border border-green-300'
+                      : selectedExpense.status === 'PENDING'
+                      ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                      : selectedExpense.status === 'REJECTED'
+                      ? 'bg-red-100 text-red-700 border border-red-300'
+                      : 'bg-gray-100 text-gray-700 border border-gray-300'
+                  }`}
+                >
+                  {selectedExpense.status === 'APPROVED'
+                    ? '승인됨'
+                    : selectedExpense.status === 'PENDING'
+                    ? '승인 대기중'
+                    : selectedExpense.status === 'REJECTED'
+                    ? '반려됨'
+                    : selectedExpense.status}
+                </span>
+              </div>
+
+              {/* 반려 사유 */}
+              {selectedExpense.status === 'REJECTED' && selectedExpense.rejectionReason && (
+                <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
+                  <label className="block text-sm font-semibold text-red-900 mb-2">
+                    반려 사유
+                  </label>
+                  <p className="text-sm text-red-800 whitespace-pre-wrap leading-relaxed">
+                    {selectedExpense.rejectionReason}
+                  </p>
+                </div>
+              )}
+
+              {/* 지출 내역 설명 */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  지출 내역 설명
+                </label>
+                <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
+                    {selectedExpense.description}
+                  </p>
+                </div>
+              </div>
+
+              {/* 영수증 */}
+              {selectedExpense.receiptUrl && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    영수증
+                  </label>
+                  <a
+                    href={`${import.meta.env.VITE_IMAGE_BASE_URL}${selectedExpense.receiptUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+                  >
+                    <Eye size={18} />
+                    영수증 보기
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* 모달 푸터 */}
+            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4">
+              <button
+                onClick={() => setSelectedExpense(null)}
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 인출 모달 */}
       {isWithdrawalModalOpen && (

@@ -147,13 +147,11 @@ export const createProject = async (data: CreateProjectRequest | FormData): Prom
 };
 
 /**
- * 프로젝트 수정
+ * 프로젝트 수정 (제목, 소개만 수정 가능)
  */
-export const updateProject = async (
-  id: number,
-  data: UpdateProjectRequest
-): Promise<Project> => {
-  return apiClient.put<Project>(`/projects/${id}`, data);
+export const updateProject = async (projectId: number, data: { title: string; description: string }): Promise<Project> => {
+  const response = await apiClient.patch<{ data: Project; message: string; success: boolean }>(`/projects/${projectId}`, data);
+  return response.data;
 };
 
 /**

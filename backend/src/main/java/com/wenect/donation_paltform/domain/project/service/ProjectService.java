@@ -576,4 +576,54 @@ public class ProjectService {
                 })
                 .collect(Collectors.toList());
     }
+
+    /**
+     * 프로젝트 수정 (제목, 소개만 수정 가능)
+     * - CLOSED, CANCELLED, REJECTED 상태는 수정 불가
+     */
+    @Transactional
+    public ProjectResponse updateProject(Long userId, Long projectId, com.wenect.donation_paltform.domain.project.dto.UpdateProjectRequest request) {
+        log.info("프로젝트 수정 요청 - projectId: {}, userId: {}", projectId, userId);
+
+        // 1. 프로젝트 조회
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다"));
+
+        // 2. 소유자 확인
+        Organization organization = organizationRepository.findById(project.getOrgId())
+                .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다"));
+
+        if (!organization.getUser().getUserId().equals(userId)) {
+            throw new IllegalArgumentException("프로젝트를 수정할 권한이 없습니다");
+        }
+
+        // 3. 상태 확인 (CLOSED, CANCELLED, REJECTED는 수정 불가)
+        if (project.getStatus() == Project.ProjectStatus.CLOSED ||
+            project.getStatus() == Project.ProjectStatus.CANCELLED ||
+            project.getStatus() == Project.ProjectStatus.REJECTED) {
+            throw new IllegalStateException("종료되거나 취소/반려된 프로젝트는 수정할 수 없습니다");
+        }
+
+        // 4. 제목과 소개만 수정
+        if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
+            project.setTitle(request.getTitle());
+        }
+        if (request.getDescription() != null && !request.getDescription().trim().isEmpty()) {
+            project.setDescription(request.getDescription());
+        }
+
+        // 5. 저장
+        Project updatedProject = projectRepository.save(project);
+
+        // 6. 이미지 조회 및 DTO 변환
+        List<String> imageUrls = projectImageRepository.findByProjectIdOrderByDisplayOrder(projectId)
+                .stream()
+                .map(ProjectImage::getFilePath)
+                .collect(Collectors.toList());
+
+        String categoryName = getCategoryName(updatedProject.getCategoryId());
+
+        log.info("프로젝트 수정 완료 - projectId: {}", projectId);
+        return ProjectResponse.from(updatedProject, categoryName, imageUrls);
+    }
 }

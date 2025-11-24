@@ -108,18 +108,19 @@ export function useCreateProject() {
 }
 
 /**
- * 프로젝트 수정
+ * 프로젝트 수정 (제목, 소개만 수정 가능)
  */
 export function useUpdateProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: projectsApi.UpdateProjectRequest }) =>
-      projectsApi.updateProject(id, data),
+    mutationFn: ({ projectId, title, description }: { projectId: number; title: string; description: string }) =>
+      projectsApi.updateProject(projectId, { title, description }),
     onSuccess: (_, variables) => {
-      // 해당 프로젝트 상세 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: ['project', variables.id] });
+      // 프로젝트 목록 및 상세 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['project', variables.projectId] });
+      queryClient.invalidateQueries({ queryKey: ['settlement-projects'] });
     },
   });
 }

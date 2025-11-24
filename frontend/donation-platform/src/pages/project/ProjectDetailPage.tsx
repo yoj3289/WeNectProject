@@ -3,11 +3,17 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight, Trash2, FileText, Download } from 'lucide-react';
 import { useProjectDetail, useToggleFavoriteProject, useUserFavoriteProjects, useDeleteProject } from '../../hooks/useProjects';
 import { useDonors } from '../../hooks/useDonations';
-import type { TabType } from '../../types';
+import { useExpenses, useSettlementSummary } from '../../hooks/useExpenses';
+import type { TabType, Project } from '../../types';
 import { getCategoryLabel } from '../../types';
 import DonationModal from '../../components/donation/DonationModal';
+import SettlementSummaryTab from '../../components/project/SettlementSummaryTab';
+import ExpenseListTab from '../../components/project/ExpenseListTab';
+import ReceiptViewer from '../../components/project/ReceiptViewer';
+import ProjectTimeline from '../../components/project/ProjectTimeline';
 import { useAuthStore } from '../../stores/authStore';
 import { sanitizeHTML } from '../../utils/sanitize';
+import { getProjectStatusLabel, getProjectStatusBadgeStyle, getProjectStatusBoxStyle } from '../../utils/projectStatus';
 import '../../components/editor/editor.css';
 
 const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
@@ -37,12 +43,26 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
 
   // API: 프로젝트 상세 정보 조회
   const { data: project, isLoading: isLoadingProject, isError: isErrorProject, error: projectError } = useProjectDetail(projectId);
 
+  // 프로젝트 상태 확인
+  const isSettlementPhase = project && (
+    project.status?.toLowerCase() === 'completed' ||
+    project.status?.toLowerCase() === 'settlement' ||
+    project.status?.toLowerCase() === 'closed'
+  );
+
   // API: 기부자 목록 조회
   const { data: donors = [], isLoading: isLoadingDonors } = useDonors(projectId);
+
+  // API: 지출 내역 조회 (결산 단계에서만)
+  const { data: expenses = [], isLoading: isLoadingExpenses } = useExpenses(projectId, isSettlementPhase || false);
+
+  // API: 결산 요약 조회 (결산 단계에서만)
+  const { data: settlement, isLoading: isLoadingSettlement } = useSettlementSummary(projectId, isSettlementPhase || false);
 
   // API: 관심 프로젝트 토글
   const toggleFavoriteMutation = useToggleFavoriteProject();
@@ -251,6 +271,51 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
           </div>
         );
       case 'progress':
+        // 결산 단계: 저금통 정보 + 지출 내역 표시
+        if (isSettlementPhase) {
+          return (
+            <div className="space-y-6">
+              {/* 결산 요약 */}
+              {isLoadingSettlement ? (
+                <div className="text-center py-8">
+                  <Loader2 className="w-8 h-8 text-red-500 animate-spin mx-auto mb-2" />
+                  <p className="text-gray-600">결산 정보를 불러오는 중...</p>
+                </div>
+              ) : settlement ? (
+                <SettlementSummaryTab summary={settlement} />
+              ) : (
+                <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-yellow-800">결산 정보를 불러올 수 없습니다.</p>
+                </div>
+              )}
+
+              {/* 프로젝트 타임라인 (결산 단계) */}
+              <ProjectTimeline
+                project={project}
+                expenses={expenses}
+                settlement={settlement}
+              />
+
+              {/* 지출 내역 */}
+              {isLoadingExpenses ? (
+                <div className="text-center py-8">
+                  <Loader2 className="w-8 h-8 text-red-500 animate-spin mx-auto mb-2" />
+                  <p className="text-gray-600">지출 내역을 불러오는 중...</p>
+                </div>
+              ) : (
+                <div className="mt-6">
+                  <h3 className="text-xl font-bold mb-4">지출 내역 상세</h3>
+                  <ExpenseListTab
+                    expenses={expenses}
+                    onReceiptClick={(expense) => setSelectedReceipt(expense)}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // 모금 단계: 진행 현황 표시
         return (
           <div className="space-y-6">
             <div className="p-6 bg-gray-50 rounded-lg">
@@ -275,35 +340,12 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               </div>
             </div>
 
-            {/* 진행 타임라인 - 실제로는 백엔드에서 프로젝트 이력 API 호출 */}
-            <div className="p-6 bg-white rounded-lg border border-gray-200">
-              <h4 className="font-bold text-lg mb-4">진행 타임라인</h4>
-              <div className="space-y-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-3 h-3 rounded-full bg-red-500 mt-1"></div>
-                  <div>
-                    <p className="font-bold text-gray-800">프로젝트 시작</p>
-                    <p className="text-sm text-gray-600">{project.startDate || '2024-02-01'}</p>
-                  </div>
-                </div>
-                {progress >= 50 && (
-                  <div className="flex items-start gap-4">
-                    <div className="w-3 h-3 rounded-full bg-red-500 mt-1"></div>
-                    <div>
-                      <p className="font-bold text-gray-800">50% 달성</p>
-                      <p className="text-sm text-gray-600">진행 중</p>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-start gap-4">
-                  <div className="w-3 h-3 rounded-full bg-gray-300 mt-1"></div>
-                  <div>
-                    <p className="font-bold text-gray-400">목표 달성 예상</p>
-                    <p className="text-sm text-gray-400">{project.endDate || '2024-03-30'}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* 진행 타임라인 */}
+            <ProjectTimeline
+              project={project}
+              expenses={[]}
+              settlement={null}
+            />
           </div>
         );
       case 'donors':
@@ -546,11 +588,18 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                   <span className="px-2 md:px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs md:text-sm font-semibold">
                     {categoryKo}
                   </span>
-                  <span className="px-2 md:px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs md:text-sm font-semibold">
-                    D-{project.dday}
-                  </span>
-                </div>
-                <div className="flex items-start justify-between gap-4">
+                  {!isSettlementPhase && (
+                    <span className="px-2 md:px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs md:text-sm font-semibold">
+                      D-{project.dday}
+                    </span>
+                  )}
+                  {/* 프로젝트 상태 배지 */}
+                  {isSettlementPhase && (
+                    <span className={`px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-semibold ${getProjectStatusBadgeStyle(project.status)}`}>
+                      {getProjectStatusLabel(project.status)}
+                    </span>
+                  )}
+                </div>                <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 md:mb-3">{project.title}</h1>
                     <p className="text-base md:text-lg lg:text-xl text-gray-600">{project.organization.name}</p>
@@ -603,44 +652,100 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
           {/* 사이드바 */}
           <div className="space-y-4 md:space-y-6 lg:order-last order-first">
             <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 lg:sticky lg:top-8">
-              {/* 진행률 표시 */}
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-4xl font-bold text-red-500">{progress}%</span>
-                  <span className="px-3 py-1 bg-red-50 text-red-500 font-bold rounded-full">
-                    D-{project.dday}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
-                  <div
-                    className="bg-red-500 h-3 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(progress, 100)}%` }}
-                  />
-                </div>
-              </div>
+              {/* 프로젝트 상태 표시 */}
+              {isSettlementPhase ? (
+                // 결산 단계: 프로젝트 상태 + 저금통 정보
+                <div className="mb-6">
+                  {(() => {
+                    const boxStyle = getProjectStatusBoxStyle(project.status);
+                    return (
+                      <div className={`mb-4 p-4 bg-gradient-to-br ${boxStyle.gradient} border-2 ${boxStyle.border} rounded-lg text-center`}>
+                        <p className={`text-sm ${boxStyle.text} font-semibold mb-2`}>프로젝트 상태</p>
+                        <p className={`text-2xl font-bold ${boxStyle.text}`}>
+                          {getProjectStatusLabel(project.status)}
+                        </p>
+                      </div>
+                    );
+                  })()}
 
-              {/* 모금 정보 */}
-              <div className="space-y-4 mb-6 pb-6 border-b border-gray-200">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">현재 모금액</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {formatAmount(project.currentAmount)}원
-                  </p>
+                  {/* 저금통 정보 (결산 진행 중일 때만) */}
+                  {project.status?.toLowerCase() === 'settlement' && settlement && (
+                    <div className="mb-4 p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg">
+                      <p className="text-sm text-green-700 font-semibold mb-2 flex items-center gap-2">
+                        <FileText size={16} />
+                        저금통 잔액
+                      </p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {formatAmount(settlement.remainingAmount)}원
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">
+                        사용액: {formatAmount(settlement.usedAmount)}원 ({Math.round((settlement.usedAmount / settlement.totalAmount) * 100)}%)
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 모금 정보 */}
+                  <div className="space-y-4 mb-6 pb-6 border-b border-gray-200">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">최종 모금액</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {formatAmount(project.currentAmount)}원
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        목표: {formatAmount(project.targetAmount)}원 ({progress}%)
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">참여 인원</p>
+                      <p className="text-lg font-semibold flex items-center gap-1">
+                        <Users size={18} />
+                        {project.donors}명
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">목표 금액</p>
-                  <p className="text-lg font-semibold text-gray-600">
-                    {formatAmount(project.targetAmount)}원
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">참여 인원</p>
-                  <p className="text-lg font-semibold flex items-center gap-1">
-                    <Users size={18} />
-                    {project.donors}명
-                  </p>
-                </div>
-              </div>
+              ) : (
+                // 모금 단계: 진행률 + 모금 정보
+                <>
+                  <div className="mb-6">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-4xl font-bold text-red-500">{progress}%</span>
+                      <span className="px-3 py-1 bg-red-50 text-red-500 font-bold rounded-full">
+                        D-{project.dday}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
+                      <div
+                        className="bg-red-500 h-3 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(progress, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 모금 정보 */}
+                  <div className="space-y-4 mb-6 pb-6 border-b border-gray-200">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">현재 모금액</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {formatAmount(project.currentAmount)}원
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">목표 금액</p>
+                      <p className="text-lg font-semibold text-gray-600">
+                        {formatAmount(project.targetAmount)}원
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">참여 인원</p>
+                      <p className="text-lg font-semibold flex items-center gap-1">
+                        <Users size={18} />
+                        {project.donors}명
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* 관심 프로젝트 버튼 */}
               <button
@@ -663,13 +768,15 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                 {isFavorite ? '관심 프로젝트 등록됨' : '관심 프로젝트 등록'}
               </button>
 
-              {/* 기부하기 버튼 */}
-              <button
-                onClick={handleDonateClick}
-                className="w-full py-4 bg-red-500 text-white rounded-lg font-bold text-lg hover:bg-red-600 transition-all mb-3"
-              >
-                기부하기
-              </button>
+              {/* 기부하기 버튼 (모금 단계에서만 표시) */}
+              {!isSettlementPhase && (
+                <button
+                  onClick={handleDonateClick}
+                  className="w-full py-4 bg-red-500 text-white rounded-lg font-bold text-lg hover:bg-red-600 transition-all mb-3"
+                >
+                  기부하기
+                </button>
+              )}
 
               {/* 링크 복사 버튼 */}
               <button
@@ -690,6 +797,14 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
           projectId={project.id}
           projectTitle={project.title}
           onClose={() => setShowDonationModal(false)}
+        />
+      )}
+
+      {/* 영수증 뷰어 모달 */}
+      {selectedReceipt && (
+        <ReceiptViewer
+          expense={selectedReceipt}
+          onClose={() => setSelectedReceipt(null)}
         />
       )}
 

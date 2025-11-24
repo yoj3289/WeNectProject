@@ -144,8 +144,8 @@ public class ExpenseController {
      */
     @PostMapping("/{expenseId}/reject")
     public ResponseEntity<ExpenseResponse> rejectExpense(
-            @PathVariable Long expenseId,
-            @RequestParam String reason) {
+            @PathVariable("expenseId") Long expenseId,
+            @RequestParam("reason") String reason) {
         log.info("지출 반려 요청 - expenseId: {}, reason: {}", expenseId, reason);
         ExpenseResponse response = expenseService.rejectExpense(expenseId, reason);
         return ResponseEntity.ok(response);
@@ -155,7 +155,7 @@ public class ExpenseController {
      * 전체 지출 내역 상태별 조회 (관리자)
      */
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<ExpenseResponse>> getAllExpensesByStatus(@PathVariable String status) {
+    public ResponseEntity<List<ExpenseResponse>> getAllExpensesByStatus(@PathVariable("status") String status) {
         log.info("전체 지출 내역 조회 요청 - status: {}", status);
         List<ExpenseResponse> expenses = expenseService.getAllExpensesByStatus(status);
         return ResponseEntity.ok(expenses);

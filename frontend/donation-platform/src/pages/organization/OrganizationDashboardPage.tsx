@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, TrendingUp, BarChart3, CheckCircle, Clock, Wallet, Loader2, AlertCircle, Edit, Eye } from 'lucide-react';
 import { useOrganizationStats, useOrganizationProjects } from '../../hooks/useOrganization';
+import { useUpdateProject } from '../../hooks/useProjects';
 import { getCategoryLabel } from '../../types';
 import type { Project } from '../../types';
 import Pagination from '../../components/common/Pagination';
 import { SettlementRequestModal } from '../../components/settlement/SettlementRequestModal';
+import EditProjectModal from '../../components/project/EditProjectModal';
 import * as settlementsApi from '../../api/settlements';
+import { getProjectStatusLabel, getProjectStatusBadgeStyle, canEditProject } from '../../utils/projectStatus';
 
 /**
  * 기관 대시보드 페이지
@@ -25,6 +28,10 @@ const OrganizationDashboardPage: React.FC = () => {
   const pageSize = 12;
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showSettlementModal, setShowSettlementModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  // API: 프로젝트 수정
+  const updateProjectMutation = useUpdateProject();
 
   // 테스트용: 정산 승인
   const handleTestApprove = async () => {
@@ -134,13 +141,21 @@ const OrganizationDashboardPage: React.FC = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-      'active': { label: '진행 중', color: 'bg-blue-100 text-blue-700', icon: <Clock size={14} /> },
-      'completed': { label: '모금 완료', color: 'bg-green-100 text-green-700', icon: <CheckCircle size={14} /> },
-      'settlement': { label: '결산 중', color: 'bg-orange-100 text-orange-700', icon: <Wallet size={14} /> },
-      'closed': { label: '종료', color: 'bg-gray-100 text-gray-700', icon: <CheckCircle size={14} /> },
+    const statusMap: Record<string, { icon: React.ReactNode }> = {
+      'active': { icon: <Clock size={14} /> },
+      'pending': { icon: <Clock size={14} /> },
+      'approved': { icon: <CheckCircle size={14} /> },
+      'completed': { icon: <CheckCircle size={14} /> },
+      'settlement': { icon: <Wallet size={14} /> },
+      'closed': { icon: <CheckCircle size={14} /> },
+      'cancelled': { icon: <AlertCircle size={14} /> },
+      'rejected': { icon: <AlertCircle size={14} /> },
     };
-    return statusMap[status.toLowerCase()] || statusMap['active'];
+    const icon = statusMap[status.toLowerCase()]?.icon || <Clock size={14} />;
+    const label = getProjectStatusLabel(status);
+    const color = getProjectStatusBadgeStyle(status);
+
+    return { label, color, icon };
   };
 
   const displayProjects = projects?.content || [];
@@ -416,14 +431,18 @@ const OrganizationDashboardPage: React.FC = () => {
 
                       {/* 액션 버튼 */}
                       <div className="flex gap-2">
-                        {project.status?.toLowerCase() === 'active' && (
-                          <Link
-                            to={`/projects/${project.id}/edit`}
+                        {/* 수정 버튼: CLOSED, CANCELLED, REJECTED 제외한 모든 상태에서 표시 */}
+                        {canEditProject(project.status) && (
+                          <button
+                            onClick={() => {
+                              setSelectedProject(project);
+                              setShowEditModal(true);
+                            }}
                             className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                           >
                             <Edit size={16} />
                             수정
-                          </Link>
+                          </button>
                         )}
                         {(project.status?.toLowerCase() === 'settlement' || project.status?.toLowerCase() === 'closed') && (
                           <Link
@@ -508,6 +527,25 @@ const OrganizationDashboardPage: React.FC = () => {
               setSelectedProject(null);
             }}
             onSuccess={() => {
+              refetch();
+            }}
+          />
+        )}
+
+        {/* 프로젝트 수정 모달 */}
+        {showEditModal && selectedProject && (
+          <EditProjectModal
+            project={selectedProject}
+            onClose={() => {
+              setShowEditModal(false);
+              setSelectedProject(null);
+            }}
+            onSubmit={async (title, description) => {
+              await updateProjectMutation.mutateAsync({
+                projectId: selectedProject.id,
+                title,
+                description,
+              });
               refetch();
             }}
           />
