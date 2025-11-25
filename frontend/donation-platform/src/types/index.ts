@@ -37,6 +37,7 @@ export interface Project {
   donationOptions?: DonationOption[]; // 기부 옵션 목록
   startDate?: string;               // 프로젝트 시작일
   endDate?: string;                 // 프로젝트 종료일
+  createdAt?: string;               // 프로젝트 생성일
   settlementStatus?: 'PENDING' | 'APPROVED' | 'COMPLETED' | 'REJECTED'; // Settlement 상태
   settlementId?: number;            // Settlement ID
 }
@@ -105,6 +106,8 @@ export interface Comment {
   date: string;
   parentId?: number;
   replies?: Comment[];
+  likeCount?: number;
+  isLiked?: boolean;
 }
 
 export interface CommunityPost {
@@ -195,6 +198,7 @@ export interface Expense {
   rejectionReason?: string;      // 반려 사유
   createdAt: string;             // 등록일
   updatedAt?: string;            // 수정일
+  approvedAt?: string;           // 승인일
 }
 
 // 결산 요약 타입

@@ -25,9 +25,22 @@ public class CommentController {
      * GET /api/posts/{postId}/comments
      */
     @GetMapping("/posts/{postId}/comments")
-    public ResponseEntity<ApiResponse<List<CommentResponse>>> getComments(@PathVariable Long postId) {
+    public ResponseEntity<ApiResponse<List<CommentResponse>>> getComments(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable Long postId) {
         try {
-            List<CommentResponse> response = commentService.getComments(postId);
+            // 로그인한 사용자인 경우 userId 추출 (좋아요 상태 확인용)
+            Long userId = null;
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                try {
+                    String token = authHeader.substring(7);
+                    userId = jwtTokenProvider.getUserId(token);
+                } catch (Exception ignored) {
+                    // 토큰이 유효하지 않은 경우 무시 (비로그인 상태로 처리)
+                }
+            }
+
+            List<CommentResponse> response = commentService.getComments(postId, userId);
             return ResponseEntity.ok(ApiResponse.success(response, "댓글 목록 조회 성공"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(

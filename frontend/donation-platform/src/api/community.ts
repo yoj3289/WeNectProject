@@ -40,6 +40,7 @@ export interface PostResponse {
   likeCount: number;
   commentCount: number;
   isPinned: boolean;
+  isLiked: boolean; // 현재 사용자가 좋아요를 눌렀는지 여부
   createdAt: string;
   updatedAt?: string;
   images?: Array<{
@@ -59,6 +60,7 @@ export interface CommentResponse {
     userType: string;
   };
   likeCount: number;
+  isLiked: boolean; // 현재 사용자가 좋아요를 눌렀는지 여부
   createdAt: string;
   updatedAt?: string;
   parentCommentId?: number;

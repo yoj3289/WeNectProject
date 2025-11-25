@@ -28,7 +28,7 @@ const HomePage: React.FC<HomePageProps> = ({
   const topFundedScrollRef = useRef<HTMLDivElement>(null);
 
   // 스크롤 함수
-  const scroll = (direction: 'left' | 'right', ref: React.RefObject<HTMLDivElement>) => {
+  const scroll = (direction: 'left' | 'right', ref: React.RefObject<HTMLDivElement | null>) => {
     if (ref.current) {
       const container = ref.current;
       const scrollAmount = container.clientWidth; // 컨테이너 너비만큼 스크롤

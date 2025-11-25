@@ -691,6 +691,8 @@ import NotificationPageWithAPI from './pages/notification/NotificationPageWithAP
 import PaymentSuccessPage from './pages/payment/PaymentSuccessPage';
 import PaymentCancelPage from './pages/payment/PaymentCancelPage';
 import PaymentFailPage from './pages/payment/PaymentFailPage';
+import TossPaySuccessPage from './pages/payment/TossPaySuccessPage';
+import TossPayFailPage from './pages/payment/TossPayFailPage';
 
 // Component imports
 import DonationModal from './components/donation/DonationModal';
@@ -1314,6 +1316,10 @@ const AppRoutes: React.FC = () => {
         <Route path="/payment/access" element={<PaymentSuccessPage />} /> {/* 카카오페이 테스트 환경 임시 경로 */}
         <Route path="/payment/cancel" element={<PaymentCancelPage />} />
         <Route path="/payment/fail" element={<PaymentFailPage />} />
+
+        {/* TossPay Payment Pages */}
+        <Route path="/payment/toss/success" element={<TossPaySuccessPage />} />
+        <Route path="/payment/toss/fail" element={<TossPayFailPage />} />
 
         {/* Main Routes - MainLayout으로 감싸기 */}
         <Route path="/*" element={
