@@ -105,6 +105,8 @@ export interface Comment {
   date: string;
   parentId?: number;
   replies?: Comment[];
+  likeCount?: number;
+  isLiked?: boolean;
 }
 
 export interface CommunityPost {

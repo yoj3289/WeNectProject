@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Eye, Edit, Trash2, Reply, Send, X, Loader2, Heart } from 'lucide-react';
+import { Eye, Edit, Trash2, Reply, Send, X, Loader2, Heart, Link } from 'lucide-react';
 import type { CommunityPost, Comment, PostType } from '../../types';
 import { POST_TYPE_LABELS } from '../../types';
-import { usePost, useComments, useCreateComment, useDeleteComment, useUpdateComment, useLikePost } from '../../hooks/useCommunity';
+import { usePost, useComments, useCreateComment, useDeleteComment, useUpdateComment, useLikePost, useLikeComment } from '../../hooks/useCommunity';
 
 interface PostDetailPageProps {
   selectedPost: CommunityPost | null;
@@ -45,6 +45,7 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
   const updateCommentMutation = useUpdateComment();
   const deleteCommentMutation = useDeleteComment();
   const likePostMutation = useLikePost();
+  const likeCommentMutation = useLikeComment();
 
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -73,14 +74,18 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
           id: comment.commentId,
           author: comment.author.userName,
           content: comment.content,
-          date: new Date(comment.createdAt).toLocaleDateString('ko-KR'),
+          date: new Date(comment.createdAt).toISOString(),
+          likeCount: comment.likeCount || 0,
+          isLiked: comment.isLiked || false,
           replies: commentsData
             .filter(r => r.parentCommentId === comment.commentId)
             .map(reply => ({
               id: reply.commentId,
               author: reply.author.userName,
               content: reply.content,
-              date: new Date(reply.createdAt).toLocaleDateString('ko-KR')
+              date: new Date(reply.createdAt).toISOString(),
+              likeCount: reply.likeCount || 0,
+              isLiked: reply.isLiked || false
             }))
         }));
       setComments(convertedComments);
@@ -110,6 +115,31 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
       console.error('좋아요 처리 실패:', error);
       alert('좋아요 처리에 실패했습니다.');
     }
+  };
+
+  // 댓글 좋아요
+  const handleLikeComment = async (commentId: number) => {
+    if (!isLoggedIn) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    try {
+      await likeCommentMutation.mutateAsync(commentId);
+    } catch (error) {
+      console.error('댓글 좋아요 처리 실패:', error);
+      alert('댓글 좋아요 처리에 실패했습니다.');
+    }
+  };
+
+  // 댓글 링크 복사
+  const handleCopyCommentLink = (commentId: number) => {
+    const url = `${window.location.origin}${window.location.pathname}#comment-${commentId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      alert('댓글 링크가 복사되었습니다.');
+    }).catch(() => {
+      alert('링크 복사에 실패했습니다.');
+    });
   };
 
   // 댓글 추가
@@ -186,9 +216,16 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
     }
   };
 
-  // 댓글 수정 권한 체크
+  // 댓글 수정 권한 체크 (5분 이내만 수정 가능)
   const canEditComment = (comment: Comment) => {
-    return isLoggedIn && comment.author === currentUserName;
+    if (!isLoggedIn || comment.author !== currentUserName) return false;
+
+    // 댓글 작성 후 5분이 경과했는지 확인
+    const commentDate = new Date(comment.date);
+    const now = new Date();
+    const diffMinutes = (now.getTime() - commentDate.getTime()) / (1000 * 60);
+
+    return diffMinutes <= 5;
   };
 
   // 게시글 수정 권한 체크
@@ -392,40 +429,11 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
             {/* 댓글 목록 */}
             <div className="space-y-6">
               {comments.map(comment => (
-                <div key={comment.id} className="border-l-2 border-gray-200 pl-4">
+                <div key={comment.id} id={`comment-${comment.id}`} className="border-l-2 border-gray-200 pl-4">
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <span className="font-medium text-gray-900">{comment.author}</span>
-                      <span className="text-sm text-gray-500 ml-2">{comment.date}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {isLoggedIn && (
-                        <button
-                          onClick={() => setReplyTo(comment.id)}
-                          className="text-sm text-gray-600 hover:text-red-600 flex items-center gap-1"
-                        >
-                          <Reply size={14} />
-                          답글
-                        </button>
-                      )}
-                      {canEditComment(comment) && (
-                        <>
-                          <button
-                            onClick={() => startEditComment(comment)}
-                            className="text-sm text-gray-600 hover:text-blue-600 flex items-center gap-1"
-                          >
-                            <Edit size={14} />
-                            수정
-                          </button>
-                          <button
-                            onClick={() => deleteComment(comment.id)}
-                            className="text-sm text-gray-600 hover:text-red-600 flex items-center gap-1"
-                          >
-                            <Trash2 size={14} />
-                            삭제
-                          </button>
-                        </>
-                      )}
+                      <span className="text-sm text-gray-500 ml-2">{new Date(comment.date).toLocaleDateString('ko-KR')}</span>
                     </div>
                   </div>
 
@@ -454,38 +462,74 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <p className="text-gray-700 mb-2">{comment.content}</p>
+                    <>
+                      <p className="text-gray-700 mb-3">{comment.content}</p>
+
+                      {/* 댓글 액션 버튼 */}
+                      <div className="flex items-center gap-3 text-sm">
+                        {isLoggedIn && (
+                          <button
+                            onClick={() => setReplyTo(comment.id)}
+                            className="text-gray-600 hover:text-red-600 flex items-center gap-1"
+                          >
+                            <Reply size={14} />
+                            답글
+                          </button>
+                        )}
+                        {isLoggedIn && (
+                          <button
+                            onClick={() => handleLikeComment(comment.id)}
+                            disabled={likeCommentMutation.isPending}
+                            className={`flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                              comment.isLiked
+                                ? 'text-red-600 hover:text-red-700'
+                                : 'text-gray-600 hover:text-red-600'
+                            }`}
+                          >
+                            <Heart size={14} fill={comment.isLiked ? 'currentColor' : 'none'} />
+                            좋아요 {comment.likeCount || 0}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleCopyCommentLink(comment.id)}
+                          className="text-gray-600 hover:text-blue-600 flex items-center gap-1"
+                        >
+                          <Link size={14} />
+                          링크
+                        </button>
+                        {canEditComment(comment) && (
+                          <>
+                            <button
+                              onClick={() => startEditComment(comment)}
+                              className="text-gray-600 hover:text-blue-600 flex items-center gap-1"
+                            >
+                              <Edit size={14} />
+                              수정
+                            </button>
+                            <button
+                              onClick={() => deleteComment(comment.id)}
+                              className="text-gray-600 hover:text-red-600 flex items-center gap-1"
+                            >
+                              <Trash2 size={14} />
+                              삭제
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </>
                   )}
 
                   {/* 대댓글 */}
                   {comment.replies && comment.replies.length > 0 && (
                     <div className="mt-3 ml-6 space-y-3">
                       {comment.replies.map(reply => (
-                        <div key={reply.id} className="border-l-2 border-red-200 pl-4">
+                        <div key={reply.id} id={`comment-${reply.id}`} className="border-l-2 border-red-200 pl-4">
                           <div className="flex items-start justify-between mb-2">
                             <div>
                               <Reply size={14} className="inline text-red-500 mr-1" />
                               <span className="font-medium text-gray-900">{reply.author}</span>
-                              <span className="text-sm text-gray-500 ml-2">{reply.date}</span>
+                              <span className="text-sm text-gray-500 ml-2">{new Date(reply.date).toLocaleDateString('ko-KR')}</span>
                             </div>
-                            {canEditComment(reply) && (
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => startEditComment(reply)}
-                                  className="text-sm text-gray-600 hover:text-blue-600 flex items-center gap-1"
-                                >
-                                  <Edit size={14} />
-                                  수정
-                                </button>
-                                <button
-                                  onClick={() => deleteComment(reply.id, true, comment.id)}
-                                  className="text-sm text-gray-600 hover:text-red-600 flex items-center gap-1"
-                                >
-                                  <Trash2 size={14} />
-                                  삭제
-                                </button>
-                              </div>
-                            )}
                           </div>
 
                           {/* 대댓글 내용 또는 수정 폼 */}
@@ -513,7 +557,52 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
                               </div>
                             </div>
                           ) : (
-                            <p className="text-gray-700">{reply.content}</p>
+                            <>
+                              <p className="text-gray-700 mb-3">{reply.content}</p>
+
+                              {/* 대댓글 액션 버튼 */}
+                              <div className="flex items-center gap-3 text-sm">
+                                {isLoggedIn && (
+                                  <button
+                                    onClick={() => handleLikeComment(reply.id)}
+                                    disabled={likeCommentMutation.isPending}
+                                    className={`flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                                      reply.isLiked
+                                        ? 'text-red-600 hover:text-red-700'
+                                        : 'text-gray-600 hover:text-red-600'
+                                    }`}
+                                  >
+                                    <Heart size={14} fill={reply.isLiked ? 'currentColor' : 'none'} />
+                                    좋아요 {reply.likeCount || 0}
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleCopyCommentLink(reply.id)}
+                                  className="text-gray-600 hover:text-blue-600 flex items-center gap-1"
+                                >
+                                  <Link size={14} />
+                                  링크
+                                </button>
+                                {canEditComment(reply) && (
+                                  <>
+                                    <button
+                                      onClick={() => startEditComment(reply)}
+                                      className="text-gray-600 hover:text-blue-600 flex items-center gap-1"
+                                    >
+                                      <Edit size={14} />
+                                      수정
+                                    </button>
+                                    <button
+                                      onClick={() => deleteComment(reply.id, true, comment.id)}
+                                      className="text-gray-600 hover:text-red-600 flex items-center gap-1"
+                                    >
+                                      <Trash2 size={14} />
+                                      삭제
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </>
                           )}
                         </div>
                       ))}

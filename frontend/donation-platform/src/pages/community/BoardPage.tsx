@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { MessageSquare, Eye, Heart, ChevronRight, Search, Reply, Image as ImageIcon, Send, X, Pin, Loader2 } from 'lucide-react';
+import { MessageSquare, Eye, Heart, ChevronRight, Search, Reply, Image as ImageIcon, Send, X, Pin, Loader2, Link } from 'lucide-react';
 import type { CommunityPost, PostType } from '../../types';
 import { POST_TYPE_LABELS } from '../../types';
-import { usePosts, useLikePost, useCreateComment, useComments } from '../../hooks/useCommunity';
+import { usePosts, useLikePost, useCreateComment, useComments, useLikeComment } from '../../hooks/useCommunity';
 import { createPost } from '../../api/community';
 
 interface BoardPageProps {
@@ -71,6 +71,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
   // 좋아요 및 댓글 mutation
   const likePostMutation = useLikePost();
   const createCommentMutation = useCreateComment();
+  const likeCommentMutation = useLikeComment();
 
   // 선택된 게시글의 댓글 조회
   const { data: commentsData } = useComments(selectedPost?.id || 0);
@@ -83,13 +84,17 @@ const BoardPage: React.FC<BoardPageProps> = ({
       author: comment.author.userName,
       content: comment.content,
       date: new Date(comment.createdAt).toLocaleDateString('ko-KR'),
+      likeCount: comment.likeCount || 0,
+      isLiked: comment.isLiked || false,
       replies: commentsData
         .filter(r => r.parentCommentId === comment.commentId)
         .map(reply => ({
           id: reply.commentId,
           author: reply.author.userName,
           content: reply.content,
-          date: new Date(reply.createdAt).toLocaleDateString('ko-KR')
+          date: new Date(reply.createdAt).toLocaleDateString('ko-KR'),
+          likeCount: reply.likeCount || 0,
+          isLiked: reply.isLiked || false
         }))
     })) || [];
 
@@ -159,6 +164,29 @@ const BoardPage: React.FC<BoardPageProps> = ({
       alert('댓글 등록에 실패했습니다.');
       console.error(error);
     }
+  };
+
+  const handleLikeComment = async (commentId: number) => {
+    if (!isLoggedIn) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    try {
+      await likeCommentMutation.mutateAsync(commentId);
+    } catch (error) {
+      console.error('댓글 좋아요 처리 실패:', error);
+      alert('댓글 좋아요 처리에 실패했습니다.');
+    }
+  };
+
+  const handleCopyCommentLink = (commentId: number) => {
+    const url = `${window.location.origin}/community/post/${selectedPost?.id}#comment-${commentId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      alert('댓글 링크가 복사되었습니다.');
+    }).catch(() => {
+      alert('링크 복사에 실패했습니다.');
+    });
   };
 
   const handleSubmitPost = async () => {
@@ -479,29 +507,54 @@ const BoardPage: React.FC<BoardPageProps> = ({
           {/* 댓글 목록 */}
           <div className="space-y-4">
             {convertedComments.map(comment => (
-              <div key={comment.id} className="border-l-2 border-gray-200 pl-4">
+              <div key={comment.id} id={`comment-${comment.id}`} className="border-l-2 border-gray-200 pl-4">
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <span className="font-medium text-gray-900">{comment.author}</span>
                     <span className="text-sm text-gray-500 ml-2">{comment.date}</span>
                   </div>
+                </div>
+                <p className="text-gray-700 mb-3">{comment.content}</p>
+
+                {/* 댓글 액션 버튼 */}
+                <div className="flex items-center gap-3 text-sm mb-2">
                   {isLoggedIn && (
                     <button
                       onClick={() => setReplyTo(comment)}
-                      className="text-sm text-gray-600 hover:text-red-600 flex items-center gap-1"
+                      className="text-gray-600 hover:text-red-600 flex items-center gap-1"
                     >
                       <Reply size={14} />
                       답글
                     </button>
                   )}
+                  {isLoggedIn && (
+                    <button
+                      onClick={() => handleLikeComment(comment.id)}
+                      disabled={likeCommentMutation.isPending}
+                      className={`flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        comment.isLiked
+                          ? 'text-red-600 hover:text-red-700'
+                          : 'text-gray-600 hover:text-red-600'
+                      }`}
+                    >
+                      <Heart size={14} fill={comment.isLiked ? 'currentColor' : 'none'} />
+                      좋아요 {comment.likeCount || 0}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleCopyCommentLink(comment.id)}
+                    className="text-gray-600 hover:text-blue-600 flex items-center gap-1"
+                  >
+                    <Link size={14} />
+                    링크
+                  </button>
                 </div>
-                <p className="text-gray-700 mb-2">{comment.content}</p>
 
                 {/* 대댓글 */}
                 {comment.replies && comment.replies.length > 0 && (
                   <div className="mt-3 ml-6 space-y-3">
                     {comment.replies.map(reply => (
-                      <div key={reply.id} className="border-l-2 border-red-200 pl-4">
+                      <div key={reply.id} id={`comment-${reply.id}`} className="border-l-2 border-red-200 pl-4">
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <Reply size={14} className="inline text-red-500 mr-1" />
@@ -509,7 +562,32 @@ const BoardPage: React.FC<BoardPageProps> = ({
                             <span className="text-sm text-gray-500 ml-2">{reply.date}</span>
                           </div>
                         </div>
-                        <p className="text-gray-700">{reply.content}</p>
+                        <p className="text-gray-700 mb-3">{reply.content}</p>
+
+                        {/* 대댓글 액션 버튼 */}
+                        <div className="flex items-center gap-3 text-sm">
+                          {isLoggedIn && (
+                            <button
+                              onClick={() => handleLikeComment(reply.id)}
+                              disabled={likeCommentMutation.isPending}
+                              className={`flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                                reply.isLiked
+                                  ? 'text-red-600 hover:text-red-700'
+                                  : 'text-gray-600 hover:text-red-600'
+                              }`}
+                            >
+                              <Heart size={14} fill={reply.isLiked ? 'currentColor' : 'none'} />
+                              좋아요 {reply.likeCount || 0}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleCopyCommentLink(reply.id)}
+                            className="text-gray-600 hover:text-blue-600 flex items-center gap-1"
+                          >
+                            <Link size={14} />
+                            링크
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
