@@ -33,9 +33,16 @@ public class CommentService {
     private final CommentLikeRepository commentLikeRepository;
 
     /**
-     * 게시글의 댓글 목록 조회 (트리 구조)
+     * 게시글의 댓글 목록 조회 (트리 구조) - 비로그인
      */
     public List<CommentResponse> getComments(Long postId) {
+        return getComments(postId, null);
+    }
+
+    /**
+     * 게시글의 댓글 목록 조회 (트리 구조) - 로그인 사용자
+     */
+    public List<CommentResponse> getComments(Long postId, Long currentUserId) {
         // 게시글 존재 확인
         postRepository.findByIdAndNotDeleted(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
@@ -52,9 +59,9 @@ public class CommentService {
                 .filter(c -> c.getParentCommentId() != null)
                 .collect(Collectors.groupingBy(Comment::getParentCommentId));
 
-        // 트리 구조로 변환
+        // 트리 구조로 변환 (currentUserId 전달하여 isLiked 상태 확인)
         return topLevelComments.stream()
-                .map(comment -> convertToResponse(comment, repliesMap))
+                .map(comment -> convertToResponse(comment, repliesMap, currentUserId))
                 .collect(Collectors.toList());
     }
 
