@@ -103,11 +103,6 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
         return;
       }
 
-      if (paymentMethod === 'TOSS_PAY') {
-        alert('토스페이는 곧 지원될 예정입니다. 카카오페이를 이용해주세요.');
-        return;
-      }
-
       setIsLoading(true);
 
       const requestData = {
@@ -125,19 +120,58 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
       console.log('=== 결제 준비 요청 데이터 ===');
       console.log('전송 데이터:', requestData);
 
-      // 카카오페이 결제 준비 API 호출
-      const response = await apiClient.post<{ next_redirect_pc_url: string }>('/payments/kakao/ready', requestData);
+      if (paymentMethod === 'TOSS_PAY') {
+        // 토스페이 결제 준비 API 호출
+        const response = await apiClient.post<{
+          orderId: string;
+          clientKey: string;
+          amount: number;
+          orderName: string;
+          customerKey: string;
+          successUrl: string;
+          failUrl: string;
+        }>('/payments/toss/ready', requestData);
 
-      console.log('=== 결제 준비 응답 ===');
-      console.log('응답 데이터:', response);
+        console.log('=== 토스페이 결제 준비 응답 ===');
+        console.log('응답 데이터:', response);
 
-      // 카카오페이 결제 페이지로 리다이렉트
-      if (response.next_redirect_pc_url) {
-        console.log('결제 페이지로 이동:', response.next_redirect_pc_url);
-        window.location.href = response.next_redirect_pc_url;
+        // 토스페이먼츠 SDK 동적 로드 및 결제 요청
+        const script = document.createElement('script');
+        script.src = 'https://js.tosspayments.com/v2/standard';
+        script.onload = async () => {
+          // @ts-ignore
+          const tossPayments = window.TossPayments(response.clientKey);
+
+          // 결제 요청
+          tossPayments.requestPayment('카드', {
+            amount: {
+              currency: 'KRW',
+              value: response.amount,
+            },
+            orderId: response.orderId,
+            orderName: response.orderName,
+            successUrl: response.successUrl,
+            failUrl: response.failUrl,
+            customerEmail: donorEmail,
+            customerName: donorName,
+          });
+        };
+        document.head.appendChild(script);
       } else {
-        console.error('next_redirect_pc_url이 없습니다:', response);
-        alert('결제 준비 중 오류가 발생했습니다.');
+        // 카카오페이 결제 준비 API 호출
+        const response = await apiClient.post<{ next_redirect_pc_url: string }>('/payments/kakao/ready', requestData);
+
+        console.log('=== 결제 준비 응답 ===');
+        console.log('응답 데이터:', response);
+
+        // 카카오페이 결제 페이지로 리다이렉트
+        if (response.next_redirect_pc_url) {
+          console.log('결제 페이지로 이동:', response.next_redirect_pc_url);
+          window.location.href = response.next_redirect_pc_url;
+        } else {
+          console.error('next_redirect_pc_url이 없습니다:', response);
+          alert('결제 준비 중 오류가 발생했습니다.');
+        }
       }
     } catch (error: any) {
       if (error.message && error.message.includes('원 이상')) {
@@ -384,11 +418,14 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
               </button>
               <button
                 onClick={() => setPaymentMethod('TOSS_PAY')}
-                disabled
-                className="py-4 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 bg-gray-100 text-gray-400 cursor-not-allowed border-2 border-transparent"
+                className={`py-4 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
+                  paymentMethod === 'TOSS_PAY'
+                    ? 'bg-blue-500 text-white border-2 border-blue-600'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
+                }`}
               >
                 <CreditCard size={20} />
-                토스페이 (준비중)
+                토스페이
               </button>
             </div>
           </div>

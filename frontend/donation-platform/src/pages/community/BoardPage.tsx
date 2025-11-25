@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { MessageSquare, Eye, Heart, ChevronRight, Search, Reply, Image as ImageIcon, Send, X, Pin, Loader2, Link } from 'lucide-react';
+import { MessageSquare, Eye, Heart, Search, Reply, Image as ImageIcon, Send, X, Pin, Loader2, Link, Edit2, Trash2 } from 'lucide-react';
 import type { CommunityPost, PostType } from '../../types';
 import { POST_TYPE_LABELS } from '../../types';
-import { usePosts, useLikePost, useCreateComment, useComments, useLikeComment } from '../../hooks/useCommunity';
+import { usePosts, useLikePost, useCreateComment, useComments, useLikeComment, useUpdateComment, useDeleteComment } from '../../hooks/useCommunity';
 import { createPost } from '../../api/community';
+import { useAuth } from '../../hooks/useAuth';
 
 interface BoardPageProps {
   isLoggedIn: boolean;
@@ -61,6 +62,11 @@ const BoardPage: React.FC<BoardPageProps> = ({
   const [postTitle, setPostTitle] = useState('');
   const [postContent, setPostContent] = useState('');
   const [postType, setPostType] = useState<PostType>('QUESTION');
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingCommentContent, setEditingCommentContent] = useState('');
+
+  // 현재 로그인한 사용자 정보
+  const { user } = useAuth();
 
   // API에서 게시글 데이터 가져오기
   const { data: postsData, isLoading, isError } = usePosts({
@@ -72,31 +78,50 @@ const BoardPage: React.FC<BoardPageProps> = ({
   const likePostMutation = useLikePost();
   const createCommentMutation = useCreateComment();
   const likeCommentMutation = useLikeComment();
+  const updateCommentMutation = useUpdateComment();
+  const deleteCommentMutation = useDeleteComment();
 
   // 선택된 게시글의 댓글 조회
   const { data: commentsData } = useComments(selectedPost?.id || 0);
 
   // 댓글 데이터 변환 (API 응답 → 로컬 타입)
+  // 백엔드가 이미 중첩 구조로 replies를 포함해서 반환함
   const convertedComments = commentsData
     ?.filter(c => !c.parentCommentId)
     .map(comment => ({
       id: comment.commentId,
+      authorId: comment.author.userId,
       author: comment.author.userName,
       content: comment.content,
       date: new Date(comment.createdAt).toLocaleDateString('ko-KR'),
+      createdAt: comment.createdAt,
       likeCount: comment.likeCount || 0,
       isLiked: comment.isLiked || false,
-      replies: commentsData
-        .filter(r => r.parentCommentId === comment.commentId)
-        .map(reply => ({
-          id: reply.commentId,
-          author: reply.author.userName,
-          content: reply.content,
-          date: new Date(reply.createdAt).toLocaleDateString('ko-KR'),
-          likeCount: reply.likeCount || 0,
-          isLiked: reply.isLiked || false
-        }))
+      // 백엔드에서 이미 중첩된 replies 사용
+      replies: (comment.replies || []).map(reply => ({
+        id: reply.commentId,
+        authorId: reply.author.userId,
+        author: reply.author.userName,
+        content: reply.content,
+        date: new Date(reply.createdAt).toLocaleDateString('ko-KR'),
+        createdAt: reply.createdAt,
+        likeCount: reply.likeCount || 0,
+        isLiked: reply.isLiked || false
+      }))
     })) || [];
+
+  // 댓글이 5분 이내에 작성되었는지 확인
+  const isWithin5Minutes = (createdAt: string) => {
+    const created = new Date(createdAt).getTime();
+    const now = Date.now();
+    const fiveMinutes = 5 * 60 * 1000;
+    return (now - created) < fiveMinutes;
+  };
+
+  // 본인 댓글인지 확인
+  const isOwnComment = (authorId: number) => {
+    return user?.userId === authorId;
+  };
 
   // API 응답을 ExtendedPost 형식으로 변환
   const extendedPosts: ExtendedPost[] = postsData?.content.map(post => ({
@@ -136,6 +161,16 @@ const BoardPage: React.FC<BoardPageProps> = ({
 
     try {
       await likePostMutation.mutateAsync(selectedPost.id);
+      // 좋아요 토글 후 selectedPost 상태 업데이트
+      setSelectedPost(prev => {
+        if (!prev) return prev;
+        const newIsLiked = !prev.isLiked;
+        return {
+          ...prev,
+          isLiked: newIsLiked,
+          likes: newIsLiked ? (prev.likes || 0) + 1 : Math.max((prev.likes || 0) - 1, 0)
+        };
+      });
     } catch (error) {
       console.error('좋아요 처리 실패:', error);
       alert('좋아요 처리에 실패했습니다.');
@@ -182,11 +217,86 @@ const BoardPage: React.FC<BoardPageProps> = ({
 
   const handleCopyCommentLink = (commentId: number) => {
     const url = `${window.location.origin}/community/post/${selectedPost?.id}#comment-${commentId}`;
-    navigator.clipboard.writeText(url).then(() => {
+
+    // HTTPS 환경에서는 navigator.clipboard 사용, HTTP에서는 폴백 사용
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(url).then(() => {
+        alert('댓글 링크가 복사되었습니다.');
+      }).catch(() => {
+        fallbackCopyToClipboard(url);
+      });
+    } else {
+      fallbackCopyToClipboard(url);
+    }
+  };
+
+  // HTTP 환경을 위한 클립보드 복사 폴백
+  const fallbackCopyToClipboard = (text: string) => {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      document.execCommand('copy');
       alert('댓글 링크가 복사되었습니다.');
-    }).catch(() => {
-      alert('링크 복사에 실패했습니다.');
-    });
+    } catch (err) {
+      alert('링크 복사에 실패했습니다. URL: ' + text);
+    }
+
+    document.body.removeChild(textArea);
+  };
+
+  // 댓글 수정 핸들러
+  const handleEditComment = async (commentId: number) => {
+    if (!editingCommentContent.trim()) {
+      alert('댓글 내용을 입력해주세요.');
+      return;
+    }
+
+    try {
+      await updateCommentMutation.mutateAsync({
+        commentId,
+        content: editingCommentContent
+      });
+      alert('댓글이 수정되었습니다.');
+      setEditingCommentId(null);
+      setEditingCommentContent('');
+    } catch (error) {
+      console.error('댓글 수정 실패:', error);
+      alert('댓글 수정에 실패했습니다.');
+    }
+  };
+
+  // 댓글 삭제 핸들러
+  const handleDeleteComment = async (commentId: number) => {
+    if (!confirm('정말 이 댓글을 삭제하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      await deleteCommentMutation.mutateAsync(commentId);
+      alert('댓글이 삭제되었습니다.');
+    } catch (error) {
+      console.error('댓글 삭제 실패:', error);
+      alert('댓글 삭제에 실패했습니다.');
+    }
+  };
+
+  // 댓글 수정 모드 시작
+  const startEditComment = (commentId: number, content: string) => {
+    setEditingCommentId(commentId);
+    setEditingCommentContent(content);
+  };
+
+  // 댓글 수정 취소
+  const cancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditingCommentContent('');
   };
 
   const handleSubmitPost = async () => {
@@ -514,7 +624,35 @@ const BoardPage: React.FC<BoardPageProps> = ({
                     <span className="text-sm text-gray-500 ml-2">{comment.date}</span>
                   </div>
                 </div>
-                <p className="text-gray-700 mb-3">{comment.content}</p>
+
+                {/* 댓글 수정 모드 */}
+                {editingCommentId === comment.id ? (
+                  <div className="mb-3">
+                    <textarea
+                      value={editingCommentContent}
+                      onChange={(e) => setEditingCommentContent(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      rows={3}
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={() => handleEditComment(comment.id)}
+                        disabled={updateCommentMutation.isPending}
+                        className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 disabled:opacity-50"
+                      >
+                        저장
+                      </button>
+                      <button
+                        onClick={cancelEditComment}
+                        className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
+                      >
+                        취소
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-700 mb-3">{comment.content}</p>
+                )}
 
                 {/* 댓글 액션 버튼 */}
                 <div className="flex items-center gap-3 text-sm mb-2">
@@ -548,6 +686,26 @@ const BoardPage: React.FC<BoardPageProps> = ({
                     <Link size={14} />
                     링크
                   </button>
+                  {/* 수정/삭제 버튼 (본인 댓글 + 5분 이내 또는 관리자) */}
+                  {isLoggedIn && ((isOwnComment(comment.authorId) && isWithin5Minutes(comment.createdAt)) || userType === 'admin') && editingCommentId !== comment.id && (
+                    <>
+                      <button
+                        onClick={() => startEditComment(comment.id, comment.content)}
+                        className="text-gray-600 hover:text-blue-600 flex items-center gap-1"
+                      >
+                        <Edit2 size={14} />
+                        수정
+                      </button>
+                      <button
+                        onClick={() => handleDeleteComment(comment.id)}
+                        disabled={deleteCommentMutation.isPending}
+                        className="text-gray-600 hover:text-red-600 flex items-center gap-1 disabled:opacity-50"
+                      >
+                        <Trash2 size={14} />
+                        삭제
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 {/* 대댓글 */}
@@ -562,7 +720,35 @@ const BoardPage: React.FC<BoardPageProps> = ({
                             <span className="text-sm text-gray-500 ml-2">{reply.date}</span>
                           </div>
                         </div>
-                        <p className="text-gray-700 mb-3">{reply.content}</p>
+
+                        {/* 대댓글 수정 모드 */}
+                        {editingCommentId === reply.id ? (
+                          <div className="mb-3">
+                            <textarea
+                              value={editingCommentContent}
+                              onChange={(e) => setEditingCommentContent(e.target.value)}
+                              className="w-full p-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              rows={3}
+                            />
+                            <div className="flex gap-2 mt-2">
+                              <button
+                                onClick={() => handleEditComment(reply.id)}
+                                disabled={updateCommentMutation.isPending}
+                                className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 disabled:opacity-50"
+                              >
+                                저장
+                              </button>
+                              <button
+                                onClick={cancelEditComment}
+                                className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
+                              >
+                                취소
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-gray-700 mb-3">{reply.content}</p>
+                        )}
 
                         {/* 대댓글 액션 버튼 */}
                         <div className="flex items-center gap-3 text-sm">
@@ -587,6 +773,26 @@ const BoardPage: React.FC<BoardPageProps> = ({
                             <Link size={14} />
                             링크
                           </button>
+                          {/* 대댓글 수정/삭제 버튼 (본인 댓글 + 5분 이내 또는 관리자) */}
+                          {isLoggedIn && ((isOwnComment(reply.authorId) && isWithin5Minutes(reply.createdAt)) || userType === 'admin') && editingCommentId !== reply.id && (
+                            <>
+                              <button
+                                onClick={() => startEditComment(reply.id, reply.content)}
+                                className="text-gray-600 hover:text-blue-600 flex items-center gap-1"
+                              >
+                                <Edit2 size={14} />
+                                수정
+                              </button>
+                              <button
+                                onClick={() => handleDeleteComment(reply.id)}
+                                disabled={deleteCommentMutation.isPending}
+                                className="text-gray-600 hover:text-red-600 flex items-center gap-1 disabled:opacity-50"
+                              >
+                                <Trash2 size={14} />
+                                삭제
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}

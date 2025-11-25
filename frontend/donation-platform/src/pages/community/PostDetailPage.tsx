@@ -132,14 +132,41 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
     }
   };
 
+  // HTTP 환경을 위한 클립보드 복사 폴백
+  const fallbackCopyToClipboard = (text: string) => {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      document.execCommand('copy');
+      alert('댓글 링크가 복사되었습니다.');
+    } catch (err) {
+      alert('링크 복사에 실패했습니다. URL: ' + text);
+    }
+
+    document.body.removeChild(textArea);
+  };
+
   // 댓글 링크 복사
   const handleCopyCommentLink = (commentId: number) => {
     const url = `${window.location.origin}${window.location.pathname}#comment-${commentId}`;
-    navigator.clipboard.writeText(url).then(() => {
-      alert('댓글 링크가 복사되었습니다.');
-    }).catch(() => {
-      alert('링크 복사에 실패했습니다.');
-    });
+
+    // HTTPS 환경에서는 navigator.clipboard 사용, HTTP에서는 폴백 사용
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(url).then(() => {
+        alert('댓글 링크가 복사되었습니다.');
+      }).catch(() => {
+        fallbackCopyToClipboard(url);
+      });
+    } else {
+      fallbackCopyToClipboard(url);
+    }
   };
 
   // 댓글 추가
