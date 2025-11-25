@@ -131,6 +131,14 @@ class ApiClient {
   }
 
   /**
+   * PATCH 요청
+   */
+  async patch<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    const response: AxiosResponse<T> = await this.axiosInstance.patch(url, data, config);
+    return response.data;
+  }
+
+  /**
    * 파일 업로드 (multipart/form-data)
    */
   async uploadFile<T>(url: string, file: File, fieldName: string = 'file'): Promise<T> {
