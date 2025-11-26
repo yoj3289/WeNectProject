@@ -163,7 +163,7 @@ WeNect/
 
 ```bash
 # 1. 저장소 클론
-git clone https://github.com/your-repo/WeNectProject.git
+git clone https://github.com/yoj3289/WeNectProject.git
 cd WeNectProject
 
 # 2. Docker Compose로 실행
@@ -307,7 +307,7 @@ VITE_IMAGE_BASE_URL=http://140.245.64.178
 
 ## 📞 문의
 
-프로젝트 관련 문의사항은 [Issues](https://github.com/your-repo/WeNectProject/issues)로 등록해주세요.
+프로젝트 관련 문의사항은 [Issues](https://github.com/yoj3289/WeNectProject/issues)로 등록해주세요.
 
 ---
 
