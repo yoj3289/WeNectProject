@@ -326,23 +326,30 @@ public class ProjectService {
 
     /**
      * 인기 프로젝트 조회 (관심 등록 수 기준 정렬)
+     * - ACTIVE 상태의 프로젝트만 대상
+     * - 관심 등록 수가 많은 순으로 정렬
+     * - 관심 등록 수가 같으면 최신순 (created_at 내림차순)
      */
     @Transactional(readOnly = true)
     public List<ProjectResponse> getPopularProjects(int limit) {
-        // 1. 관심 등록 수가 많은 프로젝트 ID 목록 조회
-        List<Long> topProjectIds = favoriteProjectService.getTopProjectIdsByFavoriteCount(limit);
+        // 1. ACTIVE 상태의 프로젝트 조회
+        List<Project> projects = projectRepository.findByStatus(Project.ProjectStatus.ACTIVE);
 
-        // 2. 프로젝트 정보 조회 및 DTO 변환
-        return topProjectIds.stream()
-                .map(projectId -> {
-                    Project project = projectRepository.findById(projectId)
-                            .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다"));
+        // 2. 관심 등록 수로 정렬 및 limit 적용
+        List<Project> sortedProjects = projects.stream()
+                .sorted((p1, p2) -> {
+                    Long count1 = favoriteProjectService.getFavoriteCount(p1.getProjectId());
+                    Long count2 = favoriteProjectService.getFavoriteCount(p2.getProjectId());
+                    int countCompare = count2.compareTo(count1); // 내림차순
+                    if (countCompare != 0) return countCompare;
+                    return p2.getCreatedAt().compareTo(p1.getCreatedAt()); // 동점이면 최신순
+                })
+                .limit(limit)
+                .collect(Collectors.toList());
 
-                    // ACTIVE 상태인 프로젝트만 반환
-                    if (project.getStatus() != Project.ProjectStatus.ACTIVE) {
-                        return null;
-                    }
-
+        // 3. DTO 변환
+        return sortedProjects.stream()
+                .map(project -> {
                     List<String> imageUrls = projectImageRepository.findByProjectIdOrderByDisplayOrder(project.getProjectId())
                             .stream()
                             .map(ProjectImage::getFilePath)
@@ -351,8 +358,6 @@ public class ProjectService {
                     String categoryName = getCategoryName(project.getCategoryId());
                     return ProjectResponse.from(project, categoryName, imageUrls);
                 })
-                .filter(response -> response != null) // null 제거
-                .limit(limit) // ACTIVE가 아닌 프로젝트를 제외한 후 다시 limit 적용
                 .collect(Collectors.toList());
     }
 

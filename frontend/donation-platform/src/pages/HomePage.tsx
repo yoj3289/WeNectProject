@@ -152,7 +152,7 @@ const HomePage: React.FC<HomePageProps> = ({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 md:mb-10 gap-4">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold">지금 주목받는 프로젝트</h2>
           <Link
-            to="/projects"
+            to="/projects?sortBy=mostFavorited"
             className="text-red-500 font-bold hover:underline text-sm md:text-base whitespace-nowrap"
           >
             전체보기 →
@@ -284,7 +284,7 @@ const HomePage: React.FC<HomePageProps> = ({
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 md:mb-10 gap-4">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold">가장 많은 후원을 받고 있는 프로젝트</h2>
             <Link
-              to="/projects"
+              to="/projects?sortBy=mostDonated"
               className="text-red-500 font-bold hover:underline text-sm md:text-base whitespace-nowrap"
             >
               전체보기 →

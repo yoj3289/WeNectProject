@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Search, Heart, FileText, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2, AlertCircle } from 'lucide-react';
 import { useProjects, useSettlementProjects, useToggleFavoriteProject, useUserFavoriteProjects } from '../../hooks/useProjects';
 import type { Project } from '../../types';
@@ -19,6 +19,10 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
   onProjectSelect,
   onNavigateToLogin
 }) => {
+  // URL 파라미터 읽기
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sortByParam = searchParams.get('sortBy');
+
   // State
   const [activeTab, setActiveTab] = useState<'active' | 'settlement'>('active');
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
@@ -27,6 +31,12 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
   const [debouncedSearchKeyword, setDebouncedSearchKeyword] = useState<string>(''); // API 호출용
   const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 12; // 한 페이지에 표시할 프로젝트 수
+
+  // URL 파라미터로부터 정렬 옵션 초기화 (컴포넌트 마운트 시 또는 URL 변경 시)
+  useEffect(() => {
+    const newSortOption = sortByParam || 'latest';
+    setSortOption(newSortOption);
+  }, [sortByParam]);
 
   // Debounce: 사용자 입력 500ms 후 검색 실행
   useEffect(() => {

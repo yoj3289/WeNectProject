@@ -21,8 +21,8 @@ export function usePopularProjects(limit: number = 4) {
   return useQuery({
     queryKey: ['popular-projects', limit],
     queryFn: () => projectsApi.getPopularProjects(limit),
-    // 5분간 캐시 유지
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
+    refetchOnMount: true, // 컴포넌트 마운트 시 항상 최신 데이터 가져오기
   });
 }
 
@@ -33,8 +33,8 @@ export function useTopFundedProjects(limit: number = 8) {
   return useQuery({
     queryKey: ['top-funded-projects', limit],
     queryFn: () => projectsApi.getTopFundedProjects(limit),
-    // 5분간 캐시 유지
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
+    refetchOnMount: true, // 컴포넌트 마운트 시 항상 최신 데이터 가져오기
   });
 }
 
