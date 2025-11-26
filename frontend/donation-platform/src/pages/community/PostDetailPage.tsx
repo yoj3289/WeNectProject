@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Eye, Edit, Trash2, Reply, Send, X, Loader2, Heart, Link } from 'lucide-react';
 import type { CommunityPost, Comment, PostType } from '../../types';
 import { POST_TYPE_LABELS } from '../../types';
@@ -34,8 +34,10 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
   onIncrementView
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const postId = id ? parseInt(id) : selectedPost?.id;
+  const hasScrolledToComment = useRef(false);
 
   // API에서 게시글 데이터 가져오기
   const { data: postData, isLoading: isPostLoading, isError: isPostError } = usePost(postId || 0);
@@ -100,6 +102,33 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
       onIncrementView(post.id);
     }
   }, [post?.id]);
+
+  // URL 해시로 특정 댓글로 스크롤 (댓글 링크 공유 시)
+  useEffect(() => {
+    // 이미 스크롤했거나 댓글이 로드되지 않았으면 무시
+    if (hasScrolledToComment.current || !commentsData || isCommentsLoading) {
+      return;
+    }
+
+    const hash = location.hash;
+    if (hash && hash.startsWith('#comment-')) {
+      // 약간의 지연 후 스크롤 (DOM 렌더링 대기)
+      const timeoutId = setTimeout(() => {
+        const element = document.querySelector(hash);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // 하이라이트 효과 추가
+          element.classList.add('bg-yellow-50', 'transition-colors', 'duration-1000');
+          setTimeout(() => {
+            element.classList.remove('bg-yellow-50');
+          }, 2000);
+          hasScrolledToComment.current = true;
+        }
+      }, 300);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [location.hash, commentsData, isCommentsLoading]);
 
   // 게시글 좋아요
   const handleLikePost = async () => {

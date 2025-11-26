@@ -135,26 +135,41 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
         console.log('=== 토스페이 결제 준비 응답 ===');
         console.log('응답 데이터:', response);
 
-        // 토스페이먼츠 SDK 동적 로드 및 결제 요청
+        // 토스페이먼츠 SDK v2 동적 로드 및 결제 요청
         const script = document.createElement('script');
         script.src = 'https://js.tosspayments.com/v2/standard';
         script.onload = async () => {
-          // @ts-ignore
-          const tossPayments = window.TossPayments(response.clientKey);
+          try {
+            // @ts-ignore - TossPayments SDK v2 API
+            const tossPayments = window.TossPayments(response.clientKey);
 
-          // 결제 요청
-          tossPayments.requestPayment('카드', {
-            amount: {
-              currency: 'KRW',
-              value: response.amount,
-            },
-            orderId: response.orderId,
-            orderName: response.orderName,
-            successUrl: response.successUrl,
-            failUrl: response.failUrl,
-            customerEmail: donorEmail,
-            customerName: donorName,
-          });
+            // v2에서는 payment 객체를 먼저 생성해야 함
+            const payment = tossPayments.payment({
+              customerKey: response.customerKey,
+            });
+
+            // 결제 요청
+            await payment.requestPayment({
+              method: 'CARD',
+              amount: {
+                currency: 'KRW',
+                value: response.amount,
+              },
+              orderId: response.orderId,
+              orderName: response.orderName,
+              successUrl: response.successUrl,
+              failUrl: response.failUrl,
+              customerEmail: donorEmail,
+              customerName: donorName,
+            });
+          } catch (error: any) {
+            console.error('토스페이 결제 요청 실패:', error);
+            if (error.code === 'USER_CANCEL') {
+              alert('결제가 취소되었습니다.');
+            } else {
+              alert(`결제 요청 실패: ${error.message || '알 수 없는 오류'}`);
+            }
+          }
         };
         document.head.appendChild(script);
       } else {

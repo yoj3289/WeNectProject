@@ -31,6 +31,10 @@ public class Comment {
     @Column(name = "parent_comment_id")
     private Long parentCommentId;
 
+    // 답글 대상 댓글 ID (대댓글에 대한 답글일 때 사용, 알림용)
+    @Column(name = "reply_to_comment_id")
+    private Long replyToCommentId;
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 

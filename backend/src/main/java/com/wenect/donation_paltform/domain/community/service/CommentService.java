@@ -87,11 +87,12 @@ public class CommentService {
                 .userId(userId)
                 .content(request.getContent())
                 .parentCommentId(request.getParentCommentId())
+                .replyToCommentId(request.getReplyToCommentId())
                 .build();
 
         comment = commentRepository.save(comment);
 
-        return convertToResponse(comment, null);
+        return convertToResponse(comment, null, userId);
     }
 
     /**
@@ -188,6 +189,22 @@ public class CommentService {
             isLiked = commentLikeRepository.existsByCommentIdAndUserId(comment.getCommentId(), currentUserId);
         }
 
+        // 답글 대상 사용자 정보 조회
+        AuthorDto replyToAuthor = null;
+        if (comment.getReplyToCommentId() != null) {
+            Comment replyToComment = commentRepository.findByIdAndNotDeleted(comment.getReplyToCommentId()).orElse(null);
+            if (replyToComment != null) {
+                User replyToUser = userRepository.findById(replyToComment.getUserId()).orElse(null);
+                if (replyToUser != null) {
+                    replyToAuthor = AuthorDto.builder()
+                            .userId(replyToUser.getUserId())
+                            .userName(replyToUser.getUserName())
+                            .userType(replyToUser.getUserType().name())
+                            .build();
+                }
+            }
+        }
+
         CommentResponse response = CommentResponse.builder()
                 .commentId(comment.getCommentId())
                 .postId(comment.getPost().getPostId())
@@ -198,6 +215,8 @@ public class CommentService {
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .parentCommentId(comment.getParentCommentId())
+                .replyToCommentId(comment.getReplyToCommentId())
+                .replyToAuthor(replyToAuthor)
                 .replies(new ArrayList<>())
                 .build();
 

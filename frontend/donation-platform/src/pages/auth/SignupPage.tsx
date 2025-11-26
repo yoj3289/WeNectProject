@@ -1,12 +1,150 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, Loader2, AlertCircle, CheckCircle, X, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import type { UserType } from '../../types';
 
+// 이용약관 내용
+const TERMS_OF_SERVICE = `제1조 (목적)
+이 약관은 WeNect(이하 "회사")가 제공하는 기부 플랫폼 서비스(이하 "서비스")의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.
+
+제2조 (정의)
+① "서비스"란 회사가 제공하는 온라인 기부 중개 플랫폼을 의미합니다.
+② "이용자"란 본 약관에 따라 서비스를 이용하는 회원 및 비회원을 말합니다.
+③ "회원"이란 본 약관에 동의하고 회원가입을 완료한 자를 말합니다.
+④ "기부자"란 서비스를 통해 기부금을 전달하는 이용자를 말합니다.
+⑤ "기관회원"이란 기부금을 수령하는 비영리단체, 사회적기업 등을 말합니다.
+
+제3조 (약관의 효력 및 변경)
+① 본 약관은 서비스 화면에 게시하거나 기타의 방법으로 이용자에게 공지함으로써 효력이 발생합니다.
+② 회사는 관련 법령을 위배하지 않는 범위에서 본 약관을 개정할 수 있습니다.
+③ 변경된 약관은 공지 후 7일이 경과한 날부터 효력이 발생합니다.
+
+제4조 (서비스의 제공)
+회사는 다음과 같은 서비스를 제공합니다:
+① 기부 프로젝트 등록 및 관리 서비스
+② 온라인 기부금 결제 중개 서비스
+③ 기부 내역 관리 및 영수증 발급 서비스
+④ 기부자와 기관 간 커뮤니케이션 서비스
+⑤ 기타 회사가 정하는 서비스
+
+제5조 (회원가입)
+① 이용자는 회사가 정한 절차에 따라 회원가입을 신청합니다.
+② 회사는 다음 각 호에 해당하는 경우 회원가입을 거부할 수 있습니다:
+  1. 타인의 명의를 도용한 경우
+  2. 허위 정보를 기재한 경우
+  3. 기타 회원으로 등록하는 것이 부적절하다고 판단되는 경우
+
+제6조 (회원의 의무)
+① 회원은 서비스 이용 시 다음 행위를 하여서는 안 됩니다:
+  1. 허위 정보 등록 및 타인의 정보 도용
+  2. 회사 및 제3자의 지식재산권 침해
+  3. 서비스의 정상적인 운영을 방해하는 행위
+  4. 기타 관련 법령에 위반되는 행위
+② 회원은 본인의 계정 정보를 안전하게 관리할 책임이 있습니다.
+
+제7조 (기부금 처리)
+① 기부자가 결제한 기부금은 회사가 지정한 결제대행사를 통해 처리됩니다.
+② 기부금은 프로젝트 종료 후 해당 기관회원에게 전달됩니다.
+③ 기부금 환불은 관련 법령 및 회사 정책에 따라 처리됩니다.
+
+제8조 (면책조항)
+① 회사는 천재지변, 전쟁, 기타 불가항력으로 인한 서비스 중단에 대해 책임을 지지 않습니다.
+② 회사는 이용자의 귀책사유로 인한 서비스 이용 장애에 대해 책임을 지지 않습니다.
+③ 회사는 기관회원의 프로젝트 운영 및 기부금 사용에 대해 보증하지 않습니다.
+
+제9조 (분쟁해결)
+① 본 약관과 관련하여 분쟁이 발생한 경우 회사와 이용자는 상호 협의하여 해결합니다.
+② 협의가 이루어지지 않는 경우 관할 법원에 소송을 제기할 수 있습니다.
+
+부칙
+본 약관은 2024년 1월 1일부터 시행합니다.`;
+
+const PRIVACY_POLICY = `제1조 (개인정보의 수집 항목)
+회사는 서비스 제공을 위해 다음과 같은 개인정보를 수집합니다:
+① 필수 수집 항목: 이메일, 비밀번호, 이름, 연락처
+② 기관회원 추가 수집 항목: 기관명, 사업자등록번호, 대표자명, 기관 인증서류
+③ 기부 시 수집 항목: 결제 정보, 기부 내역
+
+제2조 (개인정보의 수집 및 이용 목적)
+① 회원 가입 및 관리: 회원제 서비스 이용에 따른 본인확인, 개인식별, 부정이용 방지
+② 서비스 제공: 기부 중개, 결제 처리, 영수증 발급, 기부 내역 관리
+③ 마케팅 및 광고: 이벤트 정보 제공, 서비스 개선을 위한 통계 분석 (선택 동의 시)
+
+제3조 (개인정보의 보유 및 이용 기간)
+① 회원 탈퇴 시까지 보유하며, 탈퇴 후 지체 없이 파기합니다.
+② 단, 관련 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관합니다:
+  - 계약 또는 청약철회 등에 관한 기록: 5년
+  - 대금결제 및 재화 등의 공급에 관한 기록: 5년
+  - 소비자의 불만 또는 분쟁처리에 관한 기록: 3년
+
+제4조 (개인정보의 제3자 제공)
+① 회사는 원칙적으로 이용자의 개인정보를 외부에 제공하지 않습니다.
+② 다만, 다음의 경우에는 예외로 합니다:
+  1. 이용자가 사전에 동의한 경우
+  2. 법령의 규정에 의한 경우
+  3. 기부금 전달을 위해 기관회원에게 제공하는 경우 (기부자명, 기부금액)
+
+제5조 (개인정보의 파기)
+① 개인정보 보유기간의 경과, 처리목적 달성 등 개인정보가 불필요하게 되었을 때에는 지체 없이 해당 개인정보를 파기합니다.
+② 전자적 파일 형태의 정보는 복구할 수 없는 방법으로 영구 삭제합니다.
+
+제6조 (이용자의 권리)
+① 이용자는 언제든지 자신의 개인정보를 조회하거나 수정할 수 있습니다.
+② 이용자는 회원 탈퇴를 통해 개인정보 처리 정지를 요청할 수 있습니다.
+
+제7조 (개인정보 보호책임자)
+개인정보 보호책임자: WeNect 개인정보보호팀
+연락처: privacy@wenect.com
+
+부칙
+본 방침은 2024년 1월 1일부터 시행합니다.`;
+
+const MARKETING_POLICY = `마케팅 정보 수신 동의
+
+WeNect(이하 "회사")는 회원님께 다양한 혜택과 정보를 제공하기 위해 마케팅 정보 수신 동의를 받고 있습니다.
+
+1. 수집 및 이용 목적
+① 신규 기부 프로젝트 안내
+② 기부 캠페인 및 이벤트 정보 제공
+③ 맞춤형 기부 추천 서비스
+④ 서비스 업데이트 및 새로운 기능 안내
+⑤ 기부 관련 뉴스레터 발송
+
+2. 수집 항목
+① 이메일 주소
+② 휴대폰 번호 (SMS 수신 동의 시)
+
+3. 정보 발송 방법
+① 이메일
+② SMS/MMS
+③ 앱 푸시 알림
+
+4. 수신 동의 철회
+① 회원님은 언제든지 마케팅 정보 수신 동의를 철회할 수 있습니다.
+② 철회 방법: 마이페이지 > 설정 > 알림 설정에서 변경
+③ 또는 수신된 이메일/SMS 하단의 '수신거부' 링크 클릭
+
+5. 동의 거부 시 불이익
+① 마케팅 정보 수신 동의는 선택 사항입니다.
+② 동의하지 않으셔도 서비스 이용에 제한이 없습니다.
+③ 단, 유용한 기부 정보 및 이벤트 혜택을 받으실 수 없습니다.
+
+6. 보유 및 이용 기간
+① 마케팅 정보 수신 동의일로부터 회원 탈퇴 시 또는 동의 철회 시까지
+
+※ 본 동의는 선택 사항이며, 동의하지 않으셔도 WeNect 서비스를 이용하실 수 있습니다.`;
+
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
+
+  // 스텝 관리 (1: 약관 동의, 2: 정보 입력)
+  const [currentStep, setCurrentStep] = useState(1);
+
+  // 회원 유형
   const [signupType, setSignupType] = useState<UserType>('individual');
+
+  // 회원 정보
   const [signupEmail, setSignupEmail] = useState('');
   const [isEmailChecked, setIsEmailChecked] = useState(false);
   const [isEmailAvailable, setIsEmailAvailable] = useState(false);
@@ -20,7 +158,51 @@ const SignupPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
+  // 약관 동의 상태
+  const [agreeAll, setAgreeAll] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [agreeMarketing, setAgreeMarketing] = useState(false);
+
+  // 약관 모달 상태
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showMarketingModal, setShowMarketingModal] = useState(false);
+
   const { signup, isSigningUp, checkEmailAvailability } = useAuth();
+
+  // 전체 동의 핸들러
+  const handleAgreeAll = (checked: boolean) => {
+    setAgreeAll(checked);
+    setAgreeTerms(checked);
+    setAgreePrivacy(checked);
+    setAgreeMarketing(checked);
+  };
+
+  // 개별 동의 변경 시 전체 동의 상태 업데이트
+  const updateAgreeAll = (terms: boolean, privacy: boolean, marketing: boolean) => {
+    setAgreeAll(terms && privacy && marketing);
+  };
+
+  // 다음 단계로 이동
+  const handleNextStep = () => {
+    if (!agreeTerms) {
+      setErrorMessage('이용약관에 동의해주세요.');
+      return;
+    }
+    if (!agreePrivacy) {
+      setErrorMessage('개인정보 처리방침에 동의해주세요.');
+      return;
+    }
+    setErrorMessage('');
+    setCurrentStep(2);
+  };
+
+  // 이전 단계로 이동
+  const handlePrevStep = () => {
+    setErrorMessage('');
+    setCurrentStep(1);
+  };
 
   const checkEmailDuplicate = async (email: string) => {
     // 이메일 형식 검증
@@ -120,53 +302,6 @@ const SignupPage: React.FC = () => {
     return true;
   };
 
-
-  // 회원가입 방법 변경 시도(기관회원가입 오류로 인함 251101)
-  // const handleSignup = async () => {
-  //   if (!validateForm()) {
-  //     return;
-  //   }
-
-  //   try {
-  //     setErrorMessage('');
-
-  //     // 회원가입 요청 데이터 생성
-  //     const signupData = {
-  //       email: signupEmail,
-  //       password: signupPassword,
-  //       userName: signupName,
-  //       phone: signupPhone,
-  //       userType: signupType,
-  //       ...(signupType === 'organization' && {
-  //         organizationName: signupName,
-  //         businessNumber: signupBusinessNumber,
-  //         representativeName: signupRepName,
-  //       }),
-  //     };
-
-  //     await signup(signupData);
-
-  //     // 회원가입 성공
-  //     alert('회원가입이 완료되었습니다!');
-  //     navigate('/login');
-
-  //     // 입력 필드 초기화
-  //     setSignupEmail('');
-  //     setSignupPassword('');
-  //     setSignupPasswordConfirm('');
-  //     setSignupName('');
-  //     setSignupPhone('');
-  //     setSignupBusinessNumber('');
-  //     setSignupRepName('');
-  //     setUploadedFile(null);
-  //     setIsEmailChecked(false);
-  //     setIsEmailAvailable(false);
-  //   } catch (error: any) {
-  //     const message = error.response?.data?.message || '회원가입에 실패했습니다.';
-  //     setErrorMessage(message);
-  //   }
-  // };
-
   const handleSignup = async () => {
     if (!validateForm()) {
       return;
@@ -185,6 +320,7 @@ const SignupPage: React.FC = () => {
         userName: signupName,
         phone: signupPhone,
         userType: signupType.toUpperCase(),
+        agreeMarketing: agreeMarketing,
         ...(signupType === 'organization' && {
           organizationName: signupName,
           businessNumber: signupBusinessNumber,
@@ -226,282 +362,556 @@ const SignupPage: React.FC = () => {
     }
   };
 
+  // 스텝 1: 약관 동의 화면
+  const renderStep1 = () => (
+    <>
+      <h1 className="text-4xl font-bold mb-2">회원가입</h1>
+      <p className="text-gray-600 mb-8">서비스 이용을 위해 약관에 동의해주세요</p>
+
+      {/* 에러 메시지 */}
+      {errorMessage && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+          <p className="text-sm text-red-800">{errorMessage}</p>
+        </div>
+      )}
+
+      {/* 약관 동의 섹션 */}
+      <div className="space-y-4">
+        {/* 전체 동의 */}
+        <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-gray-200">
+          <input
+            type="checkbox"
+            checked={agreeAll}
+            onChange={(e) => handleAgreeAll(e.target.checked)}
+            className="w-5 h-5 text-red-500 border-gray-300 rounded focus:ring-red-500"
+          />
+          <span className="font-bold text-gray-900 text-lg">전체 동의</span>
+        </label>
+
+        <div className="space-y-3">
+          {/* 이용약관 */}
+          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+            <label className="flex items-center gap-3 cursor-pointer flex-1">
+              <input
+                type="checkbox"
+                checked={agreeTerms}
+                onChange={(e) => {
+                  setAgreeTerms(e.target.checked);
+                  updateAgreeAll(e.target.checked, agreePrivacy, agreeMarketing);
+                }}
+                className="w-5 h-5 text-red-500 border-gray-300 rounded focus:ring-red-500"
+              />
+              <span className="text-gray-700">
+                <span className="text-red-500 font-bold">[필수]</span> 이용약관 동의
+              </span>
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowTermsModal(true)}
+              className="text-sm text-gray-500 hover:text-red-500 underline px-2"
+            >
+              보기
+            </button>
+          </div>
+
+          {/* 개인정보 처리방침 */}
+          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+            <label className="flex items-center gap-3 cursor-pointer flex-1">
+              <input
+                type="checkbox"
+                checked={agreePrivacy}
+                onChange={(e) => {
+                  setAgreePrivacy(e.target.checked);
+                  updateAgreeAll(agreeTerms, e.target.checked, agreeMarketing);
+                }}
+                className="w-5 h-5 text-red-500 border-gray-300 rounded focus:ring-red-500"
+              />
+              <span className="text-gray-700">
+                <span className="text-red-500 font-bold">[필수]</span> 개인정보 처리방침 동의
+              </span>
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowPrivacyModal(true)}
+              className="text-sm text-gray-500 hover:text-red-500 underline px-2"
+            >
+              보기
+            </button>
+          </div>
+
+          {/* 마케팅 정보 수신 */}
+          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+            <label className="flex items-center gap-3 cursor-pointer flex-1">
+              <input
+                type="checkbox"
+                checked={agreeMarketing}
+                onChange={(e) => {
+                  setAgreeMarketing(e.target.checked);
+                  updateAgreeAll(agreeTerms, agreePrivacy, e.target.checked);
+                }}
+                className="w-5 h-5 text-red-500 border-gray-300 rounded focus:ring-red-500"
+              />
+              <span className="text-gray-700">
+                <span className="text-gray-400 font-bold">[선택]</span> 마케팅 정보 수신 동의
+              </span>
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowMarketingModal(true)}
+              className="text-sm text-gray-500 hover:text-red-500 underline px-2"
+            >
+              보기
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 다음 버튼 */}
+      <button
+        onClick={handleNextStep}
+        className="w-full mt-8 py-4 bg-red-500 text-white rounded-lg font-bold text-lg hover:bg-red-600 transition-all flex items-center justify-center gap-2"
+      >
+        <span>다음</span>
+        <ChevronRight size={20} />
+      </button>
+
+      <div className="text-center mt-6">
+        <span className="text-gray-600">이미 계정이 있으신가요? </span>
+        <button
+          onClick={() => navigate('/login')}
+          className="text-red-500 font-semibold hover:underline"
+        >
+          로그인
+        </button>
+      </div>
+    </>
+  );
+
+  // 스텝 2: 정보 입력 화면
+  const renderStep2 = () => (
+    <>
+      {/* 뒤로가기 버튼 */}
+      <button
+        onClick={handlePrevStep}
+        disabled={isSigningUp}
+        className="flex items-center gap-1 text-gray-600 hover:text-gray-900 font-semibold mb-6 disabled:text-gray-400"
+      >
+        <ArrowLeft size={18} />
+        <span>이전</span>
+      </button>
+
+      <h1 className="text-4xl font-bold mb-2">회원정보 입력</h1>
+      <p className="text-gray-600 mb-8">회원 정보를 입력해주세요</p>
+
+      {/* 에러 메시지 */}
+      {errorMessage && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+          <p className="text-sm text-red-800">{errorMessage}</p>
+        </div>
+      )}
+
+      {/* 회원 유형 선택 */}
+      <div className="flex gap-4 mb-8">
+        <button
+          onClick={() => {
+            setSignupType('individual');
+            setUploadedFile(null);
+          }}
+          disabled={isSigningUp}
+          className={`flex-1 py-4 rounded-lg font-bold text-lg transition-all disabled:cursor-not-allowed ${signupType === 'individual'
+              ? 'bg-red-500 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+        >
+          일반 회원
+        </button>
+        <button
+          onClick={() => setSignupType('organization')}
+          disabled={isSigningUp}
+          className={`flex-1 py-4 rounded-lg font-bold text-lg transition-all disabled:cursor-not-allowed ${signupType === 'organization'
+              ? 'bg-red-500 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+        >
+          기관 회원
+        </button>
+      </div>
+
+      <div className="space-y-5">
+        {/* 이메일 입력 + 중복 확인 */}
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">
+            이메일 <span className="text-red-500">*</span>
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="email"
+              placeholder="example@email.com"
+              value={signupEmail}
+              onChange={(e) => {
+                setSignupEmail(e.target.value);
+                setIsEmailChecked(false);
+                setIsEmailAvailable(false);
+              }}
+              disabled={isSigningUp || isCheckingEmail}
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            />
+            <button
+              onClick={() => checkEmailDuplicate(signupEmail)}
+              disabled={isSigningUp || isCheckingEmail || !signupEmail}
+              className="px-6 py-3 bg-gray-800 text-white rounded-lg font-bold hover:bg-gray-900 transition-all whitespace-nowrap disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isCheckingEmail ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} />
+                  <span>확인 중...</span>
+                </>
+              ) : (
+                '중복 확인'
+              )}
+            </button>
+          </div>
+          {isEmailChecked && (
+            <div className={`flex items-center gap-2 text-sm mt-2 ${isEmailAvailable ? 'text-green-600' : 'text-red-600'}`}>
+              {isEmailAvailable ? (
+                <>
+                  <CheckCircle size={16} />
+                  <span>사용 가능한 이메일입니다.</span>
+                </>
+              ) : (
+                <>
+                  <AlertCircle size={16} />
+                  <span>이미 사용 중인 이메일입니다.</span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 비밀번호 */}
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">
+            비밀번호 <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="password"
+            placeholder="8자 이상, 특수문자 포함"
+            value={signupPassword}
+            onChange={(e) => setSignupPassword(e.target.value)}
+            disabled={isSigningUp}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            * 8자 이상, 특수문자(!@#$%^&* 등) 포함
+          </p>
+        </div>
+
+        {/* 비밀번호 확인 */}
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">
+            비밀번호 확인 <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="password"
+            placeholder="비밀번호 재입력"
+            value={signupPasswordConfirm}
+            onChange={(e) => setSignupPasswordConfirm(e.target.value)}
+            disabled={isSigningUp}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          />
+        </div>
+
+        {/* 이름/기관명 */}
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">
+            {signupType === 'organization' ? '기관명' : '이름'} <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            placeholder={signupType === 'organization' ? '기관명' : '이름'}
+            value={signupName}
+            onChange={(e) => setSignupName(e.target.value)}
+            disabled={isSigningUp}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          />
+        </div>
+
+        {/* 전화번호 */}
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">
+            전화번호 <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="tel"
+            placeholder="010-1234-5678"
+            value={signupPhone}
+            onChange={(e) => setSignupPhone(e.target.value)}
+            disabled={isSigningUp}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          />
+        </div>
+
+        {/* 기관 회원 추가 정보 */}
+        {signupType === 'organization' && (
+          <>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                사업자등록번호 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="000-00-00000"
+                value={signupBusinessNumber}
+                onChange={(e) => setSignupBusinessNumber(e.target.value)}
+                disabled={isSigningUp}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                대표자명 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="대표자명"
+                value={signupRepName}
+                onChange={(e) => setSignupRepName(e.target.value)}
+                disabled={isSigningUp}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              />
+            </div>
+
+            {/* 기관 인증서류 첨부 */}
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                기관 인증서류 <span className="text-red-500">*</span>
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-red-500 transition-all">
+                <input
+                  type="file"
+                  id="file-upload"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={handleFileUpload}
+                  disabled={isSigningUp}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className={`cursor-pointer flex flex-col items-center gap-3 ${isSigningUp ? 'cursor-not-allowed opacity-50' : ''}`}
+                >
+                  <Upload className="text-gray-400" size={48} />
+                  {uploadedFile ? (
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-gray-900">
+                        {uploadedFile.name}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {(uploadedFile.size / 1024).toFixed(2)} KB
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-600">
+                        클릭하여 파일 업로드
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        PDF, JPG, PNG (최대 5MB)
+                      </p>
+                    </>
+                  )}
+                </label>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                * 사업자등록증, 고유번호증 등 기관을 증명할 수 있는 서류
+              </p>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* 가입하기 버튼 */}
+      <button
+        onClick={handleSignup}
+        disabled={isSigningUp}
+        className="w-full mt-8 py-4 bg-red-500 text-white rounded-lg font-bold text-lg hover:bg-red-600 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        {isSigningUp ? (
+          <>
+            <Loader2 className="animate-spin" size={20} />
+            <span>가입 중...</span>
+          </>
+        ) : (
+          '가입하기'
+        )}
+      </button>
+
+      <div className="text-center mt-6">
+        <span className="text-gray-600">이미 계정이 있으신가요? </span>
+        <button
+          onClick={() => navigate('/login')}
+          disabled={isSigningUp}
+          className="text-red-500 font-semibold hover:underline disabled:text-gray-400 disabled:no-underline"
+        >
+          로그인
+        </button>
+      </div>
+    </>
+  );
+
   return (
-    <div className="w-full max-w-5xl">
+    <div className="w-full max-w-2xl">
       <div className="w-full">
         <button
           onClick={() => navigate('/login')}
           disabled={isSigningUp}
-          className="mb-8 text-gray-600 hover:text-gray-900 font-semibold disabled:text-gray-400"
+          className="mb-6 text-gray-600 hover:text-gray-900 font-semibold disabled:text-gray-400 flex items-center gap-1"
         >
-          ← 로그인으로
+          <ArrowLeft size={18} />
+          <span>로그인으로</span>
         </button>
-        <div className="bg-white rounded-2xl p-12 border border-gray-200">
-          <h1 className="text-5xl font-bold mb-10">회원가입</h1>
 
-          {/* 에러 메시지 표시 */}
-          {errorMessage && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
-              <p className="text-sm text-red-800">{errorMessage}</p>
-            </div>
-          )}
-
-          <div className="flex gap-4 mb-10">
-            <button
-              onClick={() => {
-                setSignupType('individual');
-                setUploadedFile(null);
-              }}
-              disabled={isSigningUp}
-              className={`flex-1 py-4 rounded-lg font-bold text-lg transition-all disabled:cursor-not-allowed ${signupType === 'individual'
-                  ? 'bg-red-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-            >
-              일반 회원
-            </button>
-            <button
-              onClick={() => setSignupType('organization')}
-              disabled={isSigningUp}
-              className={`flex-1 py-4 rounded-lg font-bold text-lg transition-all disabled:cursor-not-allowed ${signupType === 'organization'
-                  ? 'bg-red-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-            >
-              기관 회원
-            </button>
+        {/* 진행 상태 표시 */}
+        <div className="flex items-center justify-center gap-3 mb-8">
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
+            currentStep >= 1 ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500'
+          }`}>
+            1
           </div>
-
-          <div className="space-y-6">
-            {/* 이메일 입력 + 중복 확인 */}
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                이메일 <span className="text-red-500">*</span>
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  placeholder="example@email.com"
-                  value={signupEmail}
-                  onChange={(e) => {
-                    setSignupEmail(e.target.value);
-                    setIsEmailChecked(false);
-                    setIsEmailAvailable(false);
-                  }}
-                  disabled={isSigningUp || isCheckingEmail}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-                <button
-                  onClick={() => checkEmailDuplicate(signupEmail)}
-                  disabled={isSigningUp || isCheckingEmail || !signupEmail}
-                  className="px-6 py-3 bg-gray-800 text-white rounded-lg font-bold hover:bg-gray-900 transition-all whitespace-nowrap disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {isCheckingEmail ? (
-                    <>
-                      <Loader2 className="animate-spin" size={16} />
-                      <span>확인 중...</span>
-                    </>
-                  ) : (
-                    '중복 확인'
-                  )}
-                </button>
-              </div>
-              {isEmailChecked && (
-                <div className={`flex items-center gap-2 text-sm mt-2 ${isEmailAvailable ? 'text-green-600' : 'text-red-600'}`}>
-                  {isEmailAvailable ? (
-                    <>
-                      <CheckCircle size={16} />
-                      <span>사용 가능한 이메일입니다.</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle size={16} />
-                      <span>이미 사용 중인 이메일입니다.</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* 비밀번호 */}
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                비밀번호 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="password"
-                placeholder="8자 이상, 특수문자 포함"
-                value={signupPassword}
-                onChange={(e) => setSignupPassword(e.target.value)}
-                disabled={isSigningUp}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                * 8자 이상, 특수문자(!@#$%^&* 등) 포함
-              </p>
-            </div>
-
-            {/* 비밀번호 확인 */}
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                비밀번호 확인 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="password"
-                placeholder="비밀번호 재입력"
-                value={signupPasswordConfirm}
-                onChange={(e) => setSignupPasswordConfirm(e.target.value)}
-                disabled={isSigningUp}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              />
-            </div>
-
-            {/* 이름/기관명 */}
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                {signupType === 'organization' ? '기관명' : '이름'} <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder={signupType === 'organization' ? '기관명' : '이름'}
-                value={signupName}
-                onChange={(e) => setSignupName(e.target.value)}
-                disabled={isSigningUp}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              />
-            </div>
-
-            {/* 전화번호 */}
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                전화번호 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="tel"
-                placeholder="010-1234-5678"
-                value={signupPhone}
-                onChange={(e) => setSignupPhone(e.target.value)}
-                disabled={isSigningUp}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              />
-            </div>
-
-            {/* 기관 회원 추가 정보 */}
-            {signupType === 'organization' && (
-              <>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    사업자등록번호 <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="000-00-00000"
-                    value={signupBusinessNumber}
-                    onChange={(e) => setSignupBusinessNumber(e.target.value)}
-                    disabled={isSigningUp}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    대표자명 <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="대표자명"
-                    value={signupRepName}
-                    onChange={(e) => setSignupRepName(e.target.value)}
-                    disabled={isSigningUp}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  />
-                </div>
-
-                {/* 기관 인증서류 첨부 */}
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    기관 인증서류 <span className="text-red-500">*</span>
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-red-500 transition-all">
-                    <input
-                      type="file"
-                      id="file-upload"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={handleFileUpload}
-                      disabled={isSigningUp}
-                      className="hidden"
-                    />
-                    <label
-                      htmlFor="file-upload"
-                      className={`cursor-pointer flex flex-col items-center gap-3 ${isSigningUp ? 'cursor-not-allowed opacity-50' : ''}`}
-                    >
-                      <Upload className="text-gray-400" size={48} />
-                      {uploadedFile ? (
-                        <div className="text-center">
-                          <p className="text-sm font-bold text-gray-900">
-                            {uploadedFile.name}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {(uploadedFile.size / 1024).toFixed(2)} KB
-                          </p>
-                        </div>
-                      ) : (
-                        <>
-                          <p className="text-sm text-gray-600">
-                            클릭하여 파일 업로드
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            PDF, JPG, PNG (최대 5MB)
-                          </p>
-                        </>
-                      )}
-                    </label>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    * 사업자등록증, 고유번호증 등 기관을 증명할 수 있는 서류
-                  </p>
-                </div>
-              </>
-            )}
+          <div className={`w-16 h-1 rounded ${currentStep >= 2 ? 'bg-red-500' : 'bg-gray-200'}`} />
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
+            currentStep >= 2 ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500'
+          }`}>
+            2
           </div>
+        </div>
 
-          <button
-            onClick={handleSignup}
-            disabled={isSigningUp}
-            className="w-full mt-8 py-4 bg-red-500 text-white rounded-lg font-bold text-lg hover:bg-red-600 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {isSigningUp ? (
-              <>
-                <Loader2 className="animate-spin" size={20} />
-                <span>가입 중...</span>
-              </>
-            ) : (
-              '가입하기'
-            )}
-          </button>
+        <div className="bg-white rounded-2xl p-10 border border-gray-200 shadow-lg">
+          {currentStep === 1 ? renderStep1() : renderStep2()}
+        </div>
+      </div>
 
-          <div className="text-center mt-6">
-            <span className="text-gray-600">이미 계정이 있으신가요? </span>
-            <button
-              onClick={() => navigate('/login')}
-              disabled={isSigningUp}
-              className="text-red-500 font-semibold hover:underline disabled:text-gray-400 disabled:no-underline"
-            >
-              로그인
-            </button>
-          </div>
-
-          {/* 백엔드 미구현 안내 (임시) */}
-          <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-            <p className="text-sm font-bold text-yellow-900 mb-2">⚠️ 개발 중</p>
-            <div className="text-xs text-yellow-800 space-y-1">
-              <p>• 백엔드 API가 구현되면 실제 회원가입 기능이 작동합니다.</p>
-              <p>• 현재는 API 호출이 실패하며 에러 메시지가 표시됩니다.</p>
+      {/* 이용약관 모달 */}
+      {showTermsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold">이용약관</h2>
+              <button
+                onClick={() => setShowTermsModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1">
+              <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">
+                {TERMS_OF_SERVICE}
+              </pre>
+            </div>
+            <div className="p-4 border-t flex gap-3">
+              <button
+                onClick={() => {
+                  setAgreeTerms(true);
+                  updateAgreeAll(true, agreePrivacy, agreeMarketing);
+                  setShowTermsModal(false);
+                }}
+                className="flex-1 py-3 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors"
+              >
+                동의
+              </button>
+              <button
+                onClick={() => setShowTermsModal(false)}
+                className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                닫기
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* 개인정보 처리방침 모달 */}
+      {showPrivacyModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold">개인정보 처리방침</h2>
+              <button
+                onClick={() => setShowPrivacyModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1">
+              <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">
+                {PRIVACY_POLICY}
+              </pre>
+            </div>
+            <div className="p-4 border-t flex gap-3">
+              <button
+                onClick={() => {
+                  setAgreePrivacy(true);
+                  updateAgreeAll(agreeTerms, true, agreeMarketing);
+                  setShowPrivacyModal(false);
+                }}
+                className="flex-1 py-3 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors"
+              >
+                동의
+              </button>
+              <button
+                onClick={() => setShowPrivacyModal(false)}
+                className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 마케팅 정보 수신 동의 모달 */}
+      {showMarketingModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold">마케팅 정보 수신 동의</h2>
+              <button
+                onClick={() => setShowMarketingModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1">
+              <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">
+                {MARKETING_POLICY}
+              </pre>
+            </div>
+            <div className="p-4 border-t flex gap-3">
+              <button
+                onClick={() => {
+                  setAgreeMarketing(true);
+                  updateAgreeAll(agreeTerms, agreePrivacy, true);
+                  setShowMarketingModal(false);
+                }}
+                className="flex-1 py-3 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors"
+              >
+                동의
+              </button>
+              <button
+                onClick={() => setShowMarketingModal(false)}
+                className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

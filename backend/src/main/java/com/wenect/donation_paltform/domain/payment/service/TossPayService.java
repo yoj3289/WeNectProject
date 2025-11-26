@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
@@ -106,6 +108,11 @@ public class TossPayService {
 
             return result;
 
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            // TossPayments API 에러 응답 상세 로깅
+            log.error("토스페이 API 에러 - 상태: {}, 응답: {}",
+                    e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException("토스페이 결제 승인 실패: " + e.getResponseBodyAsString());
         } catch (Exception e) {
             log.error("토스페이 결제 승인 실패", e);
             throw new RuntimeException("토스페이 결제 승인에 실패했습니다: " + e.getMessage());

@@ -77,13 +77,15 @@ public class TossPayController {
      */
     @PostMapping("/confirm")
     public ResponseEntity<?> confirmPayment(@RequestBody TossPayConfirmRequest request) {
+        Donation donation = null;
+
         try {
             log.info("=== 토스페이 결제 승인 요청 ===");
             log.info("paymentKey: {}, orderId: {}, amount: {}",
                     request.getPaymentKey(), request.getOrderId(), request.getAmount());
 
             // 1. 기부 내역 조회
-            Donation donation = donationService.getDonationByOrderId(request.getOrderId());
+            donation = donationService.getDonationByOrderId(request.getOrderId());
 
             // 2. 이미 완료된 결제인지 확인
             if (donation.getStatus() == Donation.DonationStatus.COMPLETED) {
@@ -95,8 +97,10 @@ public class TossPayController {
                 ));
             }
 
-            // 3. 금액 검증
-            if (!donation.getAmount().equals(request.getAmount().longValue())) {
+            // 3. 금액 검증 (BigDecimal과 Integer 비교)
+            if (donation.getAmount().longValue() != request.getAmount().longValue()) {
+                log.error("금액 불일치 - DB 금액: {}, 요청 금액: {}",
+                    donation.getAmount(), request.getAmount());
                 throw new IllegalArgumentException("결제 금액이 일치하지 않습니다.");
             }
 
@@ -117,8 +121,36 @@ public class TossPayController {
 
         } catch (Exception e) {
             log.error("토스페이 결제 승인 실패", e);
+
+            // 이미 처리된 결제인 경우 성공으로 처리
+            String errorMsg = e.getMessage();
+            if (errorMsg != null && errorMsg.contains("ALREADY_PROCESSED_PAYMENT")) {
+                log.info("이미 처리된 결제 - orderId: {}", request.getOrderId());
+
+                try {
+                    // 기부 상태가 아직 PENDING이면 COMPLETED로 업데이트
+                    if (donation != null && donation.getStatus() == Donation.DonationStatus.PENDING) {
+                        donationService.approveDonation(
+                                request.getOrderId(),
+                                request.getPaymentKey(),
+                                request.getOrderId(),
+                                "TOSS_BRANDPAY"
+                        );
+                    }
+                } catch (Exception ex) {
+                    log.warn("이미 처리된 결제 상태 업데이트 실패: {}", ex.getMessage());
+                }
+
+                return ResponseEntity.ok(Map.of(
+                        "status", "success",
+                        "message", "결제가 완료되었습니다.",
+                        "orderId", request.getOrderId(),
+                        "paymentKey", request.getPaymentKey()
+                ));
+            }
+
             return ResponseEntity.badRequest().body(Map.of(
-                    "error", e.getMessage() != null ? e.getMessage() : "결제 승인 실패"
+                    "error", errorMsg != null ? errorMsg : "결제 승인 실패"
             ));
         }
     }

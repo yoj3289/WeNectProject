@@ -21,6 +21,8 @@ public class CommentResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Long parentCommentId;
+    private Long replyToCommentId; // 답글 대상 댓글 ID
+    private AuthorDto replyToAuthor; // 답글 대상 사용자 정보
 
     @Builder.Default
     private List<CommentResponse> replies = new ArrayList<>();

@@ -9,6 +9,7 @@ const LoginPage: React.FC = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const { login, isLoggingIn } = useAuth();
@@ -125,9 +126,21 @@ const LoginPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">비밀번호</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-bold text-gray-700">비밀번호</label>
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showPassword}
+                  onChange={(e) => setShowPassword(e.target.checked)}
+                  disabled={isLoggingIn}
+                  className="w-3.5 h-3.5 text-red-500 border-gray-300 rounded focus:ring-red-500 disabled:cursor-not-allowed"
+                />
+                <span className="text-xs text-gray-500">비밀번호 표시</span>
+              </label>
+            </div>
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               placeholder="비밀번호를 입력하세요"
               value={loginPassword}
               onChange={(e) => setLoginPassword(e.target.value)}

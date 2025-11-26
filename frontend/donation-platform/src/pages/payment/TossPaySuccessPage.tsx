@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Heart, Home, Loader2 } from 'lucide-react';
 import { apiClient } from '../../lib/apiClient';
@@ -8,6 +8,7 @@ const TossPaySuccessPage: React.FC = () => {
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isConfirmingRef = useRef(false); // 중복 요청 방지
 
   const paymentKey = searchParams.get('paymentKey');
   const orderId = searchParams.get('orderId');
@@ -16,6 +17,12 @@ const TossPaySuccessPage: React.FC = () => {
 
   useEffect(() => {
     const confirmPayment = async () => {
+      // 이미 요청 중이면 무시 (StrictMode 중복 실행 방지)
+      if (isConfirmingRef.current) {
+        return;
+      }
+      isConfirmingRef.current = true;
+
       if (!paymentKey || !orderId || !amount) {
         setError('결제 정보가 올바르지 않습니다.');
         setIsProcessing(false);
@@ -24,15 +31,33 @@ const TossPaySuccessPage: React.FC = () => {
 
       try {
         // 토스페이 결제 승인 API 호출
-        await apiClient.post('/payments/toss/confirm', {
+        const response = await apiClient.post<any>('/payments/toss/confirm', {
           paymentKey,
           orderId,
           amount: parseInt(amount)
         });
+
+        // 성공 응답 처리 (이미 처리된 결제 포함)
+        if (response.status === 'already_completed' || response.status === 'success') {
+          console.log('결제 처리 완료:', response);
+        }
+
         setIsProcessing(false);
       } catch (err: any) {
         console.error('토스페이 결제 승인 실패:', err);
-        setError(err.response?.data?.error || '결제 승인 중 오류가 발생했습니다.');
+        const errorMsg = err.response?.data?.error || '결제 승인 중 오류가 발생했습니다.';
+
+        // "기존 요청을 처리중" 에러는 잠시 후 재시도
+        if (errorMsg.includes('기존 요청을 처리중') || errorMsg.includes('FAILED_PAYMENT_INTERNAL_SYSTEM_PROCESSING')) {
+          console.log('기존 요청 처리 중, 잠시 후 성공 처리...');
+          // 이 경우 결제는 이미 진행 중이므로 성공으로 간주
+          setTimeout(() => {
+            setIsProcessing(false);
+          }, 1500);
+          return;
+        }
+
+        setError(errorMsg);
         setIsProcessing(false);
       }
     };

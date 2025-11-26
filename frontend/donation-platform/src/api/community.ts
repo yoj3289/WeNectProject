@@ -16,6 +16,7 @@ export interface UpdatePostRequest {
 export interface CreateCommentRequest {
   content: string;
   parentCommentId?: number; // 대댓글용
+  replyToCommentId?: number; // 답글 대상 댓글 ID (대댓글에 답글 시)
 }
 
 export interface PostFilters {
@@ -64,6 +65,12 @@ export interface CommentResponse {
   createdAt: string;
   updatedAt?: string;
   parentCommentId?: number;
+  replyToCommentId?: number; // 답글 대상 댓글 ID
+  replyToAuthor?: { // 답글 대상 사용자 정보
+    userId: number;
+    userName: string;
+    userType: string;
+  };
   replies?: CommentResponse[];
 }
 

@@ -59,6 +59,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [commentText, setCommentText] = useState('');
   const [replyTo, setReplyTo] = useState<any>(null);
+  const [replyToCommentId, setReplyToCommentId] = useState<number | undefined>(undefined); // 답글 대상 댓글 ID (대댓글에 답글 시)
   const [postTitle, setPostTitle] = useState('');
   const [postContent, setPostContent] = useState('');
   const [postType, setPostType] = useState<PostType>('QUESTION');
@@ -106,7 +107,9 @@ const BoardPage: React.FC<BoardPageProps> = ({
         date: new Date(reply.createdAt).toLocaleDateString('ko-KR'),
         createdAt: reply.createdAt,
         likeCount: reply.likeCount || 0,
-        isLiked: reply.isLiked || false
+        isLiked: reply.isLiked || false,
+        replyToCommentId: reply.replyToCommentId,
+        replyToAuthor: reply.replyToAuthor
       }))
     })) || [];
 
@@ -189,12 +192,14 @@ const BoardPage: React.FC<BoardPageProps> = ({
         postId: selectedPost.id,
         data: {
           content: commentText,
-          parentCommentId: replyTo?.id
+          parentCommentId: replyTo?.rootCommentId || replyTo?.id, // 대댓글에 답글 시 루트 댓글 ID 사용
+          replyToCommentId: replyToCommentId || undefined // 답글 대상 댓글 ID (알림용)
         }
       });
       alert('댓글이 등록되었습니다.');
       setCommentText('');
       setReplyTo(null);
+      setReplyToCommentId(undefined);
     } catch (error) {
       alert('댓글 등록에 실패했습니다.');
       console.error(error);
@@ -216,7 +221,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
   };
 
   const handleCopyCommentLink = (commentId: number) => {
-    const url = `${window.location.origin}/community/post/${selectedPost?.id}#comment-${commentId}`;
+    const url = `${window.location.origin}/community/${selectedPost?.id}#comment-${commentId}`;
 
     // HTTPS 환경에서는 navigator.clipboard 사용, HTTP에서는 폴백 사용
     if (navigator.clipboard && window.isSecureContext) {
@@ -590,7 +595,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
                     <Reply size={14} className="inline mr-1" />
                     {replyTo.author}님에게 답글 작성 중
                   </span>
-                  <button onClick={() => setReplyTo(null)}>
+                  <button onClick={() => { setReplyTo(null); setReplyToCommentId(undefined); }}>
                     <X size={16} />
                   </button>
                 </div>
@@ -658,7 +663,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
                 <div className="flex items-center gap-3 text-sm mb-2">
                   {isLoggedIn && (
                     <button
-                      onClick={() => setReplyTo(comment)}
+                      onClick={() => { setReplyTo(comment); setReplyToCommentId(undefined); }}
                       className="text-gray-600 hover:text-red-600 flex items-center gap-1"
                     >
                       <Reply size={14} />
@@ -710,13 +715,19 @@ const BoardPage: React.FC<BoardPageProps> = ({
 
                 {/* 대댓글 */}
                 {comment.replies && comment.replies.length > 0 && (
-                  <div className="mt-3 ml-6 space-y-3">
+                  <div className="mt-3 ml-4 space-y-3">
                     {comment.replies.map(reply => (
                       <div key={reply.id} id={`comment-${reply.id}`} className="border-l-2 border-red-200 pl-4">
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <Reply size={14} className="inline text-red-500 mr-1" />
                             <span className="font-medium text-gray-900">{reply.author}</span>
+                            {/* 답글 대상 표시 (@username) */}
+                            {reply.replyToAuthor && (
+                              <span className="text-sm text-blue-500 ml-1">
+                                @{reply.replyToAuthor.userName}
+                              </span>
+                            )}
                             <span className="text-sm text-gray-500 ml-2">{reply.date}</span>
                           </div>
                         </div>
@@ -752,6 +763,19 @@ const BoardPage: React.FC<BoardPageProps> = ({
 
                         {/* 대댓글 액션 버튼 */}
                         <div className="flex items-center gap-3 text-sm">
+                          {/* 대댓글에 답글 버튼 추가 */}
+                          {isLoggedIn && (
+                            <button
+                              onClick={() => {
+                                setReplyTo({ ...reply, rootCommentId: comment.id });
+                                setReplyToCommentId(reply.id);
+                              }}
+                              className="text-gray-600 hover:text-red-600 flex items-center gap-1"
+                            >
+                              <Reply size={14} />
+                              답글
+                            </button>
+                          )}
                           {isLoggedIn && (
                             <button
                               onClick={() => handleLikeComment(reply.id)}

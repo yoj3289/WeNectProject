@@ -11,6 +11,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080
 class ApiClient {
   private axiosInstance: AxiosInstance;
   private token: string | null = null;
+  private isLoggingOut: boolean = false; // 중복 로그아웃 방지 플래그
 
   constructor() {
     this.axiosInstance = axios.create({
@@ -46,6 +47,12 @@ class ApiClient {
         if (error.response?.status === 401 ||
             error.response?.status === 403 ||
             isJWTExpired) {
+          // 이미 로그아웃 처리 중이면 중복 실행 방지
+          if (this.isLoggingOut) {
+            return Promise.reject(error);
+          }
+          this.isLoggingOut = true;
+
           // 토큰 제거
           this.clearToken();
 
@@ -61,6 +68,11 @@ class ApiClient {
               currentPath: window.location.pathname
             }
           }));
+
+          // 일정 시간 후 플래그 리셋 (다음 로그인 후 다시 만료될 수 있으므로)
+          setTimeout(() => {
+            this.isLoggingOut = false;
+          }, 3000);
         }
 
         return Promise.reject(error);
