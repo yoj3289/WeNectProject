@@ -27,6 +27,7 @@ interface ExtendedPost extends CommunityPost {
   isPinned?: boolean;
   authorType?: 'individual' | 'organization';
   images?: string[];
+  commentCount?: number; // 댓글 수
   comments?: Array<{
     id: number;
     author: string;
@@ -140,6 +141,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
     isLiked: post.isLiked,
     isPinned: post.isPinned,
     images: post.images?.map(img => img.imageUrl) || [],
+    commentCount: post.commentCount || 0,
     comments: []
   })) || [];
 
@@ -466,7 +468,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
                       <span>•</span>
                       <div className="flex items-center gap-1">
                         <MessageSquare size={13} />
-                        {post.comments ? post.comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0) : 0}
+                        {post.commentCount || 0}
                       </div>
                       <span>•</span>
                       <div className="flex items-center gap-1">
