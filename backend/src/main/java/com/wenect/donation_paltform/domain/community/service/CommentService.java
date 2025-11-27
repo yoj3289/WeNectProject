@@ -12,8 +12,10 @@ import com.wenect.donation_paltform.domain.community.entity.Post;
 import com.wenect.donation_paltform.domain.community.repository.CommentLikeRepository;
 import com.wenect.donation_paltform.domain.community.repository.CommentRepository;
 import com.wenect.donation_paltform.domain.community.repository.PostRepository;
+import com.wenect.donation_paltform.domain.notification.service.NotificationService;
 import com.wenect.donation_paltform.global.common.PageResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,12 +31,14 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class CommentService {
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CommentLikeRepository commentLikeRepository;
+    private final NotificationService notificationService;
 
     /**
      * 게시글의 댓글 목록 조회 (트리 구조) - 비로그인
@@ -144,8 +148,9 @@ public class CommentService {
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
         // 부모 댓글 존재 확인 (대댓글인 경우)
+        Comment parentComment = null;
         if (request.getParentCommentId() != null) {
-            commentRepository.findByIdAndNotDeleted(request.getParentCommentId())
+            parentComment = commentRepository.findByIdAndNotDeleted(request.getParentCommentId())
                     .orElseThrow(() -> new IllegalArgumentException("부모 댓글을 찾을 수 없습니다."));
         }
 
@@ -159,7 +164,105 @@ public class CommentService {
 
         comment = commentRepository.save(comment);
 
+        // 알림 생성
+        try {
+            sendCommentNotifications(user, post, comment, parentComment, request.getReplyToCommentId());
+        } catch (Exception e) {
+            log.error("댓글 알림 전송 실패", e);
+            // 알림 실패해도 댓글 작성은 성공으로 처리
+        }
+
         return convertToResponse(comment, null, userId);
+    }
+
+    /**
+     * 댓글 알림 전송
+     */
+    private void sendCommentNotifications(User commenter, Post post, Comment comment,
+                                          Comment parentComment, Long replyToCommentId) {
+        String commenterName = commenter.getUserName();
+        String postTitle = post.getTitle().length() > 20
+                ? post.getTitle().substring(0, 20) + "..."
+                : post.getTitle();
+        String commentPreview = comment.getContent().length() > 30
+                ? comment.getContent().substring(0, 30) + "..."
+                : comment.getContent();
+        String link = "/community/" + post.getPostId() + "#comment-" + comment.getCommentId();
+
+        // 게시글 작성자 정보
+        User postAuthor = userRepository.findById(post.getUserId()).orElse(null);
+
+        if (parentComment == null) {
+            // 일반 댓글인 경우: 게시글 작성자에게 알림
+            if (postAuthor != null && !postAuthor.getUserId().equals(commenter.getUserId())) {
+                notificationService.createNotification(
+                        postAuthor.getUserId(),
+                        "comment",
+                        "community",
+                        "새 댓글이 달렸습니다",
+                        String.format("%s님이 '%s' 게시글에 댓글을 남겼습니다: \"%s\"",
+                                commenterName, postTitle, commentPreview),
+                        link,
+                        Map.of("postId", post.getPostId().toString(), "commentId", comment.getCommentId().toString())
+                );
+            }
+        } else {
+            // 대댓글인 경우
+            User parentCommentAuthor = userRepository.findById(parentComment.getUserId()).orElse(null);
+
+            // 1. 부모 댓글 작성자에게 알림 (본인이 아닌 경우)
+            if (parentCommentAuthor != null && !parentCommentAuthor.getUserId().equals(commenter.getUserId())) {
+                notificationService.createNotification(
+                        parentCommentAuthor.getUserId(),
+                        "reply",
+                        "community",
+                        "답글이 달렸습니다",
+                        String.format("%s님이 회원님의 댓글에 답글을 남겼습니다: \"%s\"",
+                                commenterName, commentPreview),
+                        link,
+                        Map.of("postId", post.getPostId().toString(), "commentId", comment.getCommentId().toString())
+                );
+            }
+
+            // 2. 특정 사용자를 언급한 경우 (replyToCommentId가 있는 경우)
+            if (replyToCommentId != null && !replyToCommentId.equals(parentComment.getCommentId())) {
+                Comment replyToComment = commentRepository.findByIdAndNotDeleted(replyToCommentId).orElse(null);
+                if (replyToComment != null) {
+                    User replyToUser = userRepository.findById(replyToComment.getUserId()).orElse(null);
+                    // 부모 댓글 작성자와 다른 사용자이고, 본인이 아닌 경우에만 알림
+                    if (replyToUser != null
+                            && !replyToUser.getUserId().equals(commenter.getUserId())
+                            && !replyToUser.getUserId().equals(parentCommentAuthor != null ? parentCommentAuthor.getUserId() : null)) {
+                        notificationService.createNotification(
+                                replyToUser.getUserId(),
+                                "reply",
+                                "community",
+                                "답글이 달렸습니다",
+                                String.format("%s님이 회원님을 언급했습니다: \"%s\"",
+                                        commenterName, commentPreview),
+                                link,
+                                Map.of("postId", post.getPostId().toString(), "commentId", comment.getCommentId().toString())
+                        );
+                    }
+                }
+            }
+
+            // 3. 게시글 작성자에게도 알림 (부모 댓글 작성자와 다르고, 본인이 아닌 경우)
+            if (postAuthor != null
+                    && !postAuthor.getUserId().equals(commenter.getUserId())
+                    && (parentCommentAuthor == null || !postAuthor.getUserId().equals(parentCommentAuthor.getUserId()))) {
+                notificationService.createNotification(
+                        postAuthor.getUserId(),
+                        "reply",
+                        "community",
+                        "게시글에 새 답글이 달렸습니다",
+                        String.format("%s님이 '%s' 게시글에 답글을 남겼습니다: \"%s\"",
+                                commenterName, postTitle, commentPreview),
+                        link,
+                        Map.of("postId", post.getPostId().toString(), "commentId", comment.getCommentId().toString())
+                );
+            }
+        }
     }
 
     /**

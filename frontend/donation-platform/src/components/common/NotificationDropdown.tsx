@@ -59,6 +59,8 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     switch (type) {
       case 'donation':
         return { icon: <Heart {...iconProps} />, color: 'bg-red-500' };
+      case 'donation_received':
+        return { icon: <DollarSign {...iconProps} />, color: 'bg-green-500' };
       case 'comment':
       case 'reply':
         return { icon: <MessageCircle {...iconProps} />, color: 'bg-blue-500' };

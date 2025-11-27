@@ -99,7 +99,7 @@ public class DonationService {
         boolean isFirstDonation = isFirstDonationToProject(donation);
         updateProjectDonationStats(donation.getProjectId(), donation.getAmount(), isFirstDonation);
 
-        // 기부 완료 알림 생성
+        // 기부 완료 알림 생성 (기부자에게)
         try {
             notificationService.createDonationNotification(
                     donation.getUserId(),
@@ -113,6 +113,29 @@ public class DonationService {
             // 알림 생성 실패는 기부 승인 프로세스에 영향을 주지 않음
             log.error("알림 생성 실패 - userId: {}, projectId: {}",
                     donation.getUserId(), project.getProjectId(), e);
+        }
+
+        // 프로젝트 소유자(기관)에게 기부 알림 생성
+        try {
+            String donorDisplayName = donation.getIsAnonymous() ? "익명의 기부자" : donation.getDonorName();
+            notificationService.createNotification(
+                    project.getOrgId(),
+                    "donation_received",
+                    "donation",
+                    "새로운 기부가 도착했습니다",
+                    String.format("%s님이 '%s' 프로젝트에 %,d원을 기부해주셨습니다.",
+                            donorDisplayName, project.getTitle(), donation.getAmount().longValue()),
+                    "/project/" + project.getProjectId(),
+                    java.util.Map.of(
+                            "projectId", project.getProjectId().toString(),
+                            "amount", donation.getAmount().toString(),
+                            "donorName", donorDisplayName
+                    )
+            );
+            log.info("프로젝트 소유자 기부 알림 생성 - orgId: {}, projectId: {}",
+                    project.getOrgId(), project.getProjectId());
+        } catch (Exception e) {
+            log.error("프로젝트 소유자 알림 생성 실패", e);
         }
 
         log.info("기부 승인 완료 - donationId: {}, amount: {}", donation.getDonationId(), donation.getAmount());
@@ -213,6 +236,19 @@ public class DonationService {
             } else {
                 log.info("모금액 100% 달성으로 프로젝트 완료 처리 - projectId: {}, currentAmount: {}, targetAmount: {} (저금통 이미 존재)",
                         projectId, newAmount, project.getTargetAmount());
+            }
+
+            // 프로젝트 소유자에게 목표 달성 알림 생성
+            try {
+                notificationService.createGoalAchievedNotification(
+                        project.getOrgId(),
+                        project.getTitle(),
+                        project.getProjectId()
+                );
+                log.info("목표 달성 알림 생성 - orgId: {}, projectId: {}",
+                        project.getOrgId(), project.getProjectId());
+            } catch (Exception e) {
+                log.error("목표 달성 알림 생성 실패", e);
             }
         }
     }
