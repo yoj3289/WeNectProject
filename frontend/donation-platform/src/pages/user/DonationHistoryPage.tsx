@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Download, FileText, Calendar, DollarSign, CheckCircle, AlertCircle, Search, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import Pagination from '../../components/common/Pagination';
-import { getMyDonations } from '../../api/donations';
+import { getMyDonations, getMyDonationStats, type DonationStatsResponse } from '../../api/donations';
 
 interface DonationHistory {
   id: number;
@@ -29,6 +31,10 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [donationHistory, setDonationHistory] = useState<DonationHistory[]>([]);
+  const [stats, setStats] = useState<DonationStatsResponse | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [pdfDonation, setPdfDonation] = useState<DonationHistory | null>(null);
+  const receiptRef = useRef<HTMLDivElement>(null);
   const pageSize = 10;
 
   const [confirmModal, setConfirmModal] = useState<{
@@ -42,7 +48,20 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
   const currentYear = new Date().getFullYear();
   const yearOptions = ['all', ...Array.from({ length: 5 }, (_, i) => String(currentYear - i))];
 
-  // API 호출
+  // 통계 API 호출 (최초 1회)
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await getMyDonationStats();
+        setStats(response);
+      } catch (error) {
+        console.error('기부 통계 조회 실패:', error);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  // 기부 내역 API 호출
   const fetchDonations = async () => {
     setIsLoading(true);
     try {
@@ -95,66 +114,51 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
       )
     : donationHistory;
 
-  // 통계 계산 (현재 페이지 기준)
-  const totalDonations = totalElements;
-  const totalAmount = filteredHistory.reduce((sum, item) => sum + item.amount, 0);
-  const completedCount = filteredHistory.filter(item => item.status === 'completed').length;
+  // PDF 영수증 생성 (jsPDF + html2canvas)
+  const generateReceiptPDF = async (donation: DonationHistory) => {
+    setIsGeneratingPDF(true);
+    setPdfDonation(donation);
 
-  // PDF 영수증 생성 (시뮬레이션)
-  const generateReceiptPDF = (donation: DonationHistory) => {
-    const receiptContent = `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        기부금 영수증
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // DOM 렌더링을 위해 잠시 대기
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-영수증 번호: ${donation.receiptNumber}
-발급일자: ${new Date().toLocaleDateString('ko-KR')}
+    try {
+      if (!receiptRef.current) {
+        throw new Error('영수증 템플릿을 찾을 수 없습니다.');
+      }
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          기부자 정보
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // html2canvas로 HTML을 캔버스로 변환
+      const canvas = await html2canvas(receiptRef.current, {
+        scale: 2, // 고해상도
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      });
 
-성명: ${donation.donorName}
-기부일자: ${donation.date}
+      // jsPDF로 PDF 생성
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          기부 내역
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      const imgWidth = 190; // A4 너비에서 여백 제외
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const xOffset = (210 - imgWidth) / 2; // 중앙 정렬
+      const yOffset = 10;
 
-프로젝트: ${donation.projectTitle}
-수혜기관: ${donation.organization}
-기부금액: ${donation.amount.toLocaleString()}원
+      pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          세액공제 안내
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-본 영수증은 연말정산 시 세액공제를
-받으실 수 있습니다.
-
-소득세법 제34조 및 법인세법 제24조에
-따라 기부금 세액공제 대상입니다.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-발급기관: ${donation.organization}
-문의전화: 02-1234-5678
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`;
-
-    // Blob 생성 및 다운로드
-    const blob = new Blob([receiptContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `기부금영수증_${donation.receiptNumber}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    toast.success('기부금 영수증이 다운로드되었습니다!');
+      // PDF 다운로드
+      pdf.save(`기부금영수증_${donation.receiptNumber}.pdf`);
+      toast.success('영수증이 다운로드되었습니다.');
+    } catch (error) {
+      console.error('PDF 생성 실패:', error);
+      toast.error('영수증 다운로드에 실패했습니다.');
+    } finally {
+      setIsGeneratingPDF(false);
+      setPdfDonation(null);
+    }
   };
 
   // 전체 영수증 한번에 다운로드
@@ -170,13 +174,14 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
       isOpen: true,
       title: '영수증 다운로드',
       message: `${completedDonations.length}개의 영수증을 다운로드하시겠습니까?`,
-      onConfirm: () => {
-        completedDonations.forEach((donation, index) => {
-          setTimeout(() => {
-            generateReceiptPDF(donation);
-          }, index * 500);
-        });
+      onConfirm: async () => {
         setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        for (const donation of completedDonations) {
+          await generateReceiptPDF(donation);
+          // 각 PDF 생성 사이에 딜레이
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        toast.success(`${completedDonations.length}개의 영수증 다운로드 완료`);
       }
     });
   };
@@ -203,8 +208,10 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
             <div className="flex items-center justify-between mb-2">
               <DollarSign className="text-red-600" size={32} />
             </div>
-            <p className="text-sm text-gray-600 mb-1">현재 페이지 금액</p>
-            <p className="text-3xl font-bold text-red-600">{totalAmount.toLocaleString()}원</p>
+            <p className="text-sm text-gray-600 mb-1">총 기부금액</p>
+            <p className="text-3xl font-bold text-red-600">
+              {stats ? Number(stats.totalAmount).toLocaleString() : '0'}원
+            </p>
           </div>
 
           <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-200">
@@ -212,15 +219,15 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
               <FileText className="text-blue-600" size={32} />
             </div>
             <p className="text-sm text-gray-600 mb-1">총 기부 횟수</p>
-            <p className="text-3xl font-bold text-blue-600">{totalDonations}회</p>
+            <p className="text-3xl font-bold text-blue-600">{stats?.totalCount || 0}회</p>
           </div>
 
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
             <div className="flex items-center justify-between mb-2">
               <CheckCircle className="text-green-600" size={32} />
             </div>
-            <p className="text-sm text-gray-600 mb-1">현재 페이지 완료</p>
-            <p className="text-3xl font-bold text-green-600">{completedCount}건</p>
+            <p className="text-sm text-gray-600 mb-1">영수증 발급 가능</p>
+            <p className="text-3xl font-bold text-green-600">{stats?.completedCount || 0}건</p>
           </div>
         </div>
 
@@ -446,6 +453,103 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
         onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
       />
+
+      {/* PDF 생성용 숨겨진 영수증 템플릿 */}
+      {pdfDonation && (
+        <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+          <div
+            ref={receiptRef}
+            style={{
+              width: '600px',
+              padding: '40px',
+              backgroundColor: '#fff',
+              fontFamily: "'Malgun Gothic', 'Noto Sans KR', sans-serif",
+            }}
+          >
+            {/* 영수증 내용 */}
+            <div style={{ border: '2px solid #333', padding: '30px' }}>
+              {/* 헤더 */}
+              <div style={{ textAlign: 'center', borderBottom: '2px solid #333', paddingBottom: '20px', marginBottom: '20px' }}>
+                <h1 style={{ fontSize: '28px', marginBottom: '10px', fontWeight: 'bold' }}>기부금 영수증</h1>
+                <p style={{ color: '#666', fontSize: '14px' }}>DONATION RECEIPT</p>
+              </div>
+
+              {/* 영수증 정보 */}
+              <div style={{ marginBottom: '25px' }}>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', background: '#f5f5f5', padding: '8px 12px', marginBottom: '15px', borderLeft: '4px solid #e53e3e' }}>
+                  영수증 정보
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px dashed #ddd' }}>
+                  <span style={{ color: '#666' }}>영수증 번호</span>
+                  <span style={{ fontWeight: 'bold' }}>{pdfDonation.receiptNumber}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px' }}>
+                  <span style={{ color: '#666' }}>발급일자</span>
+                  <span style={{ fontWeight: 'bold' }}>{new Date().toLocaleDateString('ko-KR')}</span>
+                </div>
+              </div>
+
+              {/* 기부자 정보 */}
+              <div style={{ marginBottom: '25px' }}>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', background: '#f5f5f5', padding: '8px 12px', marginBottom: '15px', borderLeft: '4px solid #e53e3e' }}>
+                  기부자 정보
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px dashed #ddd' }}>
+                  <span style={{ color: '#666' }}>성명</span>
+                  <span style={{ fontWeight: 'bold' }}>{pdfDonation.donorName}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px' }}>
+                  <span style={{ color: '#666' }}>기부일자</span>
+                  <span style={{ fontWeight: 'bold' }}>{pdfDonation.date}</span>
+                </div>
+              </div>
+
+              {/* 기부 내역 */}
+              <div style={{ marginBottom: '25px' }}>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', background: '#f5f5f5', padding: '8px 12px', marginBottom: '15px', borderLeft: '4px solid #e53e3e' }}>
+                  기부 내역
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px dashed #ddd' }}>
+                  <span style={{ color: '#666' }}>프로젝트</span>
+                  <span style={{ fontWeight: 'bold' }}>{pdfDonation.projectTitle}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px' }}>
+                  <span style={{ color: '#666' }}>수혜기관</span>
+                  <span style={{ fontWeight: 'bold' }}>{pdfDonation.organization}</span>
+                </div>
+                <div style={{ fontSize: '24px', color: '#e53e3e', textAlign: 'center', padding: '20px', background: '#fff5f5', borderRadius: '8px', margin: '15px 0', fontWeight: 'bold' }}>
+                  기부금액: {pdfDonation.amount.toLocaleString()}원
+                </div>
+              </div>
+
+              {/* 세액공제 안내 */}
+              <div style={{ background: '#e8f4fd', padding: '15px', borderRadius: '8px', fontSize: '13px', color: '#1a5276', lineHeight: '1.6' }}>
+                <strong>세액공제 안내</strong><br /><br />
+                본 영수증은 연말정산 시 세액공제를 받으실 수 있습니다.<br />
+                소득세법 제34조 및 법인세법 제24조에 따라 기부금 세액공제 대상입니다.<br />
+                영수증은 5년간 보관하시기 바랍니다.
+              </div>
+
+              {/* 푸터 */}
+              <div style={{ textAlign: 'center', marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #ddd', color: '#666', fontSize: '12px' }}>
+                발급기관: {pdfDonation.organization}<br />
+                문의전화: 02-1234-5678<br /><br />
+                <strong>위넥트(WeNect) 기부 플랫폼</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PDF 생성 중 로딩 오버레이 */}
+      {isGeneratingPDF && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 flex flex-col items-center gap-4">
+            <Loader2 className="animate-spin text-red-500" size={48} />
+            <p className="text-lg font-semibold text-gray-700">영수증 PDF 생성 중...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -48,6 +48,19 @@ public class DonationController {
     }
 
     /**
+     * 내 기부 통계 조회 (JWT 토큰 기반)
+     * 총 기부금액, 총 기부횟수, 완료된 기부횟수
+     */
+    @GetMapping("/my/stats")
+    public ResponseEntity<DonationService.UserDonationStats> getMyDonationStats(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Long userId = getUserIdFromToken(authHeader);
+        log.info("내 기부 통계 조회 요청 - userId: {}", userId);
+        DonationService.UserDonationStats stats = donationService.getUserDonationStats(userId);
+        return ResponseEntity.ok(stats);
+    }
+
+    /**
      * 프로젝트별 기부 내역 목록 조회
      */
     @GetMapping("/project/{projectId}")

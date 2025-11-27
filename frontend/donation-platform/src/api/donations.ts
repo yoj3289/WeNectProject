@@ -33,11 +33,18 @@ export interface DonationHistoryResponse {
   id: number;
   projectTitle: string;
   organization: string;
+  organizationName?: string; // 백엔드에서 반환하는 기관명
   amount: number;
   date: string;
   receiptNumber: string;
   status: 'completed' | 'pending';
   donorName: string;
+}
+
+export interface DonationStatsResponse {
+  totalAmount: number;
+  totalCount: number;
+  completedCount: number;
 }
 
 export interface RecentDonationResponse {
@@ -93,6 +100,13 @@ export const getMyDonations = async (
   });
 
   return apiClient.get(`/donations/my?${params.toString()}`);
+};
+
+/**
+ * 나의 기부 통계 조회
+ */
+export const getMyDonationStats = async (): Promise<DonationStatsResponse> => {
+  return apiClient.get<DonationStatsResponse>('/donations/my/stats');
 };
 
 /**

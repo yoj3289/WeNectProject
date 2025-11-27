@@ -30,6 +30,18 @@ import java.util.stream.Collectors;
 public class DonationService {
 
     private final DonationRepository donationRepository;
+
+    /**
+     * 사용자 기부 통계 DTO
+     */
+    @lombok.Getter
+    @lombok.AllArgsConstructor
+    public static class UserDonationStats {
+        private BigDecimal totalAmount;      // 총 기부금액
+        private int totalCount;               // 총 기부횟수
+        private int completedCount;           // 완료된 기부횟수
+    }
+
     private final ProjectRepository projectRepository;
     private final NotificationService notificationService;
     private final PiggyBankRepository piggyBankRepository;
@@ -310,6 +322,27 @@ public class DonationService {
         return donations.stream()
                 .map(DonationResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 사용자 기부 통계 조회
+     * 총 기부금액, 총 기부횟수, 완료된 기부횟수
+     */
+    @Transactional(readOnly = true)
+    public UserDonationStats getUserDonationStats(Long userId) {
+        List<Donation> donations = donationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+
+        // 완료된 기부만 필터링
+        List<Donation> completedDonations = donations.stream()
+                .filter(d -> d.getStatus() == Donation.DonationStatus.COMPLETED)
+                .collect(Collectors.toList());
+
+        // 총 기부금액 (완료된 기부만)
+        BigDecimal totalAmount = completedDonations.stream()
+                .map(Donation::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new UserDonationStats(totalAmount, donations.size(), completedDonations.size());
     }
 
     /**
