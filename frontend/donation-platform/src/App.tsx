@@ -1023,6 +1023,7 @@ const AppRoutes: React.FC = () => {
   // ✅ handleLogout을 useAuth의 logout 함수로 변경
   const handleLogout = () => {
     logout();
+    navigate('/');  // 메인 페이지로 이동
     toast.success('로그아웃되었습니다.');
   };
 
@@ -1269,50 +1270,7 @@ const AppRoutes: React.FC = () => {
                   setRejectReason={setRejectReason}
                 />
               } />
-              <Route path="settlements" element={
-                <SettlementManagementPage
-                  sidebarOpen={sidebarOpen}
-                  setSidebarOpen={setSidebarOpen}
-                  activeMenu={activeMenu}
-                  setActiveMenu={setActiveMenu}
-                  projectFilter={projectFilter}
-                  setProjectFilter={setProjectFilter}
-                  projectCategoryFilter={projectCategoryFilter}
-                  setProjectCategoryFilter={setProjectCategoryFilter}
-                  projectSearchTerm={projectSearchTerm}
-                  setProjectSearchTerm={setProjectSearchTerm}
-                  userTypeFilter={userTypeFilter}
-                  setUserTypeFilter={setUserTypeFilter}
-                  userStatusFilter={userStatusFilter}
-                  setUserStatusFilter={setUserStatusFilter}
-                  userSearchTerm={userSearchTerm}
-                  setUserSearchTerm={setUserSearchTerm}
-                  settlementFilter={settlementFilter}
-                  setSettlementFilter={setSettlementFilter}
-                  settlementSearchTerm={settlementSearchTerm}
-                  setSettlementSearchTerm={setSettlementSearchTerm}
-                  selectedProjects={selectedProjects}
-                  setSelectedProjects={setSelectedProjects}
-                  selectedUsers={selectedUsers}
-                  setSelectedUsers={setSelectedUsers}
-                  selectedSettlements={selectedSettlements}
-                  setSelectedSettlements={setSelectedSettlements}
-                  selectedProject={selectedProject}
-                  setSelectedProject={setSelectedProject}
-                  selectedUser={selectedUser}
-                  setSelectedUser={setSelectedUser}
-                  selectedSettlement={selectedSettlement}
-                  setSelectedSettlement={setSelectedSettlement}
-                  showProjectModal={showProjectModal}
-                  setShowProjectModal={setShowProjectModal}
-                  showUserModal={showUserModal}
-                  setShowUserModal={setShowUserModal}
-                  showSettlementModal={showSettlementModal}
-                  setShowSettlementModal={setShowSettlementModal}
-                  rejectReason={rejectReason}
-                  setRejectReason={setRejectReason}
-                />
-              } />
+              <Route path="settlements" element={<SettlementManagementPage />} />
               <Route path="expenses" element={<ExpenseApprovalPage />} />
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
             </Routes>

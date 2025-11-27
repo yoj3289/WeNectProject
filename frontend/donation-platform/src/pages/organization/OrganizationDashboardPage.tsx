@@ -9,7 +9,6 @@ import type { Project } from '../../types';
 import Pagination from '../../components/common/Pagination';
 import { SettlementRequestModal } from '../../components/settlement/SettlementRequestModal';
 import EditProjectModal from '../../components/project/EditProjectModal';
-import * as settlementsApi from '../../api/settlements';
 import { getProjectStatusLabel, getProjectStatusBadgeStyle, canEditProject } from '../../utils/projectStatus';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
@@ -41,77 +40,6 @@ const OrganizationDashboardPage: React.FC = () => {
 
   // API: 프로젝트 수정
   const updateProjectMutation = useUpdateProject();
-
-  // 테스트용: 정산 승인
-  const handleTestApprove = async () => {
-    const id = prompt('승인할 정산 ID를 입력하세요:');
-    if (!id) return;
-
-    try {
-      await settlementsApi.approveSettlement(Number(id), { adminMemo: '테스트 승인' });
-      toast.success('정산 승인 완료!');
-      refetch();
-    } catch (error: any) {
-      toast.error('승인 실패: ' + error.message);
-    }
-  };
-
-  // 테스트용: 정산 반려
-  const handleTestReject = async () => {
-    const id = prompt('반려할 정산 ID를 입력하세요:');
-    if (!id) return;
-
-    const reason = prompt('반려 사유를 입력하세요:', '서류 부족');
-    if (!reason) return;
-
-    try {
-      await settlementsApi.rejectSettlement(Number(id), { rejectionReason: reason });
-      toast.success('정산 반려 완료!');
-      refetch();
-    } catch (error: any) {
-      toast.error('반려 실패: ' + error.message);
-    }
-  };
-
-  // 테스트용: 정산 목록 조회
-  const handleTestList = async () => {
-    try {
-      const settlements = await settlementsApi.getSettlementsByStatus('PENDING');
-      console.log('📋 대기 중인 정산 목록:', settlements);
-      toast.success(`대기 중인 정산 ${settlements.length}개 (콘솔 확인)`);
-    } catch (error: any) {
-      toast.error('조회 실패: ' + error.message);
-    }
-  };
-
-  // 테스트용: 100% 달성 프로젝트 일괄 완료 처리
-  const handleMigrateFundedProjects = () => {
-    setConfirmModal({
-      isOpen: true,
-      title: '프로젝트 마이그레이션',
-      message: '100% 달성한 ACTIVE 프로젝트를 모두 COMPLETED로 변경하시겠습니까?',
-      onConfirm: async () => {
-        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
-        try {
-          const response = await fetch('http://localhost:8080/api/donations/migrate-funded-projects', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-          });
-
-          if (!response.ok) {
-            throw new Error('마이그레이션 실패');
-          }
-
-          const result = await response.json();
-          console.log('✅ 마이그레이션 결과:', result);
-          toast.success(`완료! 완료 처리: ${result.completedProjectCount}개, 저금통 생성: ${result.piggyBankCreatedCount}개`);
-          refetch();
-        } catch (error: any) {
-          toast.error('마이그레이션 실패: ' + error.message);
-        }
-      }
-    });
-  };
 
   // Debounce 검색
   useEffect(() => {
@@ -178,7 +106,7 @@ const OrganizationDashboardPage: React.FC = () => {
       <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
         {/* 헤더 */}
         <div className="mb-6 md:mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <h1 className="text-3xl md:text-4xl font-bold">프로젝트 관리</h1>
             <Link
               to="/projects/create"
@@ -186,37 +114,6 @@ const OrganizationDashboardPage: React.FC = () => {
             >
               + 새 프로젝트 등록
             </Link>
-          </div>
-
-          {/* 테스트 도구 */}
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-xs font-bold text-red-600 mb-2">🔧 정산 테스트 도구</p>
-            <div className="flex gap-2">
-              <button
-                onClick={handleTestList}
-                className="px-3 py-1.5 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                목록 조회
-              </button>
-              <button
-                onClick={handleTestApprove}
-                className="px-3 py-1.5 text-xs bg-green-500 text-white rounded hover:bg-green-600"
-              >
-                승인
-              </button>
-              <button
-                onClick={handleTestReject}
-                className="px-3 py-1.5 text-xs bg-red-500 text-white rounded hover:bg-red-600"
-              >
-                반려
-              </button>
-              <button
-                onClick={handleMigrateFundedProjects}
-                className="px-3 py-1.5 text-xs bg-purple-500 text-white rounded hover:bg-purple-600"
-              >
-                100% 프로젝트 완료처리
-              </button>
-            </div>
           </div>
         </div>
 

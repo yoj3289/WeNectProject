@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, Check, X, FileText, Building2, User, Phone, Mail, Calendar, Download, CheckCircle, XCircle } from 'lucide-react';
+import { Search, Eye, Check, X, FileText, Building2, User, Phone, Mail, Calendar, Download, CheckCircle, XCircle, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { AdminDashboardProps } from '../../types/admin';
 import { getOrganizationApprovals, approveOrganization, rejectOrganization, type OrganizationApprovalResponse } from '../../api/admin';
@@ -12,8 +12,11 @@ interface ApprovalStats {
   rejected: number;
 }
 
+const PAGE_SIZE = 10;
+
 const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(0);
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedApproval, setSelectedApproval] = useState<OrganizationApprovalResponse | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -123,6 +126,18 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
       approval.email.toLowerCase().includes(searchTerm.toLowerCase());
     return searchMatch;
   });
+
+  // 페이지네이션 계산
+  const totalPages = Math.ceil(filteredApprovals.length / PAGE_SIZE);
+  const paginatedApprovals = filteredApprovals.slice(
+    currentPage * PAGE_SIZE,
+    (currentPage + 1) * PAGE_SIZE
+  );
+
+  // 필터나 검색어 변경 시 페이지 초기화
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [statusFilter, searchTerm]);
 
   return (
     <>
@@ -393,9 +408,19 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
 
       {/* Main Content */}
       <div className="p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">기관 회원가입 승인</h1>
-          <p className="text-sm text-gray-600 mt-1">기관 회원가입 신청을 검토하고 승인/거절 처리합니다</p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">기관 회원가입 승인</h1>
+            <p className="text-sm text-gray-600 mt-1">기관 회원가입 신청을 검토하고 승인/거절 처리합니다</p>
+          </div>
+          <button
+            onClick={() => loadApprovals()}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold transition disabled:opacity-50"
+          >
+            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+            새로고침
+          </button>
         </div>
 
         {/* 통계 카드 */}
@@ -485,8 +510,8 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
                     </td>
                   </tr>
                 ) : (
-                  filteredApprovals.map((approval) => (
-                  <tr key={approval.id} className="hover:bg-gray-50">
+                  paginatedApprovals.map((approval) => (
+                  <tr key={approval.userId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-800">{approval.userName}</td>
                     <td className="px-6 py-4 text-gray-600">{approval.representativeName}</td>
                     <td className="px-6 py-4 text-gray-600 text-sm">{approval.phone}</td>
@@ -540,15 +565,57 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
             </table>
           </div>
 
+          {/* 푸터 - 페이지네이션 */}
           <div className="p-6 border-t border-gray-200 flex items-center justify-between">
             <p className="text-sm text-gray-600">
-              총 <strong>{filteredApprovals.length}</strong>건 중 <strong>1-{filteredApprovals.length}</strong> 표시
+              총 <strong>{filteredApprovals.length}</strong>건
+              {filteredApprovals.length > 0 && (
+                <span className="ml-2">
+                  ({currentPage * PAGE_SIZE + 1}-{Math.min((currentPage + 1) * PAGE_SIZE, filteredApprovals.length)}건 표시)
+                </span>
+              )}
             </p>
-            <div className="flex gap-2">
-              <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>이전</button>
-              <button className="px-3 py-1 border rounded-lg bg-red-500 text-white border-red-500">1</button>
-              <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>다음</button>
-            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                  disabled={currentPage === 0}
+                  className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i)
+                    .filter(page => {
+                      return Math.abs(page - currentPage) <= 2 || page === 0 || page === totalPages - 1;
+                    })
+                    .map((page, idx, arr) => (
+                      <React.Fragment key={page}>
+                        {idx > 0 && arr[idx - 1] !== page - 1 && (
+                          <span className="px-2 text-gray-400">...</span>
+                        )}
+                        <button
+                          onClick={() => setCurrentPage(page)}
+                          className={`w-8 h-8 rounded-lg text-sm font-medium ${
+                            currentPage === page
+                              ? 'bg-red-500 text-white'
+                              : 'border border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {page + 1}
+                        </button>
+                      </React.Fragment>
+                    ))}
+                </div>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                  disabled={currentPage === totalPages - 1}
+                  className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

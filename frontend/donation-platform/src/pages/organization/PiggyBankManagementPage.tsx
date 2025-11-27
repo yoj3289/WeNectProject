@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wallet, TrendingDown, Calendar, FileText, Download, AlertCircle, Eye, X, ArrowUpDown } from 'lucide-react';
+import { ArrowLeft, Wallet, TrendingDown, Calendar, FileText, Download, AlertCircle, Eye, X, ArrowUpDown, Tag, Receipt, XCircle, Clock, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { usePiggyBankByProject, usePiggyBankDetail } from '../../hooks/usePiggyBanks';
 import { WithdrawalModal } from '../../components/piggybank/WithdrawalModal';
 import { SettlementRequestModal } from '../../components/settlement/SettlementRequestModal';
@@ -24,6 +25,7 @@ const PiggyBankManagementPage: React.FC = () => {
   const [sortField, setSortField] = useState<'date' | 'amount'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // API: projectId로 먼저 저금통 조회하여 piggyId를 얻음
   const {
@@ -53,6 +55,51 @@ const PiggyBankManagementPage: React.FC = () => {
       month: '2-digit',
       day: '2-digit',
     });
+  };
+
+  // 영수증 다운로드 함수
+  const handleDownloadReceipt = async (receiptUrl: string) => {
+    setIsDownloading(true);
+    try {
+      const backendBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api').replace('/api', '');
+      const fullUrl = receiptUrl.startsWith('http') ? receiptUrl : `${backendBaseUrl}${receiptUrl}`;
+
+      // 인증 토큰 가져오기
+      const token = localStorage.getItem('accessToken');
+
+      const response = await fetch(fullUrl, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
+      if (!response.ok) throw new Error('파일 다운로드 실패');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      const fileName = receiptUrl.split('/').pop() || '영수증';
+      link.download = fileName;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('영수증 다운로드 완료');
+    } catch (error) {
+      console.error('다운로드 오류:', error);
+      toast.error('파일 다운로드에 실패했습니다.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // 파일 확장자로 파일 타입 판별
+  const getFileType = (url: string): 'image' | 'pdf' | 'document' => {
+    const ext = url.split('.').pop()?.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext || '')) return 'image';
+    if (ext === 'pdf') return 'pdf';
+    return 'document';
   };
 
   // 필터링 및 정렬 기능
@@ -205,35 +252,74 @@ const PiggyBankManagementPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 카테고리별 통계 */}
+        {/* 카테고리별 통계 - 막대 그래프 */}
         {piggyBank.categoryStats && piggyBank.categoryStats.length > 0 && (
           <div className="bg-white rounded-xl p-6 border border-gray-200 mb-6">
-            <h2 className="text-xl font-bold mb-4">카테고리별 지출 통계</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {piggyBank.categoryStats.map((stat, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-gray-900">{stat.category}</h3>
-                    <span className="text-sm text-gray-600">{stat.count}건</span>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900 mb-2">
-                    {formatAmount(stat.amount)}원
-                  </p>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-orange-500 h-2 rounded-full"
-                      style={{ width: `${Math.min(stat.percentage, 100)}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-1">
-                    전체의 {stat.percentage.toFixed(1)}%
-                  </p>
-                </div>
-              ))}
+            <h2 className="text-xl font-bold mb-6">카테고리별 지출 통계</h2>
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+              {piggyBank.categoryStats
+                .sort((a, b) => b.amount - a.amount)
+                .map((stat, index) => {
+                  const colors = [
+                    'bg-orange-500',
+                    'bg-blue-500',
+                    'bg-green-500',
+                    'bg-purple-500',
+                    'bg-pink-500',
+                    'bg-yellow-500',
+                    'bg-red-500',
+                    'bg-indigo-500',
+                    'bg-teal-500',
+                    'bg-cyan-500',
+                  ];
+                  const barColor = colors[index % colors.length];
+
+                  return (
+                    <div key={index} className="group">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span
+                            className={`w-3 h-3 rounded-full ${barColor} flex-shrink-0`}
+                          ></span>
+                          <span className="font-medium text-gray-800 truncate">
+                            {stat.category}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+                          <span className="text-sm text-gray-500">{stat.count}건</span>
+                          <span className="font-bold text-gray-900 min-w-[100px] text-right">
+                            {formatAmount(stat.amount)}원
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
+                          <div
+                            className={`${barColor} h-full rounded-full transition-all duration-500 flex items-center justify-end pr-2`}
+                            style={{ width: `${Math.max(stat.percentage, 2)}%` }}
+                          >
+                            {stat.percentage >= 10 && (
+                              <span className="text-xs text-white font-medium">
+                                {stat.percentage.toFixed(1)}%
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {stat.percentage < 10 && (
+                          <span className="text-xs text-gray-500 w-12">
+                            {stat.percentage.toFixed(1)}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
+            {piggyBank.categoryStats.length > 5 && (
+              <p className="text-xs text-gray-400 mt-4 text-center">
+                스크롤하여 더 보기
+              </p>
+            )}
           </div>
         )}
 
@@ -424,121 +510,162 @@ const PiggyBankManagementPage: React.FC = () => {
       {/* 지출 상세 모달 */}
       {selectedExpense && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             {/* 모달 헤더 */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">지출 상세 정보</h2>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  {formatDate(selectedExpense.expenseDate)}
-                </p>
+                <h2 className="text-2xl font-bold text-gray-800">지출 상세</h2>
+                <p className="text-sm text-gray-600 mt-1">지출 정보를 확인하세요</p>
               </div>
               <button
                 onClick={() => setSelectedExpense(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-lg"
               >
-                <X size={20} className="text-gray-500" />
+                <X size={24} />
               </button>
             </div>
 
-            {/* 모달 바디 */}
-            <div className="px-6 py-6 space-y-5">
-              {/* 카테고리 */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  카테고리
-                </label>
-                <div className="px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-base font-medium text-gray-900">{selectedExpense.category}</p>
-                </div>
-              </div>
-
-              {/* 지출 금액 */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  지출 금액
-                </label>
-                <div className="px-3 py-2 bg-orange-50 rounded-lg border border-orange-200">
-                  <p className="text-2xl font-bold text-orange-600">
-                    {formatAmount(selectedExpense.amount)}원
-                  </p>
-                </div>
-              </div>
-
-              {/* 상태 */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  상태
-                </label>
+            <div className="p-6 space-y-6">
+              {/* 기본 정보 */}
+              <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-200">
                 <span
-                  className={`inline-block px-4 py-2 rounded-lg text-sm font-semibold ${
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
                     selectedExpense.status === 'APPROVED'
-                      ? 'bg-green-100 text-green-700 border border-green-300'
+                      ? 'bg-green-100 text-green-700'
                       : selectedExpense.status === 'PENDING'
-                      ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                      ? 'bg-yellow-100 text-yellow-700'
                       : selectedExpense.status === 'REJECTED'
-                      ? 'bg-red-100 text-red-700 border border-red-300'
-                      : 'bg-gray-100 text-gray-700 border border-gray-300'
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-gray-100 text-gray-700'
                   }`}
                 >
                   {selectedExpense.status === 'APPROVED'
                     ? '승인됨'
                     : selectedExpense.status === 'PENDING'
-                    ? '승인 대기중'
+                    ? '승인 대기'
                     : selectedExpense.status === 'REJECTED'
                     ? '반려됨'
                     : selectedExpense.status}
                 </span>
+                <h3 className="text-2xl font-bold text-gray-800 mt-3">{piggyBank.projectTitle}</h3>
+                <div className="bg-white rounded-lg p-6 mt-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-gray-600">지출 금액</span>
+                    <span className="text-3xl font-bold text-orange-600">{formatAmount(selectedExpense.amount)}원</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">지출일</span>
+                    <span className="font-semibold text-gray-800">{formatDate(selectedExpense.expenseDate)}</span>
+                  </div>
+                </div>
               </div>
 
-              {/* 반려 사유 */}
-              {selectedExpense.status === 'REJECTED' && selectedExpense.rejectionReason && (
-                <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
-                  <label className="block text-sm font-semibold text-red-900 mb-2">
-                    반려 사유
-                  </label>
-                  <p className="text-sm text-red-800 whitespace-pre-wrap leading-relaxed">
-                    {selectedExpense.rejectionReason}
-                  </p>
-                </div>
-              )}
-
-              {/* 지출 내역 설명 */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  지출 내역 설명
-                </label>
-                <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
-                    {selectedExpense.description}
-                  </p>
+              {/* 지출 정보 */}
+              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <Tag size={20} className="text-blue-500" />
+                  지출 정보
+                </h4>
+                <div className="bg-blue-50 rounded-lg p-4 space-y-4">
+                  <div>
+                    <span className="text-sm text-gray-600 block mb-1">카테고리</span>
+                    <span className="px-3 py-1 bg-white text-gray-700 rounded-lg text-sm font-semibold border border-gray-200 inline-block">
+                      {selectedExpense.category}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600 block mb-1">설명</span>
+                    <p className="font-medium text-gray-800 whitespace-pre-wrap break-words">
+                      {selectedExpense.description || '-'}
+                    </p>
+                  </div>
                 </div>
               </div>
 
               {/* 영수증 */}
-              {selectedExpense.receiptUrl && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    영수증
-                  </label>
-                  <a
-                    href={`${import.meta.env.VITE_IMAGE_BASE_URL}${selectedExpense.receiptUrl}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
-                  >
-                    <Eye size={18} />
-                    영수증 보기
-                  </a>
+              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <Receipt size={20} className="text-purple-500" />
+                  영수증
+                </h4>
+                {selectedExpense.receiptUrl ? (
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                        {getFileType(selectedExpense.receiptUrl) === 'pdf' ? (
+                          <FileText size={20} className="text-red-500" />
+                        ) : getFileType(selectedExpense.receiptUrl) === 'image' ? (
+                          <Receipt size={20} className="text-purple-500" />
+                        ) : (
+                          <FileText size={20} className="text-blue-500" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800">
+                          {selectedExpense.receiptUrl.split('/').pop() || '영수증'}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {getFileType(selectedExpense.receiptUrl) === 'pdf' ? 'PDF 문서' :
+                           getFileType(selectedExpense.receiptUrl) === 'image' ? '이미지 파일' : '문서 파일'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDownloadReceipt(selectedExpense.receiptUrl!)}
+                      disabled={isDownloading}
+                      className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-semibold hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {isDownloading ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          다운로드 중...
+                        </>
+                      ) : (
+                        <>
+                          <Download size={16} />
+                          다운로드
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 rounded-lg p-6 text-center">
+                    <Receipt size={32} className="mx-auto text-gray-300 mb-2" />
+                    <p className="text-gray-500">첨부된 영수증이 없습니다</p>
+                  </div>
+                )}
+              </div>
+
+              {/* 반려 사유 (반려된 경우) */}
+              {selectedExpense.status === 'REJECTED' && selectedExpense.rejectionReason && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+                  <h4 className="text-lg font-bold text-red-800 mb-3 flex items-center gap-2">
+                    <XCircle size={20} className="text-red-600" />
+                    반려 사유
+                  </h4>
+                  <p className="text-red-900">{selectedExpense.rejectionReason}</p>
+                </div>
+              )}
+
+              {/* 대기중일 때 안내 */}
+              {selectedExpense.status === 'PENDING' && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+                  <h4 className="text-lg font-bold text-amber-800 mb-3 flex items-center gap-2">
+                    <Clock size={20} className="text-amber-600" />
+                    승인 대기 중
+                  </h4>
+                  <p className="text-sm text-amber-900">
+                    관리자의 승인을 기다리고 있습니다. 승인 후 저금통에서 금액이 차감됩니다.
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* 모달 푸터 */}
-            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4">
+            {/* 하단 버튼 */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6">
               <button
                 onClick={() => setSelectedExpense(null)}
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors"
+                className="w-full px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-bold hover:bg-gray-50"
               >
                 닫기
               </button>

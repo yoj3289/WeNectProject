@@ -95,7 +95,7 @@ const ProjectTimeline: React.FC<ProjectTimelineProps> = ({ project, expenses = [
         });
 
         // 정산 승인 (요청 후 승인된 경우에만)
-        if (settlement.status === 'APPROVED' || settlement.status === 'COMPLETED') {
+        if (settlement.settlementStatus === 'completed' || settlement.settlementStatus === 'in_progress') {
           events.push({
             id: 'settlement-approved',
             type: 'settlement_approved',

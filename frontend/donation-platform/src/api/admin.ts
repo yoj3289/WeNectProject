@@ -200,42 +200,90 @@ export const updateUserStatus = async (
   return apiClient.put<void>(`/admin/users/${userId}/status`, { status });
 };
 
+// ==================== 정산 응답 타입 ====================
+export interface SettlementDocument {
+  documentId: number;
+  fileName: string;
+  filePath: string;
+  fileSize: number;
+  documentType: string;
+  uploadedAt: string;
+}
+
+export interface SettlementResponse {
+  settlementId: number;
+  projectId: number;
+  projectTitle: string;
+  piggyId: number | null;
+  settlementAmount: number;
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  status: 'PENDING' | 'APPROVED' | 'COMPLETED' | 'REJECTED';
+  requestedAt: string;
+  approvedAt: string | null;
+  completedAt: string | null;
+  rejectionReason: string | null;
+  adminMemo: string | null;
+  documents: SettlementDocument[];
+}
+
 /**
- * 관리자 - 정산 요청 목록
+ * 관리자 - 상태별 정산 목록 조회
  */
-export const getAdminSettlements = async (
-  filters: AdminSettlementFilters = {}
-): Promise<{ content: any[]; totalPages: number; currentPage: number }> => {
-  const params = new URLSearchParams();
+export const getSettlementsByStatus = async (
+  status: 'PENDING' | 'APPROVED' | 'COMPLETED' | 'REJECTED' | 'all'
+): Promise<{ data: SettlementResponse[] }> => {
+  if (status === 'all') {
+    // 모든 상태를 가져와서 합치기
+    const [pending, approved, completed, rejected] = await Promise.all([
+      apiClient.get<{ data: SettlementResponse[] }>('/settlement-requests/status/PENDING'),
+      apiClient.get<{ data: SettlementResponse[] }>('/settlement-requests/status/APPROVED'),
+      apiClient.get<{ data: SettlementResponse[] }>('/settlement-requests/status/COMPLETED'),
+      apiClient.get<{ data: SettlementResponse[] }>('/settlement-requests/status/REJECTED'),
+    ]);
+    return {
+      data: [
+        ...(pending.data || []),
+        ...(approved.data || []),
+        ...(completed.data || []),
+        ...(rejected.data || []),
+      ],
+    };
+  }
+  return apiClient.get<{ data: SettlementResponse[] }>(`/settlement-requests/status/${status}`);
+};
 
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      params.append(key, String(value));
-    }
-  });
-
-  return apiClient.get(`/admin/settlements?${params.toString()}`);
+/**
+ * 정산 상세 조회
+ */
+export const getSettlementDetail = async (settlementId: number): Promise<{ data: SettlementResponse }> => {
+  return apiClient.get<{ data: SettlementResponse }>(`/settlement-requests/${settlementId}`);
 };
 
 /**
  * 정산 승인
  */
-export const approveSettlement = async (data: ApproveSettlementRequest): Promise<void> => {
-  return apiClient.put<void>(`/admin/settlements/${data.settlementId}/approve`, data);
+export const approveSettlement = async (data: ApproveSettlementRequest): Promise<{ data: SettlementResponse }> => {
+  return apiClient.post<{ data: SettlementResponse }>(`/settlement-requests/${data.settlementId}/approve`, {
+    adminMemo: data.approvalNote || '',
+  });
 };
 
 /**
  * 정산 반려
  */
-export const rejectSettlement = async (data: RejectSettlementRequest): Promise<void> => {
-  return apiClient.put<void>(`/admin/settlements/${data.settlementId}/reject`, data);
+export const rejectSettlement = async (data: RejectSettlementRequest): Promise<{ data: SettlementResponse }> => {
+  return apiClient.post<{ data: SettlementResponse }>(`/settlement-requests/${data.settlementId}/reject`, {
+    rejectionReason: data.rejectionReason,
+  });
 };
 
 /**
- * 정산 완료 (송금 완료)
+ * 대기 중인 정산 개수 조회
  */
-export const completeSettlement = async (settlementId: number): Promise<void> => {
-  return apiClient.put<void>(`/admin/settlements/${settlementId}/complete`);
+export const getPendingSettlementCount = async (): Promise<{ data: number }> => {
+  return apiClient.get<{ data: number }>('/settlement-requests/pending/count');
 };
 
 /**
@@ -283,4 +331,46 @@ export const approveOrganization = async (data: ApproveOrganizationRequest): Pro
  */
 export const rejectOrganization = async (data: RejectOrganizationRequest): Promise<void> => {
   return apiClient.put<void>(`/admin/organizations/${data.userId}/reject`, data);
+};
+
+/**
+ * 관리자 - 정산 목록 조회 (필터링 지원)
+ */
+export const getAdminSettlements = async (
+  filters: AdminSettlementFilters = {}
+): Promise<{ content: SettlementResponse[]; totalPages: number; currentPage: number }> => {
+  const status = filters.status || 'all';
+  const response = await getSettlementsByStatus(
+    status === 'all' ? 'all' : status.toUpperCase() as 'PENDING' | 'APPROVED' | 'COMPLETED' | 'REJECTED'
+  );
+
+  let settlements = response.data || [];
+
+  // 키워드 필터링 (프론트엔드에서 처리)
+  if (filters.keyword) {
+    const keyword = filters.keyword.toLowerCase();
+    settlements = settlements.filter(s =>
+      s.projectTitle?.toLowerCase().includes(keyword) ||
+      s.accountHolder?.toLowerCase().includes(keyword)
+    );
+  }
+
+  // 페이지네이션 (프론트엔드에서 처리)
+  const page = filters.page || 0;
+  const size = filters.size || 10;
+  const start = page * size;
+  const paginatedSettlements = settlements.slice(start, start + size);
+
+  return {
+    content: paginatedSettlements,
+    totalPages: Math.ceil(settlements.length / size),
+    currentPage: page,
+  };
+};
+
+/**
+ * 정산 완료 처리
+ */
+export const completeSettlement = async (settlementId: number): Promise<{ data: SettlementResponse }> => {
+  return apiClient.post<{ data: SettlementResponse }>(`/settlement-requests/${settlementId}/complete`, {});
 };
