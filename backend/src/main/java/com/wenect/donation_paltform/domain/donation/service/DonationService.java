@@ -115,29 +115,6 @@ public class DonationService {
                     donation.getUserId(), project.getProjectId(), e);
         }
 
-        // 프로젝트 소유자(기관)에게 기부 알림 생성
-        try {
-            String donorDisplayName = donation.getIsAnonymous() ? "익명의 기부자" : donation.getDonorName();
-            notificationService.createNotification(
-                    project.getOrgId(),
-                    "donation_received",
-                    "donation",
-                    "새로운 기부가 도착했습니다",
-                    String.format("%s님이 '%s' 프로젝트에 %,d원을 기부해주셨습니다.",
-                            donorDisplayName, project.getTitle(), donation.getAmount().longValue()),
-                    "/project/" + project.getProjectId(),
-                    java.util.Map.of(
-                            "projectId", project.getProjectId().toString(),
-                            "amount", donation.getAmount().toString(),
-                            "donorName", donorDisplayName
-                    )
-            );
-            log.info("프로젝트 소유자 기부 알림 생성 - orgId: {}, projectId: {}",
-                    project.getOrgId(), project.getProjectId());
-        } catch (Exception e) {
-            log.error("프로젝트 소유자 알림 생성 실패", e);
-        }
-
         log.info("기부 승인 완료 - donationId: {}, amount: {}", donation.getDonationId(), donation.getAmount());
     }
 
