@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Eye, Edit, Trash2, Reply, Send, X, Loader2, Heart, Link } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { CommunityPost, Comment, PostType } from '../../types';
 import { POST_TYPE_LABELS } from '../../types';
 import { usePost, useComments, useCreateComment, useDeleteComment, useUpdateComment, useLikePost, useLikeComment } from '../../hooks/useCommunity';
+import ConfirmModal from '../../components/common/ConfirmModal';
+import Pagination from '../../components/common/Pagination';
 
 interface PostDetailPageProps {
   selectedPost: CommunityPost | null;
@@ -39,9 +42,13 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
   const postId = id ? parseInt(id) : selectedPost?.id;
   const hasScrolledToComment = useRef(false);
 
+  // 댓글 페이지네이션 상태
+  const [commentPage, setCommentPage] = useState(1);
+  const commentPageSize = 10;
+
   // API에서 게시글 데이터 가져오기
   const { data: postData, isLoading: isPostLoading, isError: isPostError } = usePost(postId || 0);
-  const { data: commentsData, isLoading: isCommentsLoading } = useComments(postId || 0);
+  const { data: commentsData, isLoading: isCommentsLoading } = useComments(postId || 0, { page: commentPage - 1, size: commentPageSize });
 
   const createCommentMutation = useCreateComment();
   const updateCommentMutation = useUpdateComment();
@@ -54,6 +61,14 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
   const [replyTo, setReplyTo] = useState<number | null>(null);
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState('');
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDanger?: boolean;
+    isLoading?: boolean;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
   // API 응답을 CommunityPost 형식으로 변환
   const post: CommunityPost | null = postData ? {
@@ -69,9 +84,9 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
 
   // 댓글 데이터 변환
   useEffect(() => {
-    if (commentsData) {
-      const convertedComments: Comment[] = commentsData
-        .filter(c => !c.parentCommentId)
+    if (commentsData?.content) {
+      const commentsList = commentsData.content;
+      const convertedComments: Comment[] = commentsList
         .map(comment => ({
           id: comment.commentId,
           author: comment.author.userName,
@@ -79,16 +94,14 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
           date: new Date(comment.createdAt).toISOString(),
           likeCount: comment.likeCount || 0,
           isLiked: comment.isLiked || false,
-          replies: commentsData
-            .filter(r => r.parentCommentId === comment.commentId)
-            .map(reply => ({
-              id: reply.commentId,
-              author: reply.author.userName,
-              content: reply.content,
-              date: new Date(reply.createdAt).toISOString(),
-              likeCount: reply.likeCount || 0,
-              isLiked: reply.isLiked || false
-            }))
+          replies: comment.replies?.map(reply => ({
+            id: reply.commentId,
+            author: reply.author.userName,
+            content: reply.content,
+            date: new Date(reply.createdAt).toISOString(),
+            likeCount: reply.likeCount || 0,
+            isLiked: reply.isLiked || false
+          })) || []
         }));
       setComments(convertedComments);
     } else if (selectedPost?.comments) {
@@ -106,7 +119,7 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
   // URL 해시로 특정 댓글로 스크롤 (댓글 링크 공유 시)
   useEffect(() => {
     // 이미 스크롤했거나 댓글이 로드되지 않았으면 무시
-    if (hasScrolledToComment.current || !commentsData || isCommentsLoading) {
+    if (hasScrolledToComment.current || !commentsData?.content || isCommentsLoading) {
       return;
     }
 
@@ -134,7 +147,7 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
   const handleLikePost = async () => {
     if (!post) return;
     if (!isLoggedIn) {
-      alert('로그인이 필요합니다.');
+      toast.error('로그인이 필요합니다.');
       return;
     }
 
@@ -142,14 +155,14 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
       await likePostMutation.mutateAsync(post.id);
     } catch (error) {
       console.error('좋아요 처리 실패:', error);
-      alert('좋아요 처리에 실패했습니다.');
+      toast.error('좋아요 처리에 실패했습니다.');
     }
   };
 
   // 댓글 좋아요
   const handleLikeComment = async (commentId: number) => {
     if (!isLoggedIn) {
-      alert('로그인이 필요합니다.');
+      toast.error('로그인이 필요합니다.');
       return;
     }
 
@@ -157,7 +170,7 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
       await likeCommentMutation.mutateAsync(commentId);
     } catch (error) {
       console.error('댓글 좋아요 처리 실패:', error);
-      alert('댓글 좋아요 처리에 실패했습니다.');
+      toast.error('댓글 좋아요 처리에 실패했습니다.');
     }
   };
 
@@ -174,9 +187,9 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
 
     try {
       document.execCommand('copy');
-      alert('댓글 링크가 복사되었습니다.');
+      toast.success('댓글 링크가 복사되었습니다.');
     } catch (err) {
-      alert('링크 복사에 실패했습니다. URL: ' + text);
+      toast.error('링크 복사에 실패했습니다.');
     }
 
     document.body.removeChild(textArea);
@@ -189,7 +202,7 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
     // HTTPS 환경에서는 navigator.clipboard 사용, HTTP에서는 폴백 사용
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(url).then(() => {
-        alert('댓글 링크가 복사되었습니다.');
+        toast.success('댓글 링크가 복사되었습니다.');
       }).catch(() => {
         fallbackCopyToClipboard(url);
       });
@@ -201,7 +214,7 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
   // 댓글 추가
   const addComment = async (content: string, parentId?: number) => {
     if (!content.trim()) {
-      alert('댓글 내용을 입력해주세요.');
+      toast.error('댓글 내용을 입력해주세요.');
       return;
     }
 
@@ -218,9 +231,9 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
 
       setNewComment('');
       setReplyTo(null);
-      alert('댓글이 등록되었습니다.');
+      toast.success('댓글이 등록되었습니다.');
     } catch (error) {
-      alert('댓글 등록에 실패했습니다.');
+      toast.error('댓글 등록에 실패했습니다.');
       console.error(error);
     }
   };
@@ -234,7 +247,7 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
   // 댓글 수정 저장
   const saveEditComment = async (commentId: number, isReply: boolean = false, parentId?: number) => {
     if (!editingCommentContent.trim()) {
-      alert('댓글 내용을 입력해주세요.');
+      toast.error('댓글 내용을 입력해주세요.');
       return;
     }
 
@@ -246,9 +259,9 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
 
       setEditingCommentId(null);
       setEditingCommentContent('');
-      alert('댓글이 수정되었습니다.');
+      toast.success('댓글이 수정되었습니다.');
     } catch (error) {
-      alert('댓글 수정에 실패했습니다.');
+      toast.error('댓글 수정에 실패했습니다.');
       console.error(error);
     }
   };
@@ -260,16 +273,25 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
   };
 
   // 댓글 삭제
-  const deleteComment = async (id: number, isReply: boolean = false, parentId?: number) => {
-    if (!confirm('댓글을 삭제하시겠습니까?')) return;
-
-    try {
-      await deleteCommentMutation.mutateAsync(id);
-      alert('댓글이 삭제되었습니다.');
-    } catch (error) {
-      alert('댓글 삭제에 실패했습니다.');
-      console.error(error);
-    }
+  const deleteComment = (id: number, isReply: boolean = false, parentId?: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: '댓글 삭제',
+      message: '댓글을 삭제하시겠습니까?',
+      isDanger: true,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        try {
+          await deleteCommentMutation.mutateAsync(id);
+          toast.success('댓글이 삭제되었습니다.');
+          setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        } catch (error) {
+          toast.error('댓글 삭제에 실패했습니다.');
+          console.error(error);
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+        }
+      }
+    });
   };
 
   // 댓글 수정 권한 체크 (5분 이내만 수정 가능)
@@ -299,11 +321,18 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
   const handleDeletePost = () => {
     if (!post) return;
 
-    if (confirm('게시글을 삭제하시겠습니까?')) {
-      onDeletePost(post.id);
-      alert('게시글이 삭제되었습니다.');
-      navigate('/community');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: '게시글 삭제',
+      message: '게시글을 삭제하시겠습니까?',
+      isDanger: true,
+      onConfirm: () => {
+        onDeletePost(post.id);
+        toast.success('게시글이 삭제되었습니다.');
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        navigate('/community');
+      }
+    });
   };
 
   if (isPostLoading || isCommentsLoading) {
@@ -443,7 +472,7 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
           {/* 댓글 섹션 */}
           <div className="mt-8 border-t pt-8">
             <h3 className="text-2xl font-bold mb-6">
-              댓글 {comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0)}개
+              댓글 {commentsData?.totalElements || comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0)}개
             </h3>
 
             {/* 댓글 작성 */}
@@ -667,9 +696,38 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
                 </div>
               ))}
             </div>
+
+            {/* 댓글 페이지네이션 */}
+            {commentsData && commentsData.totalPages > 1 && (
+              <div className="mt-6 flex justify-center">
+                <Pagination
+                  currentPage={commentPage}
+                  totalPages={commentsData.totalPages}
+                  onPageChange={(page) => {
+                    setCommentPage(page);
+                    // 댓글 섹션으로 스크롤
+                    const commentSection = document.querySelector('.mt-8.border-t.pt-8');
+                    if (commentSection) {
+                      commentSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* 확인 모달 */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
+        isDanger={confirmModal.isDanger}
+        isLoading={confirmModal.isLoading}
+      />
     </div>
   );
 };

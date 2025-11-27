@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight, Trash2, FileText, Download } from 'lucide-react';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import toast from 'react-hot-toast';
 import { useProjectDetail, useToggleFavoriteProject, useUserFavoriteProjects, useDeleteProject } from '../../hooks/useProjects';
 import { useDonors } from '../../hooks/useDonations';
 import { useExpenses, useSettlementSummary } from '../../hooks/useExpenses';
@@ -114,27 +116,27 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      alert('링크가 복사되었습니다!');
+      toast.success('링크가 복사되었습니다!');
     });
   };
 
   // Handlers
   const handleFavoriteClick = async () => {
     if (!isLoggedIn) {
-      alert('로그인이 필요한 서비스입니다.');
+      toast.error('로그인이 필요한 서비스입니다.');
       onNavigateToLogin();
     } else {
       try {
         await toggleFavoriteMutation.mutateAsync(projectId);
       } catch (error: any) {
-        alert(error.response?.data?.message || '관심 프로젝트 설정에 실패했습니다.');
+        toast.error(error.response?.data?.message || '관심 프로젝트 설정에 실패했습니다.');
       }
     }
   };
 
   const handleDonateClick = () => {
     if (!isLoggedIn) {
-      alert('로그인이 필요한 서비스입니다.\n로그인 후 기부해주세요.');
+      toast.error('로그인이 필요한 서비스입니다. 로그인 후 기부해주세요.');
       // 현재 프로젝트 페이지 URL과 기부 모달 열기 플래그를 redirect 파라미터로 전달
       navigate(`/login?redirect=/projects/${projectId}&openDonation=true`);
       return;
@@ -149,11 +151,11 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   const handleDeleteConfirm = async () => {
     try {
       await deleteProjectMutation.mutateAsync(projectId);
-      alert('프로젝트가 성공적으로 삭제되었습니다.');
+      toast.success('프로젝트가 성공적으로 삭제되었습니다.');
       navigate('/projects'); // 프로젝트 목록 페이지로 이동
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || '프로젝트 삭제에 실패했습니다.';
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setShowDeleteModal(false);
     }
@@ -163,10 +165,11 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   if (isLoadingProject) {
     return (
       <div className="bg-gray-50 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-red-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">프로젝트 정보를 불러오는 중...</p>
-        </div>
+        <LoadingSpinner
+          size="xl"
+          message="프로젝트 정보를 불러오는 중..."
+          subMessage="잠시만 기다려주세요"
+        />
       </div>
     );
   }

@@ -18,6 +18,7 @@ public class CommentResponse {
     private AuthorDto author;
     private Integer likeCount;
     private Boolean isLiked; // 현재 사용자가 좋아요를 눌렀는지 여부
+    private Boolean isDeleted; // 삭제된 댓글 여부 (대댓글 표시를 위해 유지)
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Long parentCommentId;

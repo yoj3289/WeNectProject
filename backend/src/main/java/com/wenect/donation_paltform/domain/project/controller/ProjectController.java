@@ -19,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.data.domain.Page;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
@@ -116,20 +118,30 @@ public class ProjectController {
     }
 
     /**
-     * 전체 프로젝트 목록 조회 (검색, 필터링, 정렬 지원)
+     * 전체 프로젝트 목록 조회 (검색, 필터링, 정렬, 페이지네이션 지원)
      *
      * @param category 카테고리 (선택, 예: "아동복지", "환경보호")
      * @param search 검색 키워드 (선택, 프로젝트 제목에서 검색)
      * @param sortBy 정렬 기준 (선택, latest/deadline/mostDonated/leastDonated/mostFavorited/leastFavorited, 기본값: latest)
+     * @param page 페이지 번호 (0부터 시작, 기본값: 0)
+     * @param size 페이지 크기 (기본값: 12)
      */
     @GetMapping
     public ResponseEntity<PageResponse<ProjectResponse>> getAllProjects(
             @RequestParam(value = "category", required = false) String category,
             @RequestParam(value = "search", required = false) String search,
-            @RequestParam(value = "sortBy", defaultValue = "latest") String sortBy) {
+            @RequestParam(value = "sortBy", defaultValue = "latest") String sortBy,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "12") int size) {
 
-        List<ProjectResponse> responses = projectService.searchProjects(category, search, sortBy);
-        PageResponse<ProjectResponse> pageResponse = PageResponse.of(responses);
+        Page<ProjectResponse> projectPage = projectService.searchProjectsPaged(category, search, sortBy, page, size);
+        PageResponse<ProjectResponse> pageResponse = PageResponse.<ProjectResponse>builder()
+                .content(projectPage.getContent())
+                .currentPage(projectPage.getNumber())
+                .totalPages(projectPage.getTotalPages())
+                .totalElements(projectPage.getTotalElements())
+                .size(projectPage.getSize())
+                .build();
         return ResponseEntity.ok(pageResponse);
     }
 
@@ -156,20 +168,30 @@ public class ProjectController {
     /**
      * 결산 중/종료된 프로젝트 목록 조회
      * - COMPLETED, SETTLEMENT, CLOSED 상태의 프로젝트 조회
-     * - 카테고리 필터링, 검색, 정렬 지원
+     * - 카테고리 필터링, 검색, 정렬, 페이지네이션 지원
      *
      * @param category 카테고리 (선택)
      * @param search 검색 키워드 (선택)
      * @param sortBy 정렬 기준 (선택, latest/deadline/mostDonated/leastDonated/mostFavorited/leastFavorited, 기본값: latest)
+     * @param page 페이지 번호 (0부터 시작, 기본값: 0)
+     * @param size 페이지 크기 (기본값: 12)
      */
     @GetMapping("/settlement")
     public ResponseEntity<PageResponse<ProjectResponse>> getSettlementProjects(
             @RequestParam(value = "category", required = false) String category,
             @RequestParam(value = "search", required = false) String search,
-            @RequestParam(value = "sortBy", defaultValue = "latest") String sortBy) {
+            @RequestParam(value = "sortBy", defaultValue = "latest") String sortBy,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "12") int size) {
 
-        List<ProjectResponse> responses = projectService.searchSettlementProjects(category, search, sortBy);
-        PageResponse<ProjectResponse> pageResponse = PageResponse.of(responses);
+        Page<ProjectResponse> projectPage = projectService.searchSettlementProjectsPaged(category, search, sortBy, page, size);
+        PageResponse<ProjectResponse> pageResponse = PageResponse.<ProjectResponse>builder()
+                .content(projectPage.getContent())
+                .currentPage(projectPage.getNumber())
+                .totalPages(projectPage.getTotalPages())
+                .totalElements(projectPage.getTotalElements())
+                .size(projectPage.getSize())
+                .build();
         return ResponseEntity.ok(pageResponse);
     }
 

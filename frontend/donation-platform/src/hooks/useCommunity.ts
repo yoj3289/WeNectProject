@@ -23,12 +23,12 @@ export function usePost(id: number) {
 }
 
 /**
- * 댓글 목록
+ * 댓글 목록 (페이지네이션 지원)
  */
-export function useComments(postId: number) {
+export function useComments(postId: number, filters: communityApi.CommentFilters = {}) {
   return useQuery({
-    queryKey: ['comments', postId],
-    queryFn: () => communityApi.getComments(postId),
+    queryKey: ['comments', postId, filters],
+    queryFn: () => communityApi.getComments(postId, filters),
     enabled: !!postId,
   });
 }

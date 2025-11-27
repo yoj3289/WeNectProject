@@ -79,11 +79,11 @@ export const createDonation = async (data: CreateDonationRequest): Promise<Donat
 };
 
 /**
- * 나의 기부 내역 조회
+ * 나의 기부 내역 조회 (페이지네이션 지원)
  */
 export const getMyDonations = async (
   filters: DonationFilters = {}
-): Promise<{ content: DonationHistoryResponse[]; totalPages: number; currentPage: number }> => {
+): Promise<{ content: DonationHistoryResponse[]; totalPages: number; currentPage: number; totalElements: number; size: number }> => {
   const params = new URLSearchParams();
 
   Object.entries(filters).forEach(([key, value]) => {

@@ -46,6 +46,9 @@ public class PiggyBankService {
         PiggyBank piggyBank = piggyBankRepository.findByProjectId(projectId)
             .orElseThrow(() -> new IllegalArgumentException("해당 프로젝트의 저금통을 찾을 수 없습니다."));
 
+        // 잔액 정합성 검증 (totalAmount - withdrawnAmount = balance)
+        validatePiggyBankBalance(piggyBank);
+
         log.info("조회된 저금통 - piggyId: {}, projectId: {}, totalAmount: {}, balance: {}",
             piggyBank.getPiggyId(), piggyBank.getProjectId(), piggyBank.getTotalAmount(), piggyBank.getBalance());
 
@@ -66,6 +69,9 @@ public class PiggyBankService {
 
         PiggyBank piggyBank = piggyBankRepository.findById(piggyId)
             .orElseThrow(() -> new IllegalArgumentException("저금통을 찾을 수 없습니다."));
+
+        // 잔액 정합성 검증 (totalAmount - withdrawnAmount = balance)
+        validatePiggyBankBalance(piggyBank);
 
         log.info("조회된 저금통 - piggyId: {}, projectId: {}, totalAmount: {}, withdrawnAmount: {}, balance: {}, status: {}",
             piggyBank.getPiggyId(), piggyBank.getProjectId(), piggyBank.getTotalAmount(),
@@ -228,5 +234,28 @@ public class PiggyBankService {
             })
             .sorted((a, b) -> b.getAmount().compareTo(a.getAmount())) // 금액 내림차순 정렬
             .collect(Collectors.toList());
+    }
+
+    /**
+     * 저금통 잔액 정합성 검증
+     * totalAmount - withdrawnAmount = balance 여부 확인
+     * 불일치 시 로그 경고 출력 (데이터 오류 감지용)
+     */
+    private void validatePiggyBankBalance(PiggyBank piggyBank) {
+        BigDecimal expectedBalance = piggyBank.getTotalAmount().subtract(piggyBank.getWithdrawnAmount());
+
+        if (expectedBalance.compareTo(piggyBank.getBalance()) != 0) {
+            log.warn("저금통 잔액 불일치 감지! piggyId: {}, totalAmount: {}, withdrawnAmount: {}, " +
+                    "저장된 balance: {}, 계산된 balance: {}",
+                    piggyBank.getPiggyId(), piggyBank.getTotalAmount(), piggyBank.getWithdrawnAmount(),
+                    piggyBank.getBalance(), expectedBalance);
+        }
+
+        // 잔액이 음수인 경우 에러
+        if (piggyBank.getBalance().compareTo(BigDecimal.ZERO) < 0) {
+            log.error("저금통 잔액이 음수입니다! piggyId: {}, balance: {}",
+                    piggyBank.getPiggyId(), piggyBank.getBalance());
+            throw new IllegalStateException("저금통 잔액 오류: 잔액이 음수입니다.");
+        }
     }
 }

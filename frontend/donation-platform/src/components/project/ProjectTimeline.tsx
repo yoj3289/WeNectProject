@@ -36,29 +36,33 @@ const ProjectTimeline: React.FC<ProjectTimelineProps> = ({ project, expenses = [
   const generateTimeline = (): TimelineEvent[] => {
     const events: TimelineEvent[] = [];
 
+    const startDate = project.startDate || project.createdAt || '2024-01-01';
+    const endDate = project.endDate || new Date().toISOString().split('T')[0];
+
     // 1. 프로젝트 시작
     events.push({
       id: 'start',
       type: 'start',
       title: '프로젝트 시작',
-      date: project.startDate || project.createdAt || '2024-01-01',
+      date: startDate,
       icon: <Calendar size={20} />,
       color: 'bg-blue-500',
     });
 
-    // 2. 50% 달성 (진행 중인 경우)
-    const progress = Math.round((project.currentAmount / project.targetAmount) * 100);
-    if (progress >= 50) {
+    // 2. 지출 내역 (승인된 것만) - 먼저 추가하여 타임라인에 포함
+    const approvedExpenses = expenses.filter(e => e.status === 'APPROVED');
+    approvedExpenses.forEach((expense) => {
       events.push({
-        id: 'milestone-50',
-        type: 'milestone',
-        title: '50% 달성',
-        date: new Date().toISOString().split('T')[0], // 임시 날짜
-        description: `목표의 절반을 달성했습니다`,
-        icon: <TrendingUp size={20} />,
-        color: 'bg-purple-500',
+        id: `expense-${expense.expenseId}`,
+        type: 'expense',
+        title: `지출 승인: ${expense.category}`,
+        date: expense.approvedAt || expense.expenseDate,
+        description: expense.description,
+        icon: <Receipt size={20} />,
+        color: 'bg-orange-500',
+        amount: expense.amount,
       });
-    }
+    });
 
     // 3. 모금 완료 (COMPLETED, SETTLEMENT, CLOSED 상태)
     const isCompleted = ['completed', 'settlement', 'closed'].includes(project.status?.toLowerCase() || '');
@@ -67,67 +71,79 @@ const ProjectTimeline: React.FC<ProjectTimelineProps> = ({ project, expenses = [
         id: 'completed',
         type: 'completed',
         title: '모금 완료',
-        date: project.endDate || new Date().toISOString().split('T')[0],
+        date: endDate,
         description: `최종 모금액: ${formatAmount(project.currentAmount)}원`,
         icon: <CheckCircle size={20} />,
         color: 'bg-green-500',
         amount: project.currentAmount,
       });
 
-      // 4. 정산 요청 (SETTLEMENT, CLOSED 상태)
+      // 4. 정산 요청 및 승인 (SETTLEMENT, CLOSED 상태)
       const isSettlement = ['settlement', 'closed'].includes(project.status?.toLowerCase() || '');
-      if (isSettlement) {
+      if (isSettlement && settlement) {
+        // 정산 요청 날짜 (completedDate 사용, 없으면 endDate 다음날)
+        const settlementRequestDate = settlement.completedDate || endDate;
+
         events.push({
           id: 'settlement-request',
           type: 'settlement_request',
           title: '정산 요청',
-          date: settlement?.completedDate || new Date().toISOString().split('T')[0],
+          date: settlementRequestDate,
           description: '기관이 정산을 요청했습니다',
           icon: <FileCheck size={20} />,
           color: 'bg-yellow-500',
         });
 
-        // 5. 정산 승인
-        events.push({
-          id: 'settlement-approved',
-          type: 'settlement_approved',
-          title: '정산 승인',
-          date: settlement?.completedDate || new Date().toISOString().split('T')[0],
-          description: '관리자가 정산을 승인했습니다',
-          icon: <CheckCircle size={20} />,
-          color: 'bg-green-500',
-        });
-
-        // 6. 지출 내역 (승인된 것만)
-        const approvedExpenses = expenses.filter(e => e.status === 'APPROVED');
-        approvedExpenses.forEach((expense, index) => {
+        // 정산 승인 (요청 후 승인된 경우에만)
+        if (settlement.status === 'APPROVED' || settlement.status === 'COMPLETED') {
           events.push({
-            id: `expense-${expense.expenseId}`,
-            type: 'expense',
-            title: `지출 승인: ${expense.category}`,
-            date: expense.approvedAt || expense.expenseDate,
-            description: expense.description,
-            icon: <Receipt size={20} />,
-            color: 'bg-orange-500',
-            amount: expense.amount,
-          });
-        });
-
-        // 7. 프로젝트 종료 (CLOSED 상태)
-        if (project.status?.toLowerCase() === 'closed') {
-          events.push({
-            id: 'closed',
-            type: 'closed',
-            title: '프로젝트 종료',
-            date: new Date().toISOString().split('T')[0],
-            description: '프로젝트가 성공적으로 완료되었습니다',
+            id: 'settlement-approved',
+            type: 'settlement_approved',
+            title: '정산 승인',
+            date: settlement.completedDate || settlementRequestDate,
+            description: '관리자가 정산을 승인했습니다',
             icon: <CheckCircle size={20} />,
-            color: 'bg-gray-600',
+            color: 'bg-green-500',
           });
         }
       }
+
+      // 5. 프로젝트 종료 (CLOSED 상태)
+      if (project.status?.toLowerCase() === 'closed') {
+        events.push({
+          id: 'closed',
+          type: 'closed',
+          title: '프로젝트 종료',
+          date: settlement?.completedDate || endDate,
+          description: '프로젝트가 성공적으로 완료되었습니다',
+          icon: <CheckCircle size={20} />,
+          color: 'bg-gray-600',
+        });
+      }
     } else {
-      // 진행 중인 프로젝트: 미래 이벤트 표시
+      // 진행 중인 프로젝트
+
+      // 50% 달성 마일스톤 (진행 중이고 50% 이상일 때만)
+      const progress = Math.round((project.currentAmount / project.targetAmount) * 100);
+      if (progress >= 50) {
+        // 50% 달성 시점을 시작일과 현재 사이의 중간점으로 추정
+        const startTime = new Date(startDate).getTime();
+        const now = new Date().getTime();
+        const midTime = startTime + (now - startTime) * 0.5;
+        const midDate = new Date(midTime).toISOString().split('T')[0];
+
+        events.push({
+          id: 'milestone-50',
+          type: 'milestone',
+          title: '50% 달성',
+          date: midDate,
+          description: `목표의 절반을 달성했습니다`,
+          icon: <TrendingUp size={20} />,
+          color: 'bg-purple-500',
+        });
+      }
+
+      // 미래 이벤트 표시
       events.push({
         id: 'future-goal',
         type: 'future',
@@ -139,8 +155,30 @@ const ProjectTimeline: React.FC<ProjectTimelineProps> = ({ project, expenses = [
       });
     }
 
-    // 날짜순 정렬
-    return events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // 날짜순 정렬 후 논리적 순서 조정
+    const sortedEvents = events.sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+
+      // 같은 날짜일 경우 논리적 순서로 정렬
+      if (dateA === dateB) {
+        const typeOrder: Record<string, number> = {
+          'start': 0,
+          'milestone': 1,
+          'expense': 2,
+          'completed': 3,
+          'settlement_request': 4,
+          'settlement_approved': 5,
+          'closed': 6,
+          'future': 99,
+        };
+        return (typeOrder[a.type] || 50) - (typeOrder[b.type] || 50);
+      }
+
+      return dateA - dateB;
+    });
+
+    return sortedEvents;
   };
 
   const timelineEvents = generateTimeline();

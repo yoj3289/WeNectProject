@@ -5,6 +5,7 @@ import com.wenect.donation_paltform.domain.community.dto.CreateCommentRequest;
 import com.wenect.donation_paltform.domain.community.dto.UpdateCommentRequest;
 import com.wenect.donation_paltform.domain.community.service.CommentService;
 import com.wenect.donation_paltform.global.common.ApiResponse;
+import com.wenect.donation_paltform.global.common.PageResponse;
 import com.wenect.donation_paltform.global.util.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,13 +22,19 @@ public class CommentController {
     private final JwtTokenProvider jwtTokenProvider;
 
     /**
-     * 게시글의 댓글 목록 조회
-     * GET /api/posts/{postId}/comments
+     * 게시글의 댓글 목록 조회 (페이지네이션 지원)
+     * GET /api/posts/{postId}/comments?page=0&size=10
+     *
+     * @param postId 게시글 ID
+     * @param page 페이지 번호 (0부터 시작, 기본값: 0)
+     * @param size 페이지 크기 (기본값: 10)
      */
     @GetMapping("/posts/{postId}/comments")
-    public ResponseEntity<ApiResponse<List<CommentResponse>>> getComments(
+    public ResponseEntity<ApiResponse<PageResponse<CommentResponse>>> getComments(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @PathVariable Long postId) {
+            @PathVariable Long postId,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
         try {
             // 로그인한 사용자인 경우 userId 추출 (좋아요 상태 확인용)
             Long userId = null;
@@ -40,7 +47,7 @@ public class CommentController {
                 }
             }
 
-            List<CommentResponse> response = commentService.getComments(postId, userId);
+            PageResponse<CommentResponse> response = commentService.getCommentsPaged(postId, userId, page, size);
             return ResponseEntity.ok(ApiResponse.success(response, "댓글 목록 조회 성공"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(

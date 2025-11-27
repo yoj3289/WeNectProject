@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useToggleFavoriteProject, useUserFavoriteProjects } from '../../hooks/useProjects';
 import { useExpenses, useSettlementSummary } from '../../hooks/useExpenses';
 import type { TabType, Project, Expense } from '../../types';
@@ -78,20 +79,20 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      alert('링크가 복사되었습니다!');
+      toast.success('링크가 복사되었습니다!');
     });
   };
 
   // Handlers
   const handleFavoriteClick = async () => {
     if (!isLoggedIn) {
-      alert('로그인이 필요한 서비스입니다.');
+      toast.error('로그인이 필요한 서비스입니다.');
       onNavigateToLogin();
     } else {
       try {
         await toggleFavoriteMutation.mutateAsync(projectId);
       } catch (error: any) {
-        alert(error.response?.data?.message || '관심 프로젝트 설정에 실패했습니다.');
+        toast.error(error.response?.data?.message || '관심 프로젝트 설정에 실패했습니다.');
       }
     }
   };

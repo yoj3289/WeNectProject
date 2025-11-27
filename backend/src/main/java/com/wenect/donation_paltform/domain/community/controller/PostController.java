@@ -30,10 +30,10 @@ public class PostController {
      */
     @GetMapping
     public ResponseEntity<ApiResponse<PostListResponse>> getPosts(
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(value = "type", required = false) String type,
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
 
         try {
             PostListResponse response = postService.getPosts(type, search, page, size);

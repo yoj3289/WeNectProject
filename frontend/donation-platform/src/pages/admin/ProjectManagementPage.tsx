@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Search, Download, Eye, CheckCircle, XCircle, X, Users, FileText, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { AdminDashboardProps } from '../../types/admin';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 interface ProjectManagementPageProps extends AdminDashboardProps {
   rejectReason: string;
@@ -196,6 +198,14 @@ const ProjectManagementPage: React.FC<ProjectManagementPageProps> = ({
   rejectReason,
   setRejectReason,
 }) => {
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDanger?: boolean;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
   const recentProjects = [
     { id: 1, title: '저소득층 학생 교육비 지원', org: '교육나눔재단', amount: 10000000, status: 'pending', date: '2024-10-07', category: '교육' },
     { id: 2, title: '독거노인 생활 지원 프로젝트', org: '희망나눔센터', amount: 5000000, status: 'pending', date: '2024-10-06', category: '노인' },
@@ -205,24 +215,37 @@ const ProjectManagementPage: React.FC<ProjectManagementPageProps> = ({
   ];
 
   const handleApproveProject = React.useCallback(() => {
-    if (window.confirm('이 프로젝트를 승인하시겠습니까?')) {
-      alert('프로젝트가 승인되었습니다.');
-      setShowProjectModal(false);
-      setSelectedProject(null);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: '프로젝트 승인',
+      message: '이 프로젝트를 승인하시겠습니까?',
+      onConfirm: () => {
+        toast.success('프로젝트가 승인되었습니다.');
+        setShowProjectModal(false);
+        setSelectedProject(null);
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      },
+    });
   }, [setShowProjectModal, setSelectedProject]);
 
   const handleRejectProject = React.useCallback(() => {
     if (!rejectReason.trim()) {
-      alert('반려 사유를 입력해주세요.');
+      toast.error('반려 사유를 입력해주세요.');
       return;
     }
-    if (window.confirm('이 프로젝트를 반려하시겠습니까?')) {
-      alert('프로젝트가 반려되었습니다.');
-      setShowProjectModal(false);
-      setSelectedProject(null);
-      setRejectReason('');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: '프로젝트 반려',
+      message: '이 프로젝트를 반려하시겠습니까?',
+      isDanger: true,
+      onConfirm: () => {
+        toast.success('프로젝트가 반려되었습니다.');
+        setShowProjectModal(false);
+        setSelectedProject(null);
+        setRejectReason('');
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      },
+    });
   }, [rejectReason, setShowProjectModal, setSelectedProject, setRejectReason]);
 
   const handleCloseProjectModal = React.useCallback(() => {
@@ -407,33 +430,39 @@ const ProjectManagementPage: React.FC<ProjectManagementPageProps> = ({
                             setSelectedProject(project);
                             setShowProjectModal(true);
                           }}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                          className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
                           title="상세보기"
                         >
-                          <Eye size={16} className="text-gray-600" />
+                          <Eye size={18} />
                         </button>
                         {project.status === 'pending' && (
                           <>
                             <button
                               onClick={() => {
-                                if (window.confirm('이 프로젝트를 승인하시겠습니까?')) {
-                                  alert('프로젝트가 승인되었습니다.');
-                                }
+                                setConfirmModal({
+                                  isOpen: true,
+                                  title: '프로젝트 승인',
+                                  message: '이 프로젝트를 승인하시겠습니까?',
+                                  onConfirm: () => {
+                                    toast.success('프로젝트가 승인되었습니다.');
+                                    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                                  },
+                                });
                               }}
-                              className="p-2 hover:bg-green-50 rounded-lg transition-colors"
+                              className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
                               title="승인"
                             >
-                              <CheckCircle size={16} className="text-green-600" />
+                              <CheckCircle size={18} />
                             </button>
                             <button
                               onClick={() => {
                                 setSelectedProject(project);
                                 setShowProjectModal(true);
                               }}
-                              className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
                               title="반려"
                             >
-                              <XCircle size={16} className="text-red-600" />
+                              <XCircle size={18} />
                             </button>
                           </>
                         )}
@@ -466,6 +495,16 @@ const ProjectManagementPage: React.FC<ProjectManagementPageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ConfirmModal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        isDanger={confirmModal.isDanger}
+      />
     </>
   );
 };

@@ -143,6 +143,8 @@ public class ExpenseService {
 
     /**
      * 지출 승인 (관리자) - 저금통에서 실제 차감
+     * @Transactional로 인해 저금통 인출과 지출 승인이 원자적으로 처리됨
+     * 어느 단계에서든 예외 발생 시 전체 롤백
      */
     @Transactional
     public ExpenseResponse approveExpense(Long expenseId) {
@@ -159,21 +161,32 @@ public class ExpenseService {
         PiggyBank piggyBank = piggyBankRepository.findByProjectId(expense.getProjectId())
                 .orElseThrow(() -> new IllegalArgumentException("저금통을 찾을 수 없습니다."));
 
-        // 4. 잔액 확인
-        if (piggyBank.getBalance().compareTo(expense.getAmount()) < 0) {
-            throw new IllegalArgumentException("저금통 잔액이 부족합니다.");
+        // 4. 저금통 인출 가능 상태 확인
+        if (!piggyBank.canWithdraw()) {
+            throw new IllegalStateException("저금통이 인출 가능한 상태가 아닙니다.");
         }
 
-        // 5. 저금통에서 인출
+        // 5. 잔액 확인 (withdraw() 메서드 내부에서도 검증하지만 사전에 명확한 에러 메시지 제공)
+        if (piggyBank.getBalance().compareTo(expense.getAmount()) < 0) {
+            throw new IllegalArgumentException(
+                String.format("저금통 잔액이 부족합니다. 현재 잔액: %s원, 요청 금액: %s원",
+                    piggyBank.getBalance(), expense.getAmount()));
+        }
+
+        // 6. 지출 승인 처리 먼저 (상태 변경)
+        expense.approve();
+
+        // 7. 저금통에서 인출 (잔액 차감 및 검증)
+        // withdraw() 내부에서 recalculateBalance() 호출하여 잔액 정합성 보장
         piggyBank.withdraw(expense.getAmount());
+
+        // 8. 영속성 컨텍스트에서 자동 저장되지만 명시적으로 저장하여 순서 보장
+        Expense approvedExpense = expenseRepository.save(expense);
         piggyBankRepository.save(piggyBank);
 
-        // 6. 지출 승인 처리
-        expense.approve();
-        Expense approvedExpense = expenseRepository.save(expense);
-
-        log.info("지출 승인 완료 - expenseId: {}, piggyId: {}, amount: {}, 잔액: {}",
-                expenseId, piggyBank.getPiggyId(), expense.getAmount(), piggyBank.getBalance());
+        log.info("지출 승인 완료 - expenseId: {}, piggyId: {}, amount: {}, 이전잔액: {}, 현재잔액: {}",
+                expenseId, piggyBank.getPiggyId(), expense.getAmount(),
+                piggyBank.getBalance().add(expense.getAmount()), piggyBank.getBalance());
 
         return ExpenseResponse.from(approvedExpense);
     }

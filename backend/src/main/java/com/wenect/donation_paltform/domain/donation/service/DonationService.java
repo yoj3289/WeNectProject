@@ -9,8 +9,10 @@ import com.wenect.donation_paltform.domain.piggybank.entity.PiggyBank;
 import com.wenect.donation_paltform.domain.piggybank.repository.PiggyBankRepository;
 import com.wenect.donation_paltform.domain.project.entity.Project;
 import com.wenect.donation_paltform.domain.project.repository.ProjectRepository;
+import com.wenect.donation_paltform.global.common.PageResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -44,13 +46,16 @@ public class DonationService {
         // 주문 ID 생성 (UUID 기반)
         String orderId = "ORDER_" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
 
-        // 비회원 기부의 경우 userId는 null로 유지 (Donation 엔티티가 nullable 허용)
+        // 회원 전용 시스템: userId 필수
+        if (userId == null) {
+            throw new IllegalStateException("회원만 기부가 가능합니다.");
+        }
         log.info("기부 내역 생성 - userId: {}, orderId: {}", userId, orderId);
 
         // 기부 내역 생성
         Donation donation = Donation.builder()
                 .projectId(request.getProjectId())
-                .userId(userId)  // 비회원은 null 허용
+                .userId(userId)
                 .selectedOptionId(request.getSelectedOptionId())  // 선택한 기부 옵션 ID
                 .donorName(request.getDonorName())
                 .donorEmail(request.getDonorEmail())
@@ -90,24 +95,24 @@ public class DonationService {
         donationRepository.save(donation);
 
         // 프로젝트 모금액 및 기부자 수 업데이트
-        updateProjectDonationStats(donation.getProjectId(), donation.getAmount());
+        // 첫 기부 여부 체크 (중복 카운트 방지)
+        boolean isFirstDonation = isFirstDonationToProject(donation);
+        updateProjectDonationStats(donation.getProjectId(), donation.getAmount(), isFirstDonation);
 
-        // 회원 기부인 경우 알림 생성 (비회원은 userId가 null)
-        if (donation.getUserId() != null) {
-            try {
-                notificationService.createDonationNotification(
-                        donation.getUserId(),
-                        project.getTitle(),
-                        project.getProjectId(),
-                        donation.getAmount().longValue()
-                );
-                log.info("기부 완료 알림 생성 - userId: {}, projectId: {}",
-                        donation.getUserId(), project.getProjectId());
-            } catch (Exception e) {
-                // 알림 생성 실패는 기부 승인 프로세스에 영향을 주지 않음
-                log.error("알림 생성 실패 - userId: {}, projectId: {}",
-                        donation.getUserId(), project.getProjectId(), e);
-            }
+        // 기부 완료 알림 생성
+        try {
+            notificationService.createDonationNotification(
+                    donation.getUserId(),
+                    project.getTitle(),
+                    project.getProjectId(),
+                    donation.getAmount().longValue()
+            );
+            log.info("기부 완료 알림 생성 - userId: {}, projectId: {}",
+                    donation.getUserId(), project.getProjectId());
+        } catch (Exception e) {
+            // 알림 생성 실패는 기부 승인 프로세스에 영향을 주지 않음
+            log.error("알림 생성 실패 - userId: {}, projectId: {}",
+                    donation.getUserId(), project.getProjectId(), e);
         }
 
         log.info("기부 승인 완료 - donationId: {}, amount: {}", donation.getDonationId(), donation.getAmount());
@@ -142,10 +147,28 @@ public class DonationService {
     }
 
     /**
+     * 해당 프로젝트에 대한 첫 기부인지 확인 (기부자 수 중복 카운트 방지)
+     * 회원 전용 시스템이므로 userId 기준으로만 체크
+     */
+    private boolean isFirstDonationToProject(Donation donation) {
+        Long projectId = donation.getProjectId();
+        Long userId = donation.getUserId();
+
+        if (userId == null) {
+            // 회원 전용 시스템이므로 userId가 없으면 예외 발생
+            throw new IllegalStateException("회원만 기부가 가능합니다.");
+        }
+
+        return !donationRepository.existsByProjectIdAndUserIdAndStatus(
+                projectId, userId, Donation.DonationStatus.COMPLETED);
+    }
+
+    /**
      * 프로젝트의 모금액 및 기부자 수 업데이트
+     * @param isFirstDonation 해당 프로젝트에 대한 첫 기부인지 여부
      */
     @Transactional
-    public void updateProjectDonationStats(Long projectId, BigDecimal amount) {
+    public void updateProjectDonationStats(Long projectId, BigDecimal amount, boolean isFirstDonation) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
 
@@ -153,8 +176,13 @@ public class DonationService {
         BigDecimal newAmount = project.getCurrentAmount().add(amount);
         project.setCurrentAmount(newAmount);
 
-        // 기부자 수 증가
-        project.setDonorCount(project.getDonorCount() + 1);
+        // 첫 기부인 경우에만 기부자 수 증가 (중복 카운트 방지)
+        if (isFirstDonation) {
+            project.setDonorCount(project.getDonorCount() + 1);
+            log.info("새 기부자 카운트 - projectId: {}, donorCount: {}", projectId, project.getDonorCount());
+        } else {
+            log.info("기존 기부자의 추가 기부 - projectId: {}, donorCount 유지: {}", projectId, project.getDonorCount());
+        }
 
         projectRepository.save(project);
 
@@ -223,6 +251,56 @@ public class DonationService {
     }
 
     /**
+     * 사용자별 기부 내역 페이지네이션 조회 (필터 지원)
+     *
+     * @param userId 사용자 ID
+     * @param year 연도 필터 (null이면 전체)
+     * @param status 상태 필터 (null이면 전체)
+     * @param page 페이지 번호 (0부터 시작)
+     * @param size 페이지 크기
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<DonationResponse> getDonationsByUserIdPaged(
+            Long userId, Integer year, String status, int page, int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Donation> donationPage;
+
+        // 상태 변환
+        Donation.DonationStatus donationStatus = null;
+        if (status != null && !status.isEmpty() && !status.equals("all")) {
+            try {
+                donationStatus = Donation.DonationStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid donation status: {}", status);
+            }
+        }
+
+        // 조건에 따른 쿼리 분기
+        if (year != null && donationStatus != null) {
+            donationPage = donationRepository.findByUserIdAndYearAndStatus(userId, year, donationStatus, pageable);
+        } else if (year != null) {
+            donationPage = donationRepository.findByUserIdAndYear(userId, year, pageable);
+        } else if (donationStatus != null) {
+            donationPage = donationRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, donationStatus, pageable);
+        } else {
+            donationPage = donationRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        }
+
+        List<DonationResponse> content = donationPage.getContent().stream()
+                .map(DonationResponse::from)
+                .collect(Collectors.toList());
+
+        return PageResponse.<DonationResponse>builder()
+                .content(content)
+                .currentPage(donationPage.getNumber())
+                .totalPages(donationPage.getTotalPages())
+                .totalElements(donationPage.getTotalElements())
+                .size(donationPage.getSize())
+                .build();
+    }
+
+    /**
      * 최근 기부 내역 조회 (완료된 기부만)
      */
     @Transactional(readOnly = true)
@@ -246,6 +324,7 @@ public class DonationService {
     /**
      * 프로젝트 통계 재계산 (데이터 불일치 해결용)
      * 완료된 기부 내역을 기준으로 프로젝트의 currentAmount와 donorCount를 재계산
+     * donorCount는 고유 기부자 수로 계산 (회원: userId, 비회원: donorEmail)
      */
     @Transactional
     public void recalculateProjectStats(Long projectId) {
@@ -263,16 +342,22 @@ public class DonationService {
                 .map(Donation::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // 기부자 수 계산
-        int donorCount = completedDonations.size();
+        // 고유 기부자 수 계산 (회원 전용 시스템: userId 기준)
+        java.util.Set<Long> uniqueDonors = new java.util.HashSet<>();
+        for (Donation donation : completedDonations) {
+            if (donation.getUserId() != null) {
+                uniqueDonors.add(donation.getUserId());
+            }
+        }
+        int donorCount = uniqueDonors.size();
 
         // 프로젝트 업데이트
         project.setCurrentAmount(totalAmount);
         project.setDonorCount(donorCount);
         projectRepository.save(project);
 
-        log.info("프로젝트 통계 재계산 완료 - projectId: {}, currentAmount: {}, donorCount: {}",
-                projectId, totalAmount, donorCount);
+        log.info("프로젝트 통계 재계산 완료 - projectId: {}, currentAmount: {}, donorCount: {} (총 기부 횟수: {})",
+                projectId, totalAmount, donorCount, completedDonations.size());
     }
 
     /**

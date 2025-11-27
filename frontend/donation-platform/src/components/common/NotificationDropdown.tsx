@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, X, CheckCheck, Heart, MessageCircle, TrendingUp, Calendar, DollarSign, AlertCircle, Settings, Trash2, ChevronRight, Star, ExternalLink, Mail, Smartphone, Monitor } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { Notification } from '../../types';
 import { useMyNotifications, useMarkAsRead, useMarkAllAsRead, useDeleteNotification } from '../../hooks/useNotifications';
 import type { NotificationResponse } from '../../api/notifications';
@@ -80,12 +81,12 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     if ('Notification' in window) {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        alert('푸시 알림이 허용되었습니다!');
+        toast.success('푸시 알림이 허용되었습니다!');
       } else {
-        alert('푸시 알림이 차단되었습니다.');
+        toast.error('푸시 알림이 차단되었습니다.');
       }
     } else {
-      alert('이 브라우저는 푸시 알림을 지원하지 않습니다.');
+      toast.error('이 브라우저는 푸시 알림을 지원하지 않습니다.');
     }
   };
 

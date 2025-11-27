@@ -12,6 +12,7 @@ import {
   Search,
   FileText
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import DonationHistoryPage from './DonationHistoryPage';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserFavoriteProjects, useProjects, useSettlementProjects, useToggleFavoriteProject } from '../../hooks/useProjects';
@@ -26,6 +27,7 @@ import type {
 } from '../../types';
 import { getCategoryLabel } from '../../types';
 import Pagination from '../../components/common/Pagination';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 interface ProfilePageProps {
   userType: UserType;
@@ -55,6 +57,13 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   const [selectedMenu, setSelectedMenu] = useState<'main' | 'profile-edit' | 'donation-history' | 'favorite-projects'>('main');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDanger?: boolean;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
   // ✅ 실제 API로 기부 내역 조회
   const { data: donationHistoryData, isLoading: isDonationsLoading } = useMyDonations({});
@@ -95,7 +104,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   // ✅ 관심 프로젝트 토글 함수 (실제 API 호출)
   const toggleFavoriteProject = async (projectId: number) => {
     if (!isLoggedIn) {
-      alert('로그인이 필요합니다.');
+      toast.error('로그인이 필요합니다.');
       navigate('/login');
       return;
     }
@@ -105,7 +114,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
       // mutation의 onSuccess에서 자동으로 쿼리 무효화되어 UI 업데이트됨
     } catch (error) {
       console.error('관심 프로젝트 처리 실패:', error);
-      alert('관심 프로젝트 처리 중 오류가 발생했습니다.');
+      toast.error('관심 프로젝트 처리 중 오류가 발생했습니다.');
     }
   };
 
@@ -133,22 +142,28 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
   // 정산 요청 함수
   const handleSettlementRequest = (projectId: number) => {
-    if (window.confirm('정산을 요청하시겠습니까?')) {
-      alert('정산 요청이 완료되었습니다. 관리자 승인 후 처리됩니다.');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: '정산 요청',
+      message: '정산을 요청하시겠습니까?',
+      onConfirm: () => {
+        toast.success('정산 요청이 완료되었습니다. 관리자 승인 후 처리됩니다.');
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+      }
+    });
   };
 
   // 비밀번호 변경 함수
   const handleChangePassword = (currentPassword: string, newPassword: string, confirmPassword: string) => {
     if (newPassword !== confirmPassword) {
-      alert('새 비밀번호가 일치하지 않습니다.');
+      toast.error('새 비밀번호가 일치하지 않습니다.');
       return;
     }
     if (newPassword.length < 8) {
-      alert('비밀번호는 8자 이상이어야 합니다.');
+      toast.error('비밀번호는 8자 이상이어야 합니다.');
       return;
     }
-    alert('비밀번호가 변경되었습니다.');
+    toast.success('비밀번호가 변경되었습니다.');
     setShowPasswordModal(false);
   };
 
@@ -253,23 +268,19 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
     const handleDeleteAccount = async () => {
       if (!password) {
-        alert('비밀번호를 입력해주세요.');
-        return;
-      }
-
-      if (!window.confirm('정말 탈퇴하시겠습니까?\n30일 후 모든 데이터가 영구적으로 삭제됩니다.')) {
+        toast.error('비밀번호를 입력해주세요.');
         return;
       }
 
       setIsDeleting(true);
       try {
         await deleteAccount({ password, reason });
-        alert('회원 탈퇴가 완료되었습니다.\n30일 이내 로그인 시 탈퇴를 취소할 수 있습니다.');
+        toast.success('회원 탈퇴가 완료되었습니다. 30일 이내 로그인 시 탈퇴를 취소할 수 있습니다.');
         logout();
         navigate('/');
       } catch (error: any) {
         console.error('회원 탈퇴 실패:', error);
-        alert(error?.response?.data?.message || '회원 탈퇴 중 오류가 발생했습니다.');
+        toast.error(error?.response?.data?.message || '회원 탈퇴 중 오류가 발생했습니다.');
       } finally {
         setIsDeleting(false);
       }
@@ -633,11 +644,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
           phone: phone,
         });
 
-        alert('프로필이 수정되었습니다.');
+        toast.success('프로필이 수정되었습니다.');
         setSelectedMenu('main');
       } catch (error) {
         console.error('프로필 수정 실패:', error);
-        alert('프로필 수정에 실패했습니다.');
+        toast.error('프로필 수정에 실패했습니다.');
       } finally {
         setIsLoading(false);
       }
@@ -1092,6 +1103,16 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
       {selectedMenu === 'favorite-projects' && <FavoriteProjectsPage />}
       {showPasswordModal && <PasswordChangeModal />}
       {showDeleteAccountModal && <DeleteAccountModal />}
+
+      {/* 확인 모달 */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
+        isDanger={confirmModal.isDanger}
+      />
     </>
   );
 };

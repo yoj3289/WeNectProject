@@ -21,6 +21,14 @@ import java.util.stream.Collectors;
 
 /**
  * 정산 관리 서비스
+ *
+ * 정산 프로세스 상태 전환:
+ * - COMPLETED (모금 완료) → 정산 요청 가능
+ * - PENDING (정산 대기) → 승인/반려 가능
+ * - APPROVED (승인) → SETTLEMENT 상태로 전환, 저금통 입금
+ * - REJECTED (반려) → COMPLETED로 복귀, 재요청 가능
+ * - SETTLEMENT (정산 중) → 지출 후 결산 완료 가능
+ * - CLOSED (종료) → 최종 상태
  */
 @Service
 @RequiredArgsConstructor
@@ -31,6 +39,89 @@ public class SettlementManagementService {
     private final PiggyBankRepository piggyBankRepository;
     private final ProjectRepository projectRepository;
     private final RemoteFileStorageService fileStorageService;
+
+    // ==================== 상태 전환 중앙화 메서드 ====================
+
+    /**
+     * 프로젝트 상태를 SETTLEMENT로 전환 (정산 승인 시)
+     */
+    @Transactional
+    public void transitionToSettlement(Long projectId) {
+        Project project = projectRepository.findById(projectId)
+            .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+
+        Project.ProjectStatus previousStatus = project.getStatus();
+
+        // COMPLETED 상태에서만 SETTLEMENT로 전환 가능
+        if (previousStatus != Project.ProjectStatus.COMPLETED) {
+            log.warn("정산 상태 전환 시도 - 현재 상태: {} (projectId: {})", previousStatus, projectId);
+            // COMPLETED가 아니어도 강제 전환 허용 (이미 승인 로직에서 검증됨)
+        }
+
+        project.setStatus(Project.ProjectStatus.SETTLEMENT);
+        projectRepository.save(project);
+        log.info("프로젝트 상태 전환: {} → SETTLEMENT (projectId: {})", previousStatus, projectId);
+    }
+
+    /**
+     * 프로젝트 상태를 COMPLETED로 복귀 (정산 반려 시)
+     */
+    @Transactional
+    public void transitionToCompleted(Long projectId) {
+        Project project = projectRepository.findById(projectId)
+            .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+
+        // SETTLEMENT 또는 COMPLETED 상태에서만 COMPLETED로 복귀 가능
+        if (project.getStatus() != Project.ProjectStatus.SETTLEMENT &&
+            project.getStatus() != Project.ProjectStatus.COMPLETED) {
+            throw new IllegalStateException(
+                String.format("상태 복귀 불가: 현재 상태 %s", project.getStatus()));
+        }
+
+        project.setStatus(Project.ProjectStatus.COMPLETED);
+        projectRepository.save(project);
+        log.info("프로젝트 상태 복귀: COMPLETED (projectId: {})", projectId);
+    }
+
+    /**
+     * 프로젝트 상태를 CLOSED로 전환 (결산 완료 시)
+     */
+    @Transactional
+    public void transitionToClosed(Long projectId) {
+        Project project = projectRepository.findById(projectId)
+            .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+
+        if (project.getStatus() != Project.ProjectStatus.SETTLEMENT) {
+            throw new IllegalStateException(
+                String.format("결산 완료 불가: 현재 상태 %s (SETTLEMENT 상태여야 함)", project.getStatus()));
+        }
+
+        project.setStatus(Project.ProjectStatus.CLOSED);
+        projectRepository.save(project);
+        log.info("프로젝트 상태 전환: SETTLEMENT → CLOSED (projectId: {})", projectId);
+    }
+
+    /**
+     * 프로젝트의 정산 가능 여부 확인
+     */
+    public boolean canRequestSettlement(Long projectId) {
+        Project project = projectRepository.findById(projectId).orElse(null);
+        if (project == null) return false;
+
+        // COMPLETED 상태이고, 대기 중인 정산이 없어야 함
+        if (project.getStatus() != Project.ProjectStatus.COMPLETED) return false;
+
+        boolean hasPendingSettlement = settlementRepository.existsByProjectIdAndStatus(
+            projectId, Settlement.SettlementStatus.PENDING);
+        boolean hasApprovedSettlement = settlementRepository.existsByProjectIdAndStatus(
+            projectId, Settlement.SettlementStatus.APPROVED) ||
+            settlementRepository.existsByProjectIdAndStatus(
+                projectId, Settlement.SettlementStatus.COMPLETED);
+
+        return !hasPendingSettlement && !hasApprovedSettlement;
+    }
+
+    // ==================== 기존 서비스 메서드 ====================
 
     /**
      * 정산 요청 생성 (기관 사용자)
@@ -164,13 +255,12 @@ public class SettlementManagementService {
         log.info("정산 승인 완료 - settlementId: {}, piggyId: {}, 입금액: {}",
             settlementId, piggyBank.getPiggyId(), settlement.getSettlementAmount());
 
-        // 6. 프로젝트 정보 조회 및 상태 변경
+        // 6. 프로젝트 상태를 SETTLEMENT로 변경 (중앙화된 메서드 사용)
+        transitionToSettlement(settlement.getProjectId());
+
+        // 7. 프로젝트 정보 조회
         Project project = projectRepository.findById(settlement.getProjectId())
             .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
-
-        // 7. 프로젝트 상태를 SETTLEMENT로 변경
-        project.setStatus(Project.ProjectStatus.SETTLEMENT);
-        projectRepository.save(project);
 
         return SettlementResponseDto.fromEntityWithProject(savedSettlement, project.getTitle());
     }
@@ -201,12 +291,12 @@ public class SettlementManagementService {
         log.info("정산 반려 완료 - settlementId: {}, reason: {}",
             settlementId, rejectDto.getRejectionReason());
 
-        // 5. 프로젝트 상태를 다시 COMPLETED로 변경 (재요청 가능하도록)
+        // 5. 프로젝트 상태를 다시 COMPLETED로 변경 (중앙화된 메서드 사용)
+        transitionToCompleted(settlement.getProjectId());
+
+        // 6. 프로젝트 정보 조회
         Project project = projectRepository.findById(settlement.getProjectId())
             .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
-
-        project.setStatus(Project.ProjectStatus.COMPLETED);
-        projectRepository.save(project);
 
         return SettlementResponseDto.fromEntityWithProject(savedSettlement, project.getTitle());
     }

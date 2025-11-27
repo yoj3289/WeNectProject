@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, ChevronLeft, ChevronRight, Trash2, Loader2, FileText, Download, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useToggleFavoriteProject, useUserFavoriteProjects, useDeleteProject } from '../../hooks/useProjects';
 import { useDonors } from '../../hooks/useDonations';
 import type { TabType, Project } from '../../types';
@@ -98,27 +99,27 @@ const ProjectActivePage: React.FC<ProjectActivePageProps> = ({
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      alert('링크가 복사되었습니다!');
+      toast.success('링크가 복사되었습니다!');
     });
   };
 
   // Handlers
   const handleFavoriteClick = async () => {
     if (!isLoggedIn) {
-      alert('로그인이 필요한 서비스입니다.');
+      toast.error('로그인이 필요한 서비스입니다.');
       onNavigateToLogin();
     } else {
       try {
         await toggleFavoriteMutation.mutateAsync(projectId);
       } catch (error: any) {
-        alert(error.response?.data?.message || '관심 프로젝트 설정에 실패했습니다.');
+        toast.error(error.response?.data?.message || '관심 프로젝트 설정에 실패했습니다.');
       }
     }
   };
 
   const handleDonateClick = () => {
     if (!isLoggedIn) {
-      alert('로그인이 필요한 서비스입니다.\n로그인 후 기부해주세요.');
+      toast.error('로그인이 필요한 서비스입니다. 로그인 후 기부해주세요.');
       // 현재 프로젝트 페이지 URL과 기부 모달 열기 플래그를 redirect 파라미터로 전달
       navigate(`/login?redirect=/projects/${projectId}&openDonation=true`);
       return;
@@ -133,11 +134,11 @@ const ProjectActivePage: React.FC<ProjectActivePageProps> = ({
   const handleDeleteConfirm = async () => {
     try {
       await deleteProjectMutation.mutateAsync(projectId);
-      alert('프로젝트가 성공적으로 삭제되었습니다.');
+      toast.success('프로젝트가 성공적으로 삭제되었습니다.');
       navigate('/projects'); // 프로젝트 목록 페이지로 이동
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || '프로젝트 삭제에 실패했습니다.';
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setShowDeleteModal(false);
     }

@@ -659,6 +659,8 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 // ✅ useAuth import 추가!
 import { useAuth } from './hooks/useAuth';
@@ -703,6 +705,16 @@ import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
 import AdminLayout from './layouts/AdminLayout';
 
+// API Client & Auth Store imports (토큰 동기화용)
+import { apiClient } from './lib/apiClient';
+import { useAuthStore } from './stores/authStore';
+
+// 🔥 앱 로드 시점에 즉시 토큰 동기화 (useEffect보다 먼저 실행)
+const initToken = useAuthStore.getState().token;
+if (initToken) {
+  apiClient.setToken(initToken);
+}
+
 // React Query 클라이언트 생성
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -737,7 +749,7 @@ const AppRoutes: React.FC = () => {
       navigate(`/login?redirect=${encodeURIComponent(currentPath)}`);
 
       // 사용자에게 알림
-      alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+      toast.error('세션이 만료되었습니다. 다시 로그인해주세요.');
     };
 
     window.addEventListener('auth:logout', handleAuthLogout);
@@ -989,10 +1001,10 @@ const AppRoutes: React.FC = () => {
     const newFavorites = new Set(favoriteProjectIds);
     if (newFavorites.has(projectId)) {
       newFavorites.delete(projectId);
-      alert('관심 프로젝트에서 제거되었습니다.');
+      toast.success('관심 프로젝트에서 제거되었습니다.');
     } else {
       newFavorites.add(projectId);
-      alert('관심 프로젝트에 추가되었습니다.');
+      toast.success('관심 프로젝트에 추가되었습니다.');
     }
     setFavoriteProjectIds(newFavorites);
   };
@@ -1011,19 +1023,19 @@ const AppRoutes: React.FC = () => {
   // ✅ handleLogout을 useAuth의 logout 함수로 변경
   const handleLogout = () => {
     logout();
-    alert('로그아웃되었습니다.');
+    toast.success('로그아웃되었습니다.');
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (uploadedImageFiles.length + files.length > 5) {
-      alert('이미지는 최대 5개까지 업로드 가능합니다.');
+      toast.error('이미지는 최대 5개까지 업로드 가능합니다.');
       return;
     }
     const maxSize = 5 * 1024 * 1024;
     const validFiles = files.filter(file => {
       if (file.size > maxSize) {
-        alert(`${file.name}은(는) 5MB를 초과합니다.`);
+        toast.error(`${file.name}은(는) 5MB를 초과합니다.`);
         return false;
       }
       return true;
@@ -1384,7 +1396,7 @@ const AppRoutes: React.FC = () => {
                     onNavigateToEdit={(post) => setSelectedPost(post)}
                     onNavigateToBoard={() => window.location.href = '/community'}
                     onDeletePost={(postId) => {
-                      alert('게시글이 삭제되었습니다.');
+                      toast.success('게시글이 삭제되었습니다.');
                     }}
                     onIncrementView={incrementView}
                   />
@@ -1398,7 +1410,7 @@ const AppRoutes: React.FC = () => {
                     uploadedImageFiles={uploadedImageFiles}
                     onNavigateToPostDetail={(post) => setSelectedPost(post)}
                     onUpdatePost={(postId, updatedData) => {
-                      alert('게시글이 수정되었습니다.');
+                      toast.success('게시글이 수정되었습니다.');
                       setSelectedPost({ ...selectedPost, ...updatedData });
                     }}
                     onImageUpload={handleImageUpload}
@@ -1453,6 +1465,32 @@ const AppRoutes: React.FC = () => {
 const DonationPlatform: React.FC = () => {
   return (
     <BrowserRouter>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 4000,  // 4초 (기본값)
+          style: {
+            background: '#333',
+            color: '#fff',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            fontSize: '14px',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 5000,  // 에러는 5초
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       <AppRoutes />
     </BrowserRouter>
   );
@@ -1460,21 +1498,7 @@ const DonationPlatform: React.FC = () => {
 
 // QueryClientProvider로 감싸서 export
 const App: React.FC = () => {
-  // 앱 시작 시 Zustand에서 토큰을 가져와 apiClient에 설정
-  React.useEffect(() => {
-    const initAuth = async () => {
-      // Zustand persist에서 복원된 토큰 가져오기
-      const { useAuthStore } = await import('./stores/authStore');
-      const { apiClient } = await import('./lib/apiClient');
-      const token = useAuthStore.getState().token;
-
-      if (token) {
-        apiClient.setToken(token);
-      }
-    };
-
-    initAuth();
-  }, []);
+  // 토큰 초기화는 이제 모듈 최상단에서 동기적으로 실행됨 (line 712-716)
 
   return (
     <QueryClientProvider client={queryClient}>

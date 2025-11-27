@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Heart, Bell, User, LogOut } from 'lucide-react';
+import toast from 'react-hot-toast';
 import NotificationDropdown from './NotificationDropdown';
 import type { UserType, UserProfile } from '../../types';
 import { useUnreadCount } from '../../hooks/useNotifications';
@@ -28,7 +29,7 @@ const Header: React.FC<HeaderProps> = ({
   const handleShowConsentModal = () => {
     // 수신 동의 모달을 여는 로직
     console.log('수신 동의 모달 열기');
-    alert('수신 동의 모달 (구현 예정)');
+    toast('수신 동의 모달 (구현 예정)', { icon: 'ℹ️' });
   };
 
   return (

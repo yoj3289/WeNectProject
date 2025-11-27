@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Image, X, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { CommunityPost, PostType } from '../../types';
 import { POST_TYPE_LABELS } from '../../types';
 import { useUpdatePost, useCreatePost } from '../../hooks/useCommunity';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 interface EditPostPageProps {
   selectedPost: CommunityPost | null;
@@ -43,6 +45,12 @@ const EditPostPage: React.FC<EditPostPageProps> = ({
   const [postType, setPostType] = useState<PostType>('QUESTION');
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
   useEffect(() => {
     if (selectedPost) {
@@ -59,17 +67,17 @@ const EditPostPage: React.FC<EditPostPageProps> = ({
 
   const handleSubmit = async () => {
     if (!postTitle.trim()) {
-      alert('제목을 입력해주세요.');
+      toast.error('제목을 입력해주세요.');
       return;
     }
     if (!postContent.trim()) {
-      alert('내용을 입력해주세요.');
+      toast.error('내용을 입력해주세요.');
       return;
     }
 
     // 일반 사용자가 공지사항을 작성하려고 하는 경우 차단
     if (postType === 'NOTICE' && userType === 'individual') {
-      alert('일반 사용자는 공지사항을 작성할 수 없습니다.');
+      toast.error('일반 사용자는 공지사항을 작성할 수 없습니다.');
       return;
     }
 
@@ -86,11 +94,11 @@ const EditPostPage: React.FC<EditPostPageProps> = ({
         }
       });
 
-      alert('게시글이 수정되었습니다.');
+      toast.success('게시글이 수정되었습니다.');
       setUploadedImageFiles([]);
       onNavigateToPostDetail(selectedPost);
     } catch (error) {
-      alert('게시글 수정에 실패했습니다.');
+      toast.error('게시글 수정에 실패했습니다.');
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -98,12 +106,18 @@ const EditPostPage: React.FC<EditPostPageProps> = ({
   };
 
   const handleCancel = () => {
-    if (confirm('수정을 취소하시겠습니까? 변경사항이 저장되지 않습니다.')) {
-      setUploadedImageFiles([]);
-      if (selectedPost) {
-        onNavigateToPostDetail(selectedPost);
+    setConfirmModal({
+      isOpen: true,
+      title: '수정 취소',
+      message: '수정을 취소하시겠습니까?\n변경사항이 저장되지 않습니다.',
+      onConfirm: () => {
+        setUploadedImageFiles([]);
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        if (selectedPost) {
+          onNavigateToPostDetail(selectedPost);
+        }
       }
-    }
+    });
   };
 
   const removeExistingImage = (index: number) => {
@@ -301,6 +315,15 @@ const EditPostPage: React.FC<EditPostPageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 확인 모달 */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
+      />
     </div>
   );
 };

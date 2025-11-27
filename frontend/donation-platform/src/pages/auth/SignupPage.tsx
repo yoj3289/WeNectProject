@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, Loader2, AlertCircle, CheckCircle, X, ChevronRight, ArrowLeft } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
 import type { UserType } from '../../types';
 
@@ -270,6 +271,13 @@ const SignupPage: React.FC = () => {
       return false;
     }
 
+    // 전화번호 형식 검증 (010-1234-5678 또는 01012345678)
+    const cleanPhone = signupPhone.replace(/-/g, '');
+    if (!/^01[016789]\d{7,8}$/.test(cleanPhone)) {
+      setErrorMessage('올바른 휴대폰 번호 형식이 아닙니다. (예: 010-1234-5678)');
+      return false;
+    }
+
     // 비밀번호 검증
     if (signupPassword.length < 8) {
       setErrorMessage('비밀번호는 8자 이상이어야 합니다.');
@@ -293,6 +301,12 @@ const SignupPage: React.FC = () => {
         setErrorMessage('기관 회원의 모든 필수 항목을 입력해주세요.');
         return false;
       }
+      // 사업자등록번호 형식 검증 (000-00-00000 또는 0000000000)
+      const cleanBusinessNumber = signupBusinessNumber.replace(/-/g, '');
+      if (!/^\d{10}$/.test(cleanBusinessNumber)) {
+        setErrorMessage('올바른 사업자등록번호 형식이 아닙니다. (예: 000-00-00000)');
+        return false;
+      }
       if (!uploadedFile) {
         setErrorMessage('기관 인증서류를 업로드해주세요.');
         return false;
@@ -313,12 +327,21 @@ const SignupPage: React.FC = () => {
       // FormData로 변환
       const formData = new FormData();
 
+      // 전화번호 형식 변환 (01012345678 → 010-1234-5678)
+      const formatPhone = (phone: string) => {
+        const cleaned = phone.replace(/-/g, '');
+        if (cleaned.length === 11) {
+          return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7)}`;
+        }
+        return phone; // 이미 형식이 맞거나 다른 경우 그대로 반환
+      };
+
       // JSON 데이터
       const signupData = {
         email: signupEmail,
         password: signupPassword,
         userName: signupName,
-        phone: signupPhone,
+        phone: formatPhone(signupPhone),
         userType: signupType.toUpperCase(),
         agreeMarketing: agreeMarketing,
         ...(signupType === 'organization' && {
@@ -342,7 +365,7 @@ const SignupPage: React.FC = () => {
       await signup(formData);
 
       // 회원가입 성공
-      alert('회원가입이 완료되었습니다!');
+      toast.success('회원가입이 완료되었습니다!');
       navigate('/');  // 자동 로그인되므로 홈으로
 
       // 입력 필드 초기화
@@ -619,8 +642,18 @@ const SignupPage: React.FC = () => {
             value={signupPasswordConfirm}
             onChange={(e) => setSignupPasswordConfirm(e.target.value)}
             disabled={isSigningUp}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className={`w-full px-4 py-3 border rounded-lg focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed ${
+              signupPasswordConfirm && signupPassword !== signupPasswordConfirm
+                ? 'border-red-500 focus:border-red-500'
+                : 'border-gray-300 focus:border-red-500'
+            }`}
           />
+          {signupPasswordConfirm && signupPassword !== signupPasswordConfirm && (
+            <p className="text-xs text-red-500 mt-1">비밀번호가 일치하지 않습니다.</p>
+          )}
+          {signupPasswordConfirm && signupPassword === signupPasswordConfirm && (
+            <p className="text-xs text-green-600 mt-1">비밀번호가 일치합니다.</p>
+          )}
         </div>
 
         {/* 이름/기관명 */}
@@ -647,7 +680,19 @@ const SignupPage: React.FC = () => {
             type="tel"
             placeholder="010-1234-5678"
             value={signupPhone}
-            onChange={(e) => setSignupPhone(e.target.value)}
+            onChange={(e) => {
+              // 숫자만 추출
+              const numbers = e.target.value.replace(/[^0-9]/g, '');
+              // 자동 하이픈 포맷팅
+              let formatted = numbers;
+              if (numbers.length > 3 && numbers.length <= 7) {
+                formatted = `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+              } else if (numbers.length > 7) {
+                formatted = `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+              }
+              setSignupPhone(formatted);
+            }}
+            maxLength={13}
             disabled={isSigningUp}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           />

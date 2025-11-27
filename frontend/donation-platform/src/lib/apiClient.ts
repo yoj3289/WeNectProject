@@ -39,14 +39,24 @@ class ApiClient {
     this.axiosInstance.interceptors.response.use(
       (response) => response,
       async (error) => {
-        // JWT 만료 메시지 확인 (401, 403, 500 모두 체크)
-        const isJWTExpired = error.response?.data?.message?.includes('JWT expired') ||
-                             error.response?.data?.error?.includes('JWT expired');
+        const status = error.response?.status;
+        const message = error.response?.data?.message || '';
+        const errorField = error.response?.data?.error || '';
 
-        // JWT 만료 또는 인증 실패 시 자동 로그아웃
-        if (error.response?.status === 401 ||
-            error.response?.status === 403 ||
-            isJWTExpired) {
+        // JWT 만료 메시지 확인 (더 엄격한 체크)
+        const isJWTExpiredMessage =
+          message.includes('JWT expired') ||
+          message.includes('토큰이 만료') ||
+          errorField.includes('JWT expired') ||
+          errorField.includes('ExpiredJwtException');
+
+        // JWT 만료로 인한 자동 로그아웃 조건:
+        // 1. 401 상태코드 + JWT 만료 메시지가 있는 경우에만
+        // 2. 403(권한없음)이나 500(서버 에러)는 로그아웃하지 않음
+        // 3. 일반 401(인증 실패)도 JWT 만료 메시지가 없으면 로그아웃하지 않음
+        const shouldAutoLogout = status === 401 && isJWTExpiredMessage;
+
+        if (shouldAutoLogout) {
           // 이미 로그아웃 처리 중이면 중복 실행 방지
           if (this.isLoggingOut) {
             return Promise.reject(error);
