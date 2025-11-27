@@ -689,6 +689,7 @@ import ProjectManagementPage from './pages/admin/ProjectManagementPage';
 import SettlementManagementPage from './pages/admin/SettlementManagementPage';
 import OrganizationApprovalPage from './pages/admin/OrganizationApprovalPage';
 import ExpenseApprovalPage from './pages/admin/ExpenseApprovalPage';
+import TestMailPage from './pages/admin/TestMailPage';
 import NotificationPageWithAPI from './pages/notification/NotificationPageWithAPI';
 import PaymentSuccessPage from './pages/payment/PaymentSuccessPage';
 import PaymentCancelPage from './pages/payment/PaymentCancelPage';
@@ -1277,6 +1278,9 @@ const AppRoutes: React.FC = () => {
             </AdminLayout>
           </ProtectedRoute>
         } />
+
+        {/* Test Mail Page - 레이아웃 없음 */}
+        <Route path="/test/mail" element={<TestMailPage />} />
 
         {/* Notification Page - 레이아웃 없음, API 사용 */}
         <Route path="/notifications" element={<NotificationPageWithAPI />} />

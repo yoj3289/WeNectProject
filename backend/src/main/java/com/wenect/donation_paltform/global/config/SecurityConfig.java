@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll() // 헬스체크 허용
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/organization/reapply").permitAll() // 재심사 요청은 인증 불필요
+                        .requestMatchers("/api/test/**").permitAll() // 테스트 API 허용
                         .requestMatchers("/api/projects/**").permitAll()
                         .requestMatchers("/api/donations/**").permitAll()
                         .requestMatchers("/api/payments/**").permitAll() // 결제 API는 인증 불필요
