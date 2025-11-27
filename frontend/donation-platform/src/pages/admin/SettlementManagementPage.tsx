@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Search, FileText, X, CreditCard, AlertCircle, Download, FileSpreadsheet, FileDown, Eye, CheckCircle, XCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { AdminDashboardProps } from '../../types/admin';
 import * as XLSX from 'xlsx';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 interface SettlementManagementPageProps extends AdminDashboardProps {
   rejectReason: string;
@@ -205,6 +207,14 @@ const SettlementManagementPage: React.FC<SettlementManagementPageProps> = ({
   rejectReason,
   setRejectReason,
 }) => {
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDanger?: boolean;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
   const settlements = [
     { id: 1, project: '독거노인 생활 지원', org: '실버케어센터', targetAmount: 50000000, finalAmount: 52500000, amount: 9800000, date: '2024-03-15', status: 'pending', files: 2 },
     { id: 2, project: '청소년 진로 멘토링', org: '청년미래재단', targetAmount: 80000000, finalAmount: 85000000, amount: 15000000, date: '2024-03-10', status: 'pending', files: 3 },
@@ -212,24 +222,37 @@ const SettlementManagementPage: React.FC<SettlementManagementPageProps> = ({
   ];
 
   const handleApproveSettlement = React.useCallback(() => {
-    if (window.confirm('정산을 승인하고 송금 처리하시겠습니까?')) {
-      alert('정산이 승인되었습니다. 송금 처리가 진행됩니다.');
-      setShowSettlementModal(false);
-      setSelectedSettlement(null);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: '정산 승인',
+      message: '정산을 승인하고 송금 처리하시겠습니까?',
+      onConfirm: () => {
+        toast.success('정산이 승인되었습니다. 송금 처리가 진행됩니다.');
+        setShowSettlementModal(false);
+        setSelectedSettlement(null);
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      },
+    });
   }, [setShowSettlementModal, setSelectedSettlement]);
 
   const handleRejectSettlement = React.useCallback(() => {
     if (!rejectReason.trim()) {
-      alert('거부 사유를 입력해주세요.');
+      toast.error('거부 사유를 입력해주세요.');
       return;
     }
-    if (window.confirm('이 정산 요청을 거부하시겠습니까?')) {
-      alert('정산 요청이 거부되었습니다.');
-      setShowSettlementModal(false);
-      setSelectedSettlement(null);
-      setRejectReason('');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: '정산 거부',
+      message: '이 정산 요청을 거부하시겠습니까?',
+      isDanger: true,
+      onConfirm: () => {
+        toast.success('정산 요청이 거부되었습니다.');
+        setShowSettlementModal(false);
+        setSelectedSettlement(null);
+        setRejectReason('');
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      },
+    });
   }, [rejectReason, setShowSettlementModal, setSelectedSettlement, setRejectReason]);
 
   const handleCloseSettlementModal = React.useCallback(() => {
@@ -377,7 +400,7 @@ const SettlementManagementPage: React.FC<SettlementManagementPageProps> = ({
               className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={selectedSettlements.length === 0}
               onClick={() => {
-                alert(`${selectedSettlements.length}건의 정산을 승인합니다.`);
+                toast.success(`${selectedSettlements.length}건의 정산을 승인합니다.`);
                 setSelectedSettlements([]);
               }}
             >
@@ -476,33 +499,39 @@ const SettlementManagementPage: React.FC<SettlementManagementPageProps> = ({
                             setSelectedSettlement(settlement);
                             setShowSettlementModal(true);
                           }}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                          className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
                           title="상세보기"
                         >
-                          <Eye size={16} className="text-gray-600" />
+                          <Eye size={18} />
                         </button>
                         {settlement.status === 'pending' && (
                           <>
                             <button
                               onClick={() => {
-                                if (window.confirm('이 정산을 승인하시겠습니까?')) {
-                                  alert('정산이 승인되었습니다.');
-                                }
+                                setConfirmModal({
+                                  isOpen: true,
+                                  title: '정산 승인',
+                                  message: '이 정산을 승인하시겠습니까?',
+                                  onConfirm: () => {
+                                    toast.success('정산이 승인되었습니다.');
+                                    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                                  },
+                                });
                               }}
-                              className="p-2 hover:bg-green-50 rounded-lg transition-colors"
+                              className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
                               title="승인"
                             >
-                              <CheckCircle size={16} className="text-green-600" />
+                              <CheckCircle size={18} />
                             </button>
                             <button
                               onClick={() => {
                                 setSelectedSettlement(settlement);
                                 setShowSettlementModal(true);
                               }}
-                              className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
                               title="반려"
                             >
-                              <XCircle size={16} className="text-red-600" />
+                              <XCircle size={18} />
                             </button>
                           </>
                         )}
@@ -532,6 +561,16 @@ const SettlementManagementPage: React.FC<SettlementManagementPageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ConfirmModal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        isDanger={confirmModal.isDanger}
+      />
     </>
   );
 };

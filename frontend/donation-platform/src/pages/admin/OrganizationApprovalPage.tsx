@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, Check, X, FileText, Building2, User, Phone, Mail, Calendar, Download } from 'lucide-react';
+import { Search, Eye, Check, X, FileText, Building2, User, Phone, Mail, Calendar, Download, CheckCircle, XCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { AdminDashboardProps } from '../../types/admin';
 import { getOrganizationApprovals, approveOrganization, rejectOrganization, type OrganizationApprovalResponse } from '../../api/admin';
 
@@ -39,7 +40,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
       setApprovals(response.content || []);
     } catch (error) {
       console.error('기관 목록 조회 실패:', error);
-      alert('기관 목록을 불러오는데 실패했습니다.');
+      toast.error('기관 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -71,20 +72,20 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
         userId: selectedApproval.userId,
         approvalNote: approvalNote || undefined,
       });
-      alert('기관 회원가입이 승인되었습니다.');
+      toast.success('기관 회원가입이 승인되었습니다.');
       setShowApproveModal(false);
       setShowDetailModal(false);
       setApprovalNote('');
       loadApprovals(); // 목록 새로고침
     } catch (error) {
       console.error('승인 처리 실패:', error);
-      alert('승인 처리에 실패했습니다.');
+      toast.error('승인 처리에 실패했습니다.');
     }
   };
 
   const handleReject = async () => {
     if (!rejectionReason.trim()) {
-      alert('거절 사유를 입력해주세요.');
+      toast.error('거절 사유를 입력해주세요.');
       return;
     }
     if (!selectedApproval) return;
@@ -95,7 +96,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
         rejectionReason,
         rejectionFields: JSON.stringify(selectedFields),  // JSON 문자열로 전송
       });
-      alert('기관 회원가입이 거절되었습니다.');
+      toast.success('기관 회원가입이 거절되었습니다.');
       setShowRejectModal(false);
       setShowDetailModal(false);
       setRejectionReason('');
@@ -103,7 +104,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
       loadApprovals(); // 목록 새로고침
     } catch (error) {
       console.error('거절 처리 실패:', error);
-      alert('거절 처리에 실패했습니다.');
+      toast.error('거절 처리에 실패했습니다.');
     }
   };
 
@@ -502,7 +503,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
                             setSelectedApproval(approval);
                             setShowDetailModal(true);
                           }}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                          className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
                           title="상세보기"
                         >
                           <Eye size={18} />
@@ -514,20 +515,20 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
                                 setSelectedApproval(approval);
                                 setShowApproveModal(true);
                               }}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
+                              className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
                               title="승인"
                             >
-                              <Check size={18} />
+                              <CheckCircle size={18} />
                             </button>
                             <button
                               onClick={() => {
                                 setSelectedApproval(approval);
                                 setShowRejectModal(true);
                               }}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                              className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
                               title="거절"
                             >
-                              <X size={18} />
+                              <XCircle size={18} />
                             </button>
                           </>
                         )}

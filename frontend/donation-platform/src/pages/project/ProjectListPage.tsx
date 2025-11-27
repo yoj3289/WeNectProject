@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, Heart, FileText, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useProjects, useSettlementProjects, useToggleFavoriteProject, useUserFavoriteProjects } from '../../hooks/useProjects';
 import type { Project } from '../../types';
 import { getCategoryLabel } from '../../types';
@@ -115,13 +116,13 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
     e.preventDefault(); // Link 이동 방지
     e.stopPropagation();
     if (!isLoggedIn) {
-      alert('로그인이 필요한 서비스입니다.');
+      toast.error('로그인이 필요한 서비스입니다.');
       onNavigateToLogin();
     } else {
       try {
         await toggleFavoriteMutation.mutateAsync(projectId);
       } catch (error: any) {
-        alert(error.response?.data?.message || '관심 프로젝트 설정에 실패했습니다.');
+        toast.error(error.response?.data?.message || '관심 프로젝트 설정에 실패했습니다.');
       }
     }
   };

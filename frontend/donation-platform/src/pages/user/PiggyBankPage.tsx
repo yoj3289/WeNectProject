@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PiggyBank as PiggyBankIcon, TrendingUp, Calendar, DollarSign, Users, Clock, ArrowUpRight, ArrowDownRight, Download, FileText, CheckCircle, AlertCircle, Send, Eye, Filter, Search, X, ChevronRight, ChevronLeft, Lock, ClipboardCheck } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { PiggyBank } from '../../types';
 
 interface PiggyBankPageProps {
@@ -206,7 +207,7 @@ const PiggyBankPage: React.FC<PiggyBankPageProps> = ({ piggyBanks, onBack }) => 
   };
 
   const handleDownloadReceipt = (receiptNumber: string) => {
-    alert(`영수증 ${receiptNumber}을 다운로드합니다.`);
+    toast.success(`영수증 ${receiptNumber}을 다운로드합니다.`);
   };
 
   const getStatusBadge = (status: string) => {
@@ -599,7 +600,7 @@ const PiggyBankPage: React.FC<PiggyBankPageProps> = ({ piggyBanks, onBack }) => 
             </button>
             <button
               onClick={() => {
-                alert('정산 요청이 완료되었습니다!');
+                toast.success('정산 요청이 완료되었습니다!');
                 setShowSettlementModal(false);
               }}
               className="flex-1 px-6 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors"

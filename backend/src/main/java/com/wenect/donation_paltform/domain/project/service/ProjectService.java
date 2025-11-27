@@ -19,11 +19,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -102,10 +108,13 @@ public class ProjectService {
         Organization organization = organizationRepository.findByUser_UserId(userId)
                 .orElseThrow(() -> new IllegalStateException("기관 회원만 프로젝트를 등록할 수 있습니다"));
 
-        // 2. 카테고리명 -> ID 변환
+        // 2. 프로젝트 기간 유효성 검증
+        validateProjectDates(request.getStartDate(), request.getEndDate());
+
+        // 3. 카테고리명 -> ID 변환
         Integer categoryId = getCategoryId(request.getCategory());
 
-        // 3. 프로젝트 엔티티 생성
+        // 4. 프로젝트 엔티티 생성
         Project project = Project.builder()
                 .orgId(organization.getOrgId())
                 .categoryId(categoryId)
@@ -322,6 +331,152 @@ public class ProjectService {
                     return ProjectResponse.from(project, categoryName, imageUrls);
                 })
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 프로젝트 검색 (페이지네이션 버전)
+     * @param category 카테고리명 (선택)
+     * @param keyword 검색 키워드 (선택)
+     * @param sortBy 정렬 기준 (latest, deadline, mostDonated, leastDonated, mostFavorited, leastFavorited)
+     * @param page 페이지 번호 (0부터 시작)
+     * @param size 페이지 크기
+     */
+    @Transactional(readOnly = true)
+    public Page<ProjectResponse> searchProjectsPaged(String category, String keyword, String sortBy, int page, int size) {
+        // 카테고리 ID 변환
+        Integer categoryId = null;
+        if (category != null && !category.trim().isEmpty()) {
+            categoryId = getCategoryId(category);
+        }
+
+        // 정렬 기준 설정
+        Sort sort = getSortBySortBy(sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Project> projectPage;
+
+        // 검색 조건에 따라 Repository 메서드 호출
+        if (categoryId != null && keyword != null && !keyword.trim().isEmpty()) {
+            projectPage = projectRepository.findByStatusAndCategoryIdAndTitleContainingIgnoreCase(
+                    Project.ProjectStatus.ACTIVE, categoryId, keyword, pageable);
+        } else if (categoryId != null) {
+            projectPage = projectRepository.findByStatusAndCategoryId(
+                    Project.ProjectStatus.ACTIVE, categoryId, pageable);
+        } else if (keyword != null && !keyword.trim().isEmpty()) {
+            projectPage = projectRepository.findByStatusAndTitleContainingIgnoreCase(
+                    Project.ProjectStatus.ACTIVE, keyword, pageable);
+        } else {
+            projectPage = projectRepository.findByStatus(Project.ProjectStatus.ACTIVE, pageable);
+        }
+
+        // mostFavorited, leastFavorited는 별도 처리 필요 (DB에서 직접 정렬 불가)
+        if ("mostFavorited".equals(sortBy) || "leastFavorited".equals(sortBy)) {
+            return handleFavoriteSorting(projectPage, sortBy, page, size);
+        }
+
+        // DTO 변환
+        return projectPage.map(this::convertToProjectResponse);
+    }
+
+    /**
+     * 정산 프로젝트 검색 (페이지네이션 버전)
+     */
+    @Transactional(readOnly = true)
+    public Page<ProjectResponse> searchSettlementProjectsPaged(String category, String keyword, String sortBy, int page, int size) {
+        Integer categoryId = null;
+        if (category != null && !category.trim().isEmpty()) {
+            categoryId = getCategoryId(category);
+        }
+
+        Sort sort = getSortBySortBy(sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Project> projectPage;
+
+        if (categoryId != null && keyword != null && !keyword.trim().isEmpty()) {
+            projectPage = projectRepository.findSettlementProjectsByCategoryIdAndTitleContaining(categoryId, keyword, pageable);
+        } else if (categoryId != null) {
+            projectPage = projectRepository.findSettlementProjectsByCategoryId(categoryId, pageable);
+        } else if (keyword != null && !keyword.trim().isEmpty()) {
+            projectPage = projectRepository.findSettlementProjectsByTitleContaining(keyword, pageable);
+        } else {
+            projectPage = projectRepository.findSettlementProjects(pageable);
+        }
+
+        return projectPage.map(this::convertToProjectResponseWithSettlement);
+    }
+
+    /**
+     * 정렬 기준 문자열을 Sort 객체로 변환
+     */
+    private Sort getSortBySortBy(String sortBy) {
+        if (sortBy == null) {
+            return Sort.by(Sort.Direction.DESC, "createdAt");
+        }
+        switch (sortBy) {
+            case "deadline":
+                return Sort.by(Sort.Direction.ASC, "endDate");
+            case "mostDonated":
+                return Sort.by(Sort.Direction.DESC, "currentAmount").and(Sort.by(Sort.Direction.DESC, "createdAt"));
+            case "leastDonated":
+                return Sort.by(Sort.Direction.ASC, "currentAmount").and(Sort.by(Sort.Direction.DESC, "createdAt"));
+            case "latest":
+            default:
+                return Sort.by(Sort.Direction.DESC, "createdAt");
+        }
+    }
+
+    /**
+     * 관심 수 정렬 처리 (DB에서 직접 정렬 불가하여 메모리에서 처리)
+     */
+    private Page<ProjectResponse> handleFavoriteSorting(Page<Project> projectPage, String sortBy, int page, int size) {
+        List<Project> allProjects = projectPage.getContent();
+
+        Comparator<Project> comparator = (p1, p2) -> {
+            Long count1 = favoriteProjectService.getFavoriteCount(p1.getProjectId());
+            Long count2 = favoriteProjectService.getFavoriteCount(p2.getProjectId());
+            int countCompare = "mostFavorited".equals(sortBy) ? count2.compareTo(count1) : count1.compareTo(count2);
+            if (countCompare != 0) return countCompare;
+            return p2.getCreatedAt().compareTo(p1.getCreatedAt());
+        };
+
+        List<ProjectResponse> sortedList = allProjects.stream()
+                .sorted(comparator)
+                .map(this::convertToProjectResponse)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(sortedList, PageRequest.of(page, size), projectPage.getTotalElements());
+    }
+
+    /**
+     * Project 엔티티를 ProjectResponse로 변환
+     */
+    private ProjectResponse convertToProjectResponse(Project project) {
+        List<String> imageUrls = projectImageRepository.findByProjectIdOrderByDisplayOrder(project.getProjectId())
+                .stream()
+                .map(ProjectImage::getFilePath)
+                .collect(Collectors.toList());
+
+        String categoryName = getCategoryName(project.getCategoryId());
+        return ProjectResponse.from(project, categoryName, imageUrls);
+    }
+
+    /**
+     * Project 엔티티를 ProjectResponse로 변환 (Settlement 정보 포함)
+     */
+    private ProjectResponse convertToProjectResponseWithSettlement(Project project) {
+        ProjectResponse response = convertToProjectResponse(project);
+
+        // COMPLETED 상태인 경우 Settlement 정보 추가
+        if (project.getStatus() == Project.ProjectStatus.COMPLETED) {
+            settlementRepository.findFirstByProjectIdOrderByRequestedAtDesc(project.getProjectId())
+                    .ifPresent(settlement -> {
+                        response.setSettlementId(settlement.getSettlementId());
+                        response.setSettlementStatus(settlement.getStatus().name());
+                    });
+        }
+
+        return response;
     }
 
     /**
@@ -710,5 +865,33 @@ public class ProjectService {
 
         log.info("프로젝트 수정 완료 - projectId: {}", projectId);
         return ProjectResponse.from(updatedProject, categoryName, imageUrls);
+    }
+
+    /**
+     * 프로젝트 기간 유효성 검증
+     * - 시작일은 오늘 이후여야 함
+     * - 종료일은 시작일 이후여야 함
+     * - 최소 모금 기간은 7일
+     */
+    private void validateProjectDates(String startDateStr, String endDateStr) {
+        LocalDate startDate = LocalDate.parse(startDateStr);
+        LocalDate endDate = LocalDate.parse(endDateStr);
+        LocalDate today = LocalDate.now();
+
+        // 시작일은 오늘 이후여야 함
+        if (startDate.isBefore(today)) {
+            throw new IllegalArgumentException("시작일은 오늘(" + today + ") 이후여야 합니다.");
+        }
+
+        // 종료일은 시작일 이후여야 함
+        if (!endDate.isAfter(startDate)) {
+            throw new IllegalArgumentException("종료일은 시작일 이후여야 합니다.");
+        }
+
+        // 최소 모금 기간은 7일
+        long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
+        if (daysBetween < 7) {
+            throw new IllegalArgumentException("모금 기간은 최소 7일 이상이어야 합니다. (현재: " + daysBetween + "일)");
+        }
     }
 }

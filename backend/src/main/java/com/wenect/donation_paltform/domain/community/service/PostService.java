@@ -258,14 +258,24 @@ public class PostService {
      * Post -> PostResponse 변환 (userId 포함 - 좋아요 상태 확인용)
      */
     private PostResponse convertToResponse(Post post, Long currentUserId) {
-        User user = userRepository.findById(post.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        // 사용자 조회 (삭제된 사용자 처리)
+        User user = userRepository.findById(post.getUserId()).orElse(null);
 
-        AuthorDto author = AuthorDto.builder()
-                .userId(user.getUserId())
-                .userName(user.getUserName())
-                .userType(user.getUserType().name())
-                .build();
+        AuthorDto author;
+        if (user != null) {
+            author = AuthorDto.builder()
+                    .userId(user.getUserId())
+                    .userName(user.getUserName())
+                    .userType(user.getUserType().name())
+                    .build();
+        } else {
+            // 삭제된 사용자인 경우 기본값 사용
+            author = AuthorDto.builder()
+                    .userId(post.getUserId())
+                    .userName("알 수 없음")
+                    .userType("INDIVIDUAL")
+                    .build();
+        }
 
         List<PostImage> images = postImageRepository.findByPostId(post.getPostId());
         List<PostImageDto> imageDtos = images.stream()

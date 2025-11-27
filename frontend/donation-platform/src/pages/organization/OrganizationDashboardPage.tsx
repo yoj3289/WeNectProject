@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, TrendingUp, BarChart3, CheckCircle, Clock, Wallet, Loader2, AlertCircle, Edit, Eye } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useOrganizationStats, useOrganizationProjects } from '../../hooks/useOrganization';
 import { useUpdateProject } from '../../hooks/useProjects';
 import { getCategoryLabel } from '../../types';
@@ -10,6 +11,7 @@ import { SettlementRequestModal } from '../../components/settlement/SettlementRe
 import EditProjectModal from '../../components/project/EditProjectModal';
 import * as settlementsApi from '../../api/settlements';
 import { getProjectStatusLabel, getProjectStatusBadgeStyle, canEditProject } from '../../utils/projectStatus';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 /**
  * 기관 대시보드 페이지
@@ -29,6 +31,13 @@ const OrganizationDashboardPage: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showSettlementModal, setShowSettlementModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDanger?: boolean;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
   // API: 프로젝트 수정
   const updateProjectMutation = useUpdateProject();
@@ -40,10 +49,10 @@ const OrganizationDashboardPage: React.FC = () => {
 
     try {
       await settlementsApi.approveSettlement(Number(id), { adminMemo: '테스트 승인' });
-      alert('✅ 정산 승인 완료!');
+      toast.success('정산 승인 완료!');
       refetch();
     } catch (error: any) {
-      alert('❌ 승인 실패: ' + error.message);
+      toast.error('승인 실패: ' + error.message);
     }
   };
 
@@ -57,10 +66,10 @@ const OrganizationDashboardPage: React.FC = () => {
 
     try {
       await settlementsApi.rejectSettlement(Number(id), { rejectionReason: reason });
-      alert('✅ 정산 반려 완료!');
+      toast.success('정산 반려 완료!');
       refetch();
     } catch (error: any) {
-      alert('❌ 반려 실패: ' + error.message);
+      toast.error('반려 실패: ' + error.message);
     }
   };
 
@@ -69,35 +78,39 @@ const OrganizationDashboardPage: React.FC = () => {
     try {
       const settlements = await settlementsApi.getSettlementsByStatus('PENDING');
       console.log('📋 대기 중인 정산 목록:', settlements);
-      alert(`대기 중인 정산 ${settlements.length}개 (콘솔 확인)`);
+      toast.success(`대기 중인 정산 ${settlements.length}개 (콘솔 확인)`);
     } catch (error: any) {
-      alert('❌ 조회 실패: ' + error.message);
+      toast.error('조회 실패: ' + error.message);
     }
   };
 
   // 테스트용: 100% 달성 프로젝트 일괄 완료 처리
-  const handleMigrateFundedProjects = async () => {
-    if (!confirm('100% 달성한 ACTIVE 프로젝트를 모두 COMPLETED로 변경하시겠습니까?')) {
-      return;
-    }
+  const handleMigrateFundedProjects = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: '프로젝트 마이그레이션',
+      message: '100% 달성한 ACTIVE 프로젝트를 모두 COMPLETED로 변경하시겠습니까?',
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        try {
+          const response = await fetch('http://localhost:8080/api/donations/migrate-funded-projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
 
-    try {
-      const response = await fetch('http://localhost:8080/api/donations/migrate-funded-projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
+          if (!response.ok) {
+            throw new Error('마이그레이션 실패');
+          }
 
-      if (!response.ok) {
-        throw new Error('마이그레이션 실패');
+          const result = await response.json();
+          console.log('✅ 마이그레이션 결과:', result);
+          toast.success(`완료! 완료 처리: ${result.completedProjectCount}개, 저금통 생성: ${result.piggyBankCreatedCount}개`);
+          refetch();
+        } catch (error: any) {
+          toast.error('마이그레이션 실패: ' + error.message);
+        }
       }
-
-      const result = await response.json();
-      console.log('✅ 마이그레이션 결과:', result);
-      alert(`✅ 완료!\n\n완료 처리: ${result.completedProjectCount}개\n저금통 생성: ${result.piggyBankCreatedCount}개\n\nProject IDs: ${result.completedProjectIds.join(', ')}`);
-      refetch();
-    } catch (error: any) {
-      alert('❌ 마이그레이션 실패: ' + error.message);
-    }
+    });
   };
 
   // Debounce 검색
@@ -550,6 +563,16 @@ const OrganizationDashboardPage: React.FC = () => {
             }}
           />
         )}
+
+        {/* 확인 모달 */}
+        <ConfirmModal
+          isOpen={confirmModal.isOpen}
+          title={confirmModal.title}
+          message={confirmModal.message}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
+          isDanger={confirmModal.isDanger}
+        />
       </div>
     </div>
   );

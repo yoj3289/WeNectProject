@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { MessageSquare, Eye, Heart, Search, Reply, Image as ImageIcon, Send, X, Pin, Loader2, Link, Edit2, Trash2 } from 'lucide-react';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import toast from 'react-hot-toast';
 import type { CommunityPost, PostType } from '../../types';
 import { POST_TYPE_LABELS } from '../../types';
 import { usePosts, useLikePost, useCreateComment, useComments, useLikeComment, useUpdateComment, useDeleteComment } from '../../hooks/useCommunity';
 import { createPost } from '../../api/community';
 import { useAuth } from '../../hooks/useAuth';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 interface BoardPageProps {
   isLoggedIn: boolean;
@@ -66,6 +69,14 @@ const BoardPage: React.FC<BoardPageProps> = ({
   const [postType, setPostType] = useState<PostType>('QUESTION');
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState('');
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDanger?: boolean;
+    isLoading?: boolean;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
   // 현재 로그인한 사용자 정보
   const { user } = useAuth();
@@ -88,9 +99,8 @@ const BoardPage: React.FC<BoardPageProps> = ({
 
   // 댓글 데이터 변환 (API 응답 → 로컬 타입)
   // 백엔드가 이미 중첩 구조로 replies를 포함해서 반환함
-  const convertedComments = commentsData
-    ?.filter(c => !c.parentCommentId)
-    .map(comment => ({
+  const convertedComments = commentsData?.content
+    ?.map(comment => ({
       id: comment.commentId,
       authorId: comment.author.userId,
       author: comment.author.userName,
@@ -160,7 +170,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
   const handleLikePost = async () => {
     if (!selectedPost) return;
     if (!isLoggedIn) {
-      alert('로그인이 필요합니다.');
+      toast.error('로그인이 필요합니다.');
       return;
     }
 
@@ -178,13 +188,13 @@ const BoardPage: React.FC<BoardPageProps> = ({
       });
     } catch (error) {
       console.error('좋아요 처리 실패:', error);
-      alert('좋아요 처리에 실패했습니다.');
+      toast.error('좋아요 처리에 실패했습니다.');
     }
   };
 
   const handleAddComment = async () => {
     if (!commentText.trim()) {
-      alert('댓글 내용을 입력해주세요.');
+      toast.error('댓글 내용을 입력해주세요.');
       return;
     }
     if (!selectedPost) return;
@@ -198,19 +208,19 @@ const BoardPage: React.FC<BoardPageProps> = ({
           replyToCommentId: replyToCommentId || undefined // 답글 대상 댓글 ID (알림용)
         }
       });
-      alert('댓글이 등록되었습니다.');
+      toast.success('댓글이 등록되었습니다.');
       setCommentText('');
       setReplyTo(null);
       setReplyToCommentId(undefined);
     } catch (error) {
-      alert('댓글 등록에 실패했습니다.');
+      toast.error('댓글 등록에 실패했습니다.');
       console.error(error);
     }
   };
 
   const handleLikeComment = async (commentId: number) => {
     if (!isLoggedIn) {
-      alert('로그인이 필요합니다.');
+      toast.error('로그인이 필요합니다.');
       return;
     }
 
@@ -218,7 +228,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
       await likeCommentMutation.mutateAsync(commentId);
     } catch (error) {
       console.error('댓글 좋아요 처리 실패:', error);
-      alert('댓글 좋아요 처리에 실패했습니다.');
+      toast.error('댓글 좋아요 처리에 실패했습니다.');
     }
   };
 
@@ -228,7 +238,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
     // HTTPS 환경에서는 navigator.clipboard 사용, HTTP에서는 폴백 사용
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(url).then(() => {
-        alert('댓글 링크가 복사되었습니다.');
+        toast.success('댓글 링크가 복사되었습니다.');
       }).catch(() => {
         fallbackCopyToClipboard(url);
       });
@@ -250,9 +260,9 @@ const BoardPage: React.FC<BoardPageProps> = ({
 
     try {
       document.execCommand('copy');
-      alert('댓글 링크가 복사되었습니다.');
+      toast.success('댓글 링크가 복사되었습니다.');
     } catch (err) {
-      alert('링크 복사에 실패했습니다. URL: ' + text);
+      toast.error('링크 복사에 실패했습니다.');
     }
 
     document.body.removeChild(textArea);
@@ -261,7 +271,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
   // 댓글 수정 핸들러
   const handleEditComment = async (commentId: number) => {
     if (!editingCommentContent.trim()) {
-      alert('댓글 내용을 입력해주세요.');
+      toast.error('댓글 내용을 입력해주세요.');
       return;
     }
 
@@ -270,28 +280,35 @@ const BoardPage: React.FC<BoardPageProps> = ({
         commentId,
         content: editingCommentContent
       });
-      alert('댓글이 수정되었습니다.');
+      toast.success('댓글이 수정되었습니다.');
       setEditingCommentId(null);
       setEditingCommentContent('');
     } catch (error) {
       console.error('댓글 수정 실패:', error);
-      alert('댓글 수정에 실패했습니다.');
+      toast.error('댓글 수정에 실패했습니다.');
     }
   };
 
   // 댓글 삭제 핸들러
-  const handleDeleteComment = async (commentId: number) => {
-    if (!confirm('정말 이 댓글을 삭제하시겠습니까?')) {
-      return;
-    }
-
-    try {
-      await deleteCommentMutation.mutateAsync(commentId);
-      alert('댓글이 삭제되었습니다.');
-    } catch (error) {
-      console.error('댓글 삭제 실패:', error);
-      alert('댓글 삭제에 실패했습니다.');
-    }
+  const handleDeleteComment = (commentId: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: '댓글 삭제',
+      message: '정말 이 댓글을 삭제하시겠습니까?',
+      isDanger: true,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        try {
+          await deleteCommentMutation.mutateAsync(commentId);
+          toast.success('댓글이 삭제되었습니다.');
+          setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        } catch (error) {
+          console.error('댓글 삭제 실패:', error);
+          toast.error('댓글 삭제에 실패했습니다.');
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+        }
+      }
+    });
   };
 
   // 댓글 수정 모드 시작
@@ -308,17 +325,17 @@ const BoardPage: React.FC<BoardPageProps> = ({
 
   const handleSubmitPost = async () => {
     if (!postTitle.trim()) {
-      alert('제목을 입력해주세요.');
+      toast.error('제목을 입력해주세요.');
       return;
     }
     if (!postContent.trim()) {
-      alert('내용을 입력해주세요.');
+      toast.error('내용을 입력해주세요.');
       return;
     }
 
     // 권한 관리: 일반 사용자가 공지사항을 작성하려고 하는 경우 차단
     if (postType === 'NOTICE' && userType === 'individual') {
-      alert('일반 사용자는 공지사항을 작성할 수 없습니다.\n질문 또는 응원 카테고리를 선택해주세요.');
+      toast.error('일반 사용자는 공지사항을 작성할 수 없습니다.\n질문 또는 응원 카테고리를 선택해주세요.');
       return;
     }
 
@@ -331,7 +348,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
         images: uploadedImageFiles.length > 0 ? uploadedImageFiles : undefined
       });
 
-      alert('게시글이 등록되었습니다.');
+      toast.success('게시글이 등록되었습니다.');
 
       setPostTitle('');
       setPostContent('');
@@ -343,7 +360,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
       window.location.reload();
     } catch (error) {
       console.error('게시글 작성 실패:', error);
-      alert('게시글 작성에 실패했습니다. 다시 시도해주세요.');
+      toast.error('게시글 작성에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -416,9 +433,12 @@ const BoardPage: React.FC<BoardPageProps> = ({
       {/* 게시글 목록 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         {isLoading ? (
-          <div className="text-center py-16">
-            <Loader2 className="mx-auto mb-4 animate-spin text-red-500" size={48} />
-            <p className="text-gray-500">게시글을 불러오는 중...</p>
+          <div className="py-8">
+            <LoadingSpinner
+              size="lg"
+              message="게시글을 불러오는 중..."
+              subMessage="잠시만 기다려주세요"
+            />
           </div>
         ) : isError ? (
           <div className="text-center py-16 text-red-500">
@@ -981,6 +1001,17 @@ const BoardPage: React.FC<BoardPageProps> = ({
       {currentView === 'list' && renderListView()}
       {currentView === 'detail' && renderDetailView()}
       {currentView === 'write' && renderWriteView()}
+
+      {/* 확인 모달 */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
+        isDanger={confirmModal.isDanger}
+        isLoading={confirmModal.isLoading}
+      />
     </div>
   );
 };

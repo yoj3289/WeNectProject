@@ -82,6 +82,9 @@ public class DonationOptionService {
     public List<DonationOptionDto> createOptions(Long projectId, List<DonationOptionDto> dtoList) {
         log.info("프로젝트 ID {}에 기부 옵션 {}개 생성", projectId, dtoList.size());
 
+        // 중복 금액 검증
+        validateDuplicateAmounts(dtoList);
+
         // 각 옵션의 projectId 설정 및 유효성 검증
         for (int i = 0; i < dtoList.size(); i++) {
             DonationOptionDto dto = dtoList.get(i);
@@ -173,6 +176,20 @@ public class DonationOptionService {
 
         if (dto.getOptionDescription() != null && dto.getOptionDescription().length() > 500) {
             throw new IllegalArgumentException("설명은 500자 이하여야 합니다.");
+        }
+    }
+
+    /**
+     * 기부 옵션 중복 금액 검증
+     */
+    private void validateDuplicateAmounts(List<DonationOptionDto> dtoList) {
+        java.util.Set<java.math.BigDecimal> amounts = new java.util.HashSet<>();
+        for (DonationOptionDto dto : dtoList) {
+            if (dto.getAmount() != null) {
+                if (!amounts.add(dto.getAmount())) {
+                    throw new IllegalArgumentException("중복된 금액의 기부 옵션이 있습니다: " + dto.getAmount() + "원");
+                }
+            }
         }
     }
 }

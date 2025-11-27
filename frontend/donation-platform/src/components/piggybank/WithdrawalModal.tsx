@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import { useWithdrawFromPiggyBank } from '../../hooks/usePiggyBanks';
 
 interface WithdrawalModalProps {
@@ -30,27 +31,27 @@ export function WithdrawalModal({
     e.preventDefault();
 
     if (!receiptFile) {
-      alert('영수증 파일을 첨부해주세요.');
+      toast.error('영수증 파일을 첨부해주세요.');
       return;
     }
 
     if (formData.amount <= 0) {
-      alert('지출 금액을 입력해주세요.');
+      toast.error('지출 금액을 입력해주세요.');
       return;
     }
 
     if (formData.amount > currentBalance) {
-      alert(`저금통 잔액이 부족합니다. 현재 잔액: ${currentBalance.toLocaleString()}원`);
+      toast.error(`저금통 잔액이 부족합니다. 현재 잔액: ${currentBalance.toLocaleString()}원`);
       return;
     }
 
     if (!formData.category.trim()) {
-      alert('지출 카테고리를 선택해주세요.');
+      toast.error('지출 카테고리를 선택해주세요.');
       return;
     }
 
     if (!formData.description.trim()) {
-      alert('지출 내역 설명을 입력해주세요.');
+      toast.error('지출 내역 설명을 입력해주세요.');
       return;
     }
 
@@ -63,7 +64,7 @@ export function WithdrawalModal({
         receiptFile,
       });
 
-      alert('지출 내역이 등록되었습니다. 관리자 승인 후 저금통에서 차감됩니다.');
+      toast.success('지출 내역이 등록되었습니다. 관리자 승인 후 저금통에서 차감됩니다.');
       onClose();
 
       // 폼 초기화
@@ -75,7 +76,7 @@ export function WithdrawalModal({
       });
       setReceiptFile(null);
     } catch (error: any) {
-      alert(error.message || '지출 내역 등록에 실패했습니다.');
+      toast.error(error.message || '지출 내역 등록에 실패했습니다.');
     }
   };
 
@@ -84,7 +85,7 @@ export function WithdrawalModal({
     if (file) {
       // 파일 크기 제한 (10MB)
       if (file.size > 10 * 1024 * 1024) {
-        alert('파일 크기는 10MB 이하여야 합니다.');
+        toast.error('파일 크기는 10MB 이하여야 합니다.');
         return;
       }
       setReceiptFile(file);

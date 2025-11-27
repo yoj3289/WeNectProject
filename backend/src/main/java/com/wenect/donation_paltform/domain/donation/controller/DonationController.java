@@ -2,6 +2,7 @@ package com.wenect.donation_paltform.domain.donation.controller;
 
 import com.wenect.donation_paltform.domain.donation.dto.DonationResponse;
 import com.wenect.donation_paltform.domain.donation.service.DonationService;
+import com.wenect.donation_paltform.global.common.PageResponse;
 import com.wenect.donation_paltform.global.util.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,14 +26,24 @@ public class DonationController {
     private final JwtTokenProvider jwtTokenProvider;
 
     /**
-     * 내 기부 내역 조회 (JWT 토큰 기반)
+     * 내 기부 내역 조회 (JWT 토큰 기반) - 페이지네이션 지원
+     *
+     * @param year 연도 필터 (선택, 예: 2024)
+     * @param status 상태 필터 (선택, all/completed/pending/cancelled/failed)
+     * @param page 페이지 번호 (0부터 시작, 기본값: 0)
+     * @param size 페이지 크기 (기본값: 10)
      */
     @GetMapping("/my")
-    public ResponseEntity<List<DonationResponse>> getMyDonations(
-            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+    public ResponseEntity<PageResponse<DonationResponse>> getMyDonations(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestParam(value = "year", required = false) Integer year,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
         Long userId = getUserIdFromToken(authHeader);
-        log.info("내 기부 내역 조회 요청 - userId: {}", userId);
-        List<DonationResponse> donations = donationService.getDonationsByUserId(userId);
+        log.info("내 기부 내역 조회 요청 - userId: {}, year: {}, status: {}, page: {}, size: {}",
+                userId, year, status, page, size);
+        PageResponse<DonationResponse> donations = donationService.getDonationsByUserIdPaged(userId, year, status, page, size);
         return ResponseEntity.ok(donations);
     }
 

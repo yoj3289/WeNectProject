@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, X, Image as ImageIcon, FileText, CheckCircle, Loader2, AlertCircle, Wallet, Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useCreateProject } from '../../hooks/useProjects';
 import { useAuthStore } from '../../stores/authStore';
 import RichTextEditor from '../../components/editor/RichTextEditor';
@@ -232,7 +233,7 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
       // API 호출
       await createProjectMutation.mutateAsync(formData);
 
-      alert('프로젝트 등록이 완료되었습니다!\n관리자 승인 후 게시됩니다.');
+      toast.success('프로젝트 등록이 완료되었습니다! 관리자 승인 후 게시됩니다.');
       onSubmit();
     } catch (error: any) {
       console.error('프로젝트 등록 실패:', error);

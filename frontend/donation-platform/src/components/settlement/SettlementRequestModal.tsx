@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, FileText, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useCreateSettlement } from '../../hooks/useSettlements';
 import type { CreateSettlementRequest } from '../../api/settlements';
 
@@ -32,35 +33,42 @@ export function SettlementRequestModal({
     e.preventDefault();
 
     if (!formData.bankName || !formData.accountNumber || !formData.accountHolder) {
-      alert('모든 필수 항목을 입력해주세요.');
+      toast.error('모든 필수 항목을 입력해주세요.');
       return;
     }
 
+    // 계좌번호 형식 검증 (숫자만, 10~14자리)
+    const cleanAccountNumber = formData.accountNumber.replace(/-/g, '');
+    if (!/^\d{10,14}$/.test(cleanAccountNumber)) {
+      toast.error('올바른 계좌번호 형식이 아닙니다. (10~14자리 숫자)');
+    return;
+    }
+
     if (documents.length === 0) {
-      alert('증빙 서류를 최소 1개 이상 첨부해주세요.');
+      toast.error('증빙 서류를 최소 1개 이상 첨부해주세요.');
       return;
     }
 
     try {
       await createSettlement.mutateAsync({ data: formData, documents });
-      alert('정산 요청이 완료되었습니다.');
+      toast.success('정산 요청이 완료되었습니다.');
       onSuccess();
       onClose();
     } catch (error: any) {
-      alert(error.message || '정산 요청에 실패했습니다.');
+      toast.error(error.message || '정산 요청에 실패했습니다.');
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (documents.length + files.length > 10) {
-      alert('서류는 최대 10개까지 첨부 가능합니다.');
+      toast.error('서류는 최대 10개까지 첨부 가능합니다.');
       return;
     }
 
     for (const file of files) {
       if (file.size > 10 * 1024 * 1024) {
-        alert(`${file.name} 파일 크기가 10MB를 초과합니다.`);
+        toast.error(`${file.name} 파일 크기가 10MB를 초과합니다.`);
         return;
       }
     }

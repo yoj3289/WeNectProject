@@ -9,6 +9,7 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
+import toast from 'react-hot-toast';
 import {
   Bold,
   Italic,
@@ -102,7 +103,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           withHeaderRow: true
         }).run();
       } else {
-        alert('행과 열은 1~20 사이의 숫자여야 합니다.');
+        toast.error('행과 열은 1~20 사이의 숫자여야 합니다.');
       }
     }
   };
@@ -169,7 +170,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                   if (sizeNum >= 8 && sizeNum <= 100) {
                     editor.chain().focus().setFontSize(`${sizeNum}px`).run();
                   } else {
-                    alert('폰트 크기는 8~100 사이여야 합니다.');
+                    toast.error('폰트 크기는 8~100 사이여야 합니다.');
                   }
                 }
               } else if (size === 'default') {

@@ -350,7 +350,7 @@ const PiggyBankManagementPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="py-3 px-3 md:py-4 md:px-4">
-                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium whitespace-nowrap inline-block max-w-[200px] md:max-w-none truncate md:truncate-none">
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium whitespace-nowrap inline-block max-w-[120px] truncate" title={expense.category}>
                           {expense.category}
                         </span>
                       </td>

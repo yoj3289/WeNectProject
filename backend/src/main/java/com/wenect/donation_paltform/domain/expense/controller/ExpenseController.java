@@ -90,8 +90,8 @@ public class ExpenseController {
      */
     @GetMapping("/project/{projectId}/status/{status}")
     public ResponseEntity<List<ExpenseResponse>> getExpensesByProjectAndStatus(
-            @PathVariable Long projectId,
-            @PathVariable String status) {
+            @PathVariable("projectId") Long projectId,
+            @PathVariable("status") String status) {
         log.info("프로젝트별 + 상태별 지출 내역 조회 요청 - projectId: {}, status: {}", projectId, status);
         List<ExpenseResponse> expenses = expenseService.getExpensesByProjectAndStatus(projectId, status);
         return ResponseEntity.ok(expenses);
@@ -101,7 +101,7 @@ public class ExpenseController {
      * 지출 내역 상세 조회
      */
     @GetMapping("/{expenseId}")
-    public ResponseEntity<ExpenseResponse> getExpenseById(@PathVariable Long expenseId) {
+    public ResponseEntity<ExpenseResponse> getExpenseById(@PathVariable("expenseId") Long expenseId) {
         log.info("지출 내역 상세 조회 요청 - expenseId: {}", expenseId);
         ExpenseResponse expense = expenseService.getExpenseById(expenseId);
         return ResponseEntity.ok(expense);
@@ -112,7 +112,7 @@ public class ExpenseController {
      */
     @PutMapping("/{expenseId}")
     public ResponseEntity<ExpenseResponse> updateExpense(
-            @PathVariable Long expenseId,
+            @PathVariable("expenseId") Long expenseId,
             @Valid @RequestBody ExpenseRequest request) {
         log.info("지출 내역 수정 요청 - expenseId: {}", expenseId);
         ExpenseResponse response = expenseService.updateExpense(expenseId, request);
@@ -123,7 +123,7 @@ public class ExpenseController {
      * 지출 내역 삭제
      */
     @DeleteMapping("/{expenseId}")
-    public ResponseEntity<Void> deleteExpense(@PathVariable Long expenseId) {
+    public ResponseEntity<Void> deleteExpense(@PathVariable("expenseId") Long expenseId) {
         log.info("지출 내역 삭제 요청 - expenseId: {}", expenseId);
         expenseService.deleteExpense(expenseId);
         return ResponseEntity.noContent().build();
@@ -133,7 +133,7 @@ public class ExpenseController {
      * 지출 승인 (관리자)
      */
     @PostMapping("/{expenseId}/approve")
-    public ResponseEntity<ExpenseResponse> approveExpense(@PathVariable Long expenseId) {
+    public ResponseEntity<ExpenseResponse> approveExpense(@PathVariable("expenseId") Long expenseId) {
         log.info("지출 승인 요청 - expenseId: {}", expenseId);
         ExpenseResponse response = expenseService.approveExpense(expenseId);
         return ResponseEntity.ok(response);

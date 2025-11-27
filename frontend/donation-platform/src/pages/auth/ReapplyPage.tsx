@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Upload, Loader2, AlertCircle, Heart } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { apiClient } from '../../lib/apiClient';
 
 interface LocationState {
@@ -127,7 +128,7 @@ const ReapplyPage: React.FC = () => {
       });
 
       // 성공 시 로그인 페이지로 이동
-      alert('재심사 요청이 완료되었습니다. 관리자의 승인을 기다려주세요.');
+      toast.success('재심사 요청이 완료되었습니다. 관리자의 승인을 기다려주세요.');
       navigate('/login');
     } catch (error: any) {
       const message = error.response?.data?.message || '재심사 요청에 실패했습니다.';

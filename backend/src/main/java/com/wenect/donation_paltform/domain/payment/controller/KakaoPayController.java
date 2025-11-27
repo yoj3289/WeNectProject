@@ -9,6 +9,8 @@ import com.wenect.donation_paltform.domain.payment.service.KakaoPayService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -46,25 +48,33 @@ public class KakaoPayController {
                     donationRequest.getDonorName(),
                     donationRequest.getPaymentMethod());
 
-            // 1. 기부 내역 생성 (PENDING 상태)
-            log.info("1. 기부 내역 생성 중...");
-            Donation donation = donationService.createDonation(donationRequest, null);
+            // 1. 로그인한 사용자 ID 가져오기
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            Long currentUserId = null;
+            if (authentication != null && authentication.getPrincipal() instanceof Long) {
+                currentUserId = (Long) authentication.getPrincipal();
+            }
+            log.info("현재 로그인 사용자 ID: {}", currentUserId);
+
+            // 2. 기부 내역 생성 (PENDING 상태)
+            log.info("2. 기부 내역 생성 중...");
+            Donation donation = donationService.createDonation(donationRequest, currentUserId);
             log.info("기부 내역 생성 완료 - donationId: {}", donation.getDonationId());
             String orderId = donation.getOrderId();
             // orderId를 partner_user_id로 사용 (준비/승인 시 동일해야 함)
-            String userId = orderId;
+            String visitorUserId = orderId;
 
-            // 2. 카카오페이 결제 준비
-            log.info("2. 카카오페이 결제 준비 중...");
+            // 3. 카카오페이 결제 준비
+            log.info("3. 카카오페이 결제 준비 중...");
             String itemName = "기부 - 프로젝트 #" + donationRequest.getProjectId();
             int totalAmount = donationRequest.getAmount().intValue();
-            log.info("itemName: {}, totalAmount: {}, userId: {}, orderId: {}",
-                    itemName, totalAmount, userId, orderId);
+            log.info("itemName: {}, totalAmount: {}, visitorUserId: {}, orderId: {}",
+                    itemName, totalAmount, visitorUserId, orderId);
 
             KakaoPayReadyResponse response = kakaoPayService.readyPayment(
-                    itemName, totalAmount, userId, orderId, donationRequest.getProjectId());
+                    itemName, totalAmount, visitorUserId, orderId, donationRequest.getProjectId());
 
-            // 3. TID를 DB에 저장 (메모리 대신 DB 사용으로 재시작 후에도 유지)
+            // 4. TID를 DB에 저장 (메모리 대신 DB 사용으로 재시작 후에도 유지)
             donation.setPaymentTid(response.getTid());
             donationService.saveDonation(donation);
 

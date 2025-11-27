@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
 import type { UserType } from '../../types';
 
@@ -23,6 +24,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { isLoggedIn, user } = useAuth();
   const location = useLocation();
+  const hasShownToast = useRef(false);
+
+  // 권한 체크
+  const hasPermission = !allowedUserTypes || !user || allowedUserTypes.includes(user.userType);
+
+  // 권한 없을 때 toast 표시 (렌더링 후 useEffect에서 실행)
+  useEffect(() => {
+    if (!hasPermission && !hasShownToast.current) {
+      hasShownToast.current = true;
+      toast.error('접근 권한이 없습니다.');
+    }
+  }, [hasPermission]);
 
   if (requireAuth && !isLoggedIn) {
     // 로그인하지 않은 경우 로그인 페이지로 리다이렉트
@@ -31,9 +44,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // allowedUserTypes가 지정된 경우, 사용자 타입 확인
-  if (allowedUserTypes && user && !allowedUserTypes.includes(user.userType)) {
+  if (!hasPermission) {
     // 권한이 없는 경우 메인 페이지로 리다이렉트
-    alert('접근 권한이 없습니다.');
     return <Navigate to="/" replace />;
   }
 

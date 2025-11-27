@@ -12,7 +12,11 @@ import com.wenect.donation_paltform.domain.community.entity.Post;
 import com.wenect.donation_paltform.domain.community.repository.CommentLikeRepository;
 import com.wenect.donation_paltform.domain.community.repository.CommentRepository;
 import com.wenect.donation_paltform.domain.community.repository.PostRepository;
+import com.wenect.donation_paltform.global.common.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,23 +44,86 @@ public class CommentService {
     }
 
     /**
-     * 게시글의 댓글 목록 조회 (트리 구조) - 로그인 사용자
+     * 게시글의 댓글 목록 조회 (트리 구조, 페이지네이션) - 로그인 사용자
+     * 삭제된 부모 댓글이라도 대댓글이 있으면 "[삭제된 댓글]"로 표시
+     *
+     * @param postId 게시글 ID
+     * @param currentUserId 현재 로그인 사용자 ID (nullable)
+     * @param page 페이지 번호 (0부터 시작)
+     * @param size 페이지 크기
+     * @return 페이지네이션된 댓글 목록
+     */
+    public PageResponse<CommentResponse> getCommentsPaged(Long postId, Long currentUserId, int page, int size) {
+        // 게시글 존재 확인
+        postRepository.findByIdAndNotDeleted(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        // 최상위 댓글만 페이지네이션 조회
+        Page<Comment> topLevelCommentsPage = commentRepository.findTopLevelCommentsByPostId(postId, pageable);
+
+        // 삭제되지 않은 모든 대댓글 조회 (페이지네이션된 최상위 댓글의 대댓글만)
+        List<Long> topLevelCommentIds = topLevelCommentsPage.getContent().stream()
+                .map(Comment::getCommentId)
+                .collect(Collectors.toList());
+
+        // 대댓글 조회
+        List<Comment> allReplies = new ArrayList<>();
+        for (Long parentId : topLevelCommentIds) {
+            allReplies.addAll(commentRepository.findRepliesByParentId(parentId));
+        }
+
+        // 대댓글 맵 생성
+        Map<Long, List<Comment>> repliesMap = allReplies.stream()
+                .collect(Collectors.groupingBy(Comment::getParentCommentId));
+
+        // 트리 구조로 변환
+        List<CommentResponse> content = topLevelCommentsPage.getContent().stream()
+                .map(comment -> convertToResponse(comment, repliesMap, currentUserId))
+                .collect(Collectors.toList());
+
+        return PageResponse.<CommentResponse>builder()
+                .content(content)
+                .currentPage(topLevelCommentsPage.getNumber())
+                .totalPages(topLevelCommentsPage.getTotalPages())
+                .totalElements(topLevelCommentsPage.getTotalElements())
+                .size(topLevelCommentsPage.getSize())
+                .build();
+    }
+
+    /**
+     * 게시글의 댓글 목록 조회 (트리 구조) - 로그인 사용자 (기존 메서드 유지)
+     * 삭제된 부모 댓글이라도 대댓글이 있으면 "[삭제된 댓글]"로 표시
      */
     public List<CommentResponse> getComments(Long postId, Long currentUserId) {
         // 게시글 존재 확인
         postRepository.findByIdAndNotDeleted(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
-        // 모든 댓글 조회
-        List<Comment> allComments = commentRepository.findByPostId(postId);
+        // 모든 댓글 조회 (삭제된 것 포함)
+        List<Comment> allComments = commentRepository.findAllByPostIdIncludingDeleted(postId);
 
-        // 최상위 댓글과 대댓글 분리
-        List<Comment> topLevelComments = allComments.stream()
-                .filter(c -> c.getParentCommentId() == null)
+        // 삭제되지 않은 대댓글 목록
+        List<Comment> activeReplies = allComments.stream()
+                .filter(c -> c.getParentCommentId() != null && !c.getIsDeleted())
                 .collect(Collectors.toList());
 
-        Map<Long, List<Comment>> repliesMap = allComments.stream()
-                .filter(c -> c.getParentCommentId() != null)
+        // 대댓글이 있는 부모 댓글 ID 집합
+        java.util.Set<Long> parentIdsWithReplies = activeReplies.stream()
+                .map(Comment::getParentCommentId)
+                .collect(java.util.stream.Collectors.toSet());
+
+        // 최상위 댓글 필터링:
+        // - 삭제되지 않은 댓글
+        // - 또는 삭제되었지만 대댓글이 있는 댓글
+        List<Comment> topLevelComments = allComments.stream()
+                .filter(c -> c.getParentCommentId() == null)
+                .filter(c -> !c.getIsDeleted() || parentIdsWithReplies.contains(c.getCommentId()))
+                .collect(Collectors.toList());
+
+        // 대댓글 맵 (삭제되지 않은 것만)
+        Map<Long, List<Comment>> repliesMap = activeReplies.stream()
                 .collect(Collectors.groupingBy(Comment::getParentCommentId));
 
         // 트리 구조로 변환 (currentUserId 전달하여 isLiked 상태 확인)
@@ -172,21 +239,43 @@ public class CommentService {
 
     /**
      * Comment -> CommentResponse 변환 (userId 포함)
+     * 삭제된 댓글은 "[삭제된 댓글]"로 표시
      */
     private CommentResponse convertToResponse(Comment comment, Map<Long, List<Comment>> repliesMap, Long currentUserId) {
-        User user = userRepository.findById(comment.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        // 삭제된 댓글 처리
+        boolean isDeleted = comment.getIsDeleted();
 
-        AuthorDto author = AuthorDto.builder()
-                .userId(user.getUserId())
-                .userName(user.getUserName())
-                .userType(user.getUserType().name())
-                .build();
-
-        // 현재 사용자가 좋아요를 눌렀는지 확인
+        AuthorDto author;
+        String content;
+        int likeCount;
         boolean isLiked = false;
-        if (currentUserId != null) {
-            isLiked = commentLikeRepository.existsByCommentIdAndUserId(comment.getCommentId(), currentUserId);
+
+        if (isDeleted) {
+            // 삭제된 댓글: 작성자 정보 숨김, 내용을 "[삭제된 댓글]"로 표시
+            author = AuthorDto.builder()
+                    .userId(0L)
+                    .userName("알 수 없음")
+                    .userType("UNKNOWN")
+                    .build();
+            content = "[삭제된 댓글입니다]";
+            likeCount = 0;
+        } else {
+            // 정상 댓글
+            User user = userRepository.findById(comment.getUserId())
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+            author = AuthorDto.builder()
+                    .userId(user.getUserId())
+                    .userName(user.getUserName())
+                    .userType(user.getUserType().name())
+                    .build();
+            content = comment.getContent();
+            likeCount = comment.getLikeCount();
+
+            // 현재 사용자가 좋아요를 눌렀는지 확인
+            if (currentUserId != null) {
+                isLiked = commentLikeRepository.existsByCommentIdAndUserId(comment.getCommentId(), currentUserId);
+            }
         }
 
         // 답글 대상 사용자 정보 조회
@@ -208,10 +297,11 @@ public class CommentService {
         CommentResponse response = CommentResponse.builder()
                 .commentId(comment.getCommentId())
                 .postId(comment.getPost().getPostId())
-                .content(comment.getContent())
+                .content(content)
                 .author(author)
-                .likeCount(comment.getLikeCount())
+                .likeCount(likeCount)
                 .isLiked(isLiked)
+                .isDeleted(isDeleted)  // 삭제 여부 추가
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .parentCommentId(comment.getParentCommentId())

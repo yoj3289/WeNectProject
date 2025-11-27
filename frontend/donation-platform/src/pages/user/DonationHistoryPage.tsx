@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
-import { Download, FileText, Calendar, DollarSign, CheckCircle, AlertCircle, Search, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Download, FileText, Calendar, DollarSign, CheckCircle, AlertCircle, Search, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import ConfirmModal from '../../components/common/ConfirmModal';
+import Pagination from '../../components/common/Pagination';
+import { getMyDonations } from '../../api/donations';
 
 interface DonationHistory {
   id: number;
@@ -19,71 +23,85 @@ interface DonationHistoryPageProps {
 const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'pending'>('all');
-  const [selectedYear, setSelectedYear] = useState('2024');
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [donationHistory, setDonationHistory] = useState<DonationHistory[]>([]);
+  const pageSize = 10;
 
-  // 샘플 기부 내역 데이터
-  const donationHistory: DonationHistory[] = [
-    {
-      id: 1,
-      projectTitle: '희망의 집 짓기',
-      amount: 50000,
-      date: '2024-03-15',
-      receiptNumber: 'RCP-2024-001234',
-      status: 'completed',
-      donorName: '김민수',
-      organization: '희망재단'
-    },
-    {
-      id: 2,
-      projectTitle: '아이들의 미래',
-      amount: 100000,
-      date: '2024-03-10',
-      receiptNumber: 'RCP-2024-001233',
-      status: 'completed',
-      donorName: '김민수',
-      organization: '교육나눔재단'
-    },
-    {
-      id: 3,
-      projectTitle: '독거노인 생활 지원',
-      amount: 30000,
-      date: '2024-03-05',
-      receiptNumber: 'RCP-2024-001232',
-      status: 'completed',
-      donorName: '김민수',
-      organization: '실버케어센터'
-    },
-    {
-      id: 4,
-      projectTitle: '반려동물 보호 센터',
-      amount: 20000,
-      date: '2024-02-28',
-      receiptNumber: 'RCP-2024-001231',
-      status: 'pending',
-      donorName: '김민수',
-      organization: '동물사랑협회'
-    },
-  ];
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
-  // 필터링된 데이터
-  const filteredHistory = donationHistory.filter(item => {
-    const matchesSearch = item.projectTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.organization.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || item.status === filterStatus;
-    const matchesYear = item.date.startsWith(selectedYear);
-    return matchesSearch && matchesStatus && matchesYear;
-  });
+  // 연도 옵션 생성 (현재 연도부터 5년 전까지)
+  const currentYear = new Date().getFullYear();
+  const yearOptions = ['all', ...Array.from({ length: 5 }, (_, i) => String(currentYear - i))];
 
-  // 통계 계산
-  const totalDonations = filteredHistory.length;
+  // API 호출
+  const fetchDonations = async () => {
+    setIsLoading(true);
+    try {
+      const response = await getMyDonations({
+        year: selectedYear === 'all' ? undefined : selectedYear,
+        status: filterStatus === 'all' ? undefined : filterStatus,
+        page: currentPage - 1, // 백엔드는 0부터 시작
+        size: pageSize,
+      });
+
+      // API 응답을 DonationHistory 형식으로 변환
+      const mappedData: DonationHistory[] = response.content.map((item: any) => ({
+        id: item.donationId || item.id,
+        projectTitle: item.projectTitle || '프로젝트명 없음',
+        amount: item.amount,
+        date: item.createdAt ? item.createdAt.split('T')[0] : item.date || '',
+        receiptNumber: item.receiptNumber || `RCP-${item.donationId || item.id}`,
+        status: item.status?.toLowerCase() === 'completed' ? 'completed' : 'pending',
+        donorName: item.donorName || '기부자',
+        organization: item.organizationName || item.organization || '기관명 없음',
+      }));
+
+      setDonationHistory(mappedData);
+      setTotalPages(response.totalPages || 1);
+      setTotalElements(response.totalElements || mappedData.length);
+    } catch (error: any) {
+      console.error('기부 내역 조회 실패:', error);
+      toast.error('기부 내역을 불러오는데 실패했습니다.');
+      setDonationHistory([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 필터 변경 시 첫 페이지로 이동
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedYear, filterStatus]);
+
+  // 페이지 또는 필터 변경 시 데이터 새로 불러오기
+  useEffect(() => {
+    fetchDonations();
+  }, [currentPage, selectedYear, filterStatus]);
+
+  // 검색어로 클라이언트 필터링 (프론트엔드 필터링)
+  const filteredHistory = searchTerm.trim()
+    ? donationHistory.filter(item =>
+        item.projectTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.organization.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : donationHistory;
+
+  // 통계 계산 (현재 페이지 기준)
+  const totalDonations = totalElements;
   const totalAmount = filteredHistory.reduce((sum, item) => sum + item.amount, 0);
   const completedCount = filteredHistory.filter(item => item.status === 'completed').length;
 
   // PDF 영수증 생성 (시뮬레이션)
   const generateReceiptPDF = (donation: DonationHistory) => {
-    // 실제로는 jsPDF나 pdfmake 같은 라이브러리를 사용
-    // 여기서는 간단하게 텍스트 기반 영수증 생성
-
     const receiptContent = `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         기부금 영수증
@@ -136,7 +154,7 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    alert('기부금 영수증이 다운로드되었습니다!\n\n실제 환경에서는 PDF 형식으로 생성됩니다.');
+    toast.success('기부금 영수증이 다운로드되었습니다!');
   };
 
   // 전체 영수증 한번에 다운로드
@@ -144,17 +162,23 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
     const completedDonations = filteredHistory.filter(d => d.status === 'completed');
 
     if (completedDonations.length === 0) {
-      alert('다운로드 가능한 영수증이 없습니다.');
+      toast.error('다운로드 가능한 영수증이 없습니다.');
       return;
     }
 
-    if (confirm(`${completedDonations.length}개의 영수증을 다운로드하시겠습니까?`)) {
-      completedDonations.forEach((donation, index) => {
-        setTimeout(() => {
-          generateReceiptPDF(donation);
-        }, index * 500);
-      });
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: '영수증 다운로드',
+      message: `${completedDonations.length}개의 영수증을 다운로드하시겠습니까?`,
+      onConfirm: () => {
+        completedDonations.forEach((donation, index) => {
+          setTimeout(() => {
+            generateReceiptPDF(donation);
+          }, index * 500);
+        });
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+      }
+    });
   };
 
   return (
@@ -179,7 +203,7 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
             <div className="flex items-center justify-between mb-2">
               <DollarSign className="text-red-600" size={32} />
             </div>
-            <p className="text-sm text-gray-600 mb-1">총 기부 금액</p>
+            <p className="text-sm text-gray-600 mb-1">현재 페이지 금액</p>
             <p className="text-3xl font-bold text-red-600">{totalAmount.toLocaleString()}원</p>
           </div>
 
@@ -195,7 +219,7 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
             <div className="flex items-center justify-between mb-2">
               <CheckCircle className="text-green-600" size={32} />
             </div>
-            <p className="text-sm text-gray-600 mb-1">완료된 기부</p>
+            <p className="text-sm text-gray-600 mb-1">현재 페이지 완료</p>
             <p className="text-3xl font-bold text-green-600">{completedCount}건</p>
           </div>
         </div>
@@ -221,9 +245,11 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
               onChange={(e) => setSelectedYear(e.target.value)}
               className="px-3 md:px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm md:text-base"
             >
-              <option value="2024">2024년</option>
-              <option value="2023">2023년</option>
-              <option value="2022">2022년</option>
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>
+                  {year === 'all' ? '전체 연도' : `${year}년`}
+                </option>
+              ))}
             </select>
 
             {/* 상태 필터 */}
@@ -251,7 +277,11 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
 
         {/* 기부 내역 테이블 */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          {filteredHistory.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="animate-spin text-red-500" size={48} />
+            </div>
+          ) : filteredHistory.length === 0 ? (
             <div className="text-center py-16">
               <FileText className="mx-auto mb-4 text-gray-300" size={64} />
               <p className="text-lg font-semibold text-gray-600 mb-2">기부 내역이 없습니다</p>
@@ -375,6 +405,20 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
                   </div>
                 ))}
               </div>
+
+              {/* 페이지네이션 */}
+              {totalPages > 1 && (
+                <div className="p-4 border-t border-gray-200">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(page) => {
+                      setCurrentPage(page);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                  />
+                </div>
+              )}
             </>
           )}
         </div>
@@ -393,6 +437,15 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
           </ul>
         </div>
       </div>
+
+      {/* 확인 모달 */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
+      />
     </div>
   );
 };

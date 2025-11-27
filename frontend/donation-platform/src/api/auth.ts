@@ -158,6 +158,7 @@ export interface ApiErrorResponse {
 
 /**
  * 회원가입
+ * 백엔드가 @RequestPart("data")를 기대하므로 항상 FormData로 전송
  */
 export const signup = async (data: SignupRequest | FormData): Promise<AuthResponse> => {
   // FormData인 경우 그대로 전송
@@ -169,14 +170,21 @@ export const signup = async (data: SignupRequest | FormData): Promise<AuthRespon
     });
     return response.data;
   }
-  
-  // 일반 객체인 경우 (일반 회원)
+
+  // 일반 객체인 경우 FormData로 변환하여 전송
   const requestData = {
     ...data,
     userType: data.userType.toUpperCase() as 'INDIVIDUAL' | 'ORGANIZATION' | 'ADMIN'
   };
-  
-  const response = await apiClient.post<ApiResponse<AuthResponse>>('/auth/signup', requestData);
+
+  const formData = new FormData();
+  formData.append('data', new Blob([JSON.stringify(requestData)], { type: 'application/json' }));
+
+  const response = await apiClient.post<ApiResponse<AuthResponse>>('/auth/signup', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return response.data;
 };
 

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Search, Eye, Edit, Trash2, X, Heart, FileText, Clock, Settings, Shield, LogOut, History } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { AdminDashboardProps } from '../../types/admin';
 import { useAdminUsers } from '../../hooks/useAdmin';
 import type { AdminUserResponse } from '../../api/admin';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 interface UserManagementPageProps extends AdminDashboardProps {}
 
@@ -60,6 +62,15 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
   const [selectedRole, setSelectedRole] = useState<UserRole>('user');
   const [roleChangeReason, setRoleChangeReason] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
+
+  // ConfirmModal 상태
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDanger?: boolean;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
   // API 호출
   const { data, isLoading, error } = useAdminUsers({
@@ -148,27 +159,46 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
   };
 
   const handleChangeUserStatus = React.useCallback((status: string) => {
-    if (window.confirm(`사용자 상태를 "${getStatusLabel(status)}"로 변경하시겠습니까?`)) {
-      alert('사용자 상태가 변경되었습니다.');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: '사용자 상태 변경',
+      message: `사용자 상태를 "${getStatusLabel(status)}"로 변경하시겠습니까?`,
+      onConfirm: () => {
+        toast.success('사용자 상태가 변경되었습니다.');
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      },
+    });
   }, []);
 
   const handleChangeRole = () => {
     if (!roleChangeReason.trim()) {
-      alert('권한 변경 사유를 입력해주세요.');
+      toast.error('권한 변경 사유를 입력해주세요.');
       return;
     }
-    if (window.confirm(`사용자 권한을 "${getRoleLabel(selectedRole)}"로 변경하시겠습니까?`)) {
-      alert('사용자 권한이 변경되었습니다.');
-      setShowRoleModal(false);
-      setRoleChangeReason('');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: '사용자 권한 변경',
+      message: `사용자 권한을 "${getRoleLabel(selectedRole)}"로 변경하시겠습니까?`,
+      onConfirm: () => {
+        toast.success('사용자 권한이 변경되었습니다.');
+        setShowRoleModal(false);
+        setRoleChangeReason('');
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      },
+    });
   };
 
   const handleForceLogout = () => {
-    if (window.confirm('이 사용자를 강제 로그아웃 하시겠습니까?')) {
-      alert('사용자가 강제 로그아웃되었습니다.');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: '강제 로그아웃',
+      message: '이 사용자를 강제 로그아웃 하시겠습니까?',
+      isDanger: true,
+      onConfirm: () => {
+        toast.success('사용자가 강제 로그아웃되었습니다.');
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      },
+    });
   };
 
   // 백엔드에서 이미 필터링되어 오므로 별도 필터링 불필요
@@ -509,7 +539,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
               className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={selectedUsers.length === 0}
               onClick={() => {
-                alert(`${selectedUsers.length}명의 사용자를 관리합니다.`);
+                toast.success(`${selectedUsers.length}명의 사용자를 관리합니다.`);
                 setSelectedUsers([]);
               }}
             >
@@ -582,19 +612,19 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
                             setSelectedUser(user);
                             setShowUserModal(true);
                           }}
-                          className="p-2 text-pink-600 hover:bg-pink-50 rounded-lg"
+                          className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
                           title="상세보기"
                         >
                           <Eye size={18} />
                         </button>
                         <button
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                          className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
                           title="수정"
                         >
                           <Edit size={18} />
                         </button>
                         <button
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                          className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
                           title="삭제"
                         >
                           <Trash2 size={18} />
@@ -619,6 +649,16 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ConfirmModal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        isDanger={confirmModal.isDanger}
+      />
     </>
   );
 };

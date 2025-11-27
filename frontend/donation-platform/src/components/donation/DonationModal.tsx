@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Heart, CreditCard, Wallet, Loader2, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAuthStore } from '../../stores/authStore';
 import { getDonationOptions } from '../../api/projects';
 import { apiClient } from '../../lib/apiClient';
@@ -94,12 +95,19 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
       const amount = getFinalAmount(); // 금액 검증 포함
 
       if (!donorName.trim()) {
-        alert('기부자 이름을 입력해주세요.');
+        toast.error('기부자 이름을 입력해주세요.');
         return;
       }
 
       if (!donorEmail.trim()) {
-        alert('이메일을 입력해주세요.');
+        toast.error('이메일을 입력해주세요.');
+        return;
+      }
+
+      // 이메일 형식 검증
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(donorEmail)) {
+        toast.error('올바른 이메일 형식이 아닙니다.');
         return;
       }
 
@@ -165,9 +173,9 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
           } catch (error: any) {
             console.error('토스페이 결제 요청 실패:', error);
             if (error.code === 'USER_CANCEL') {
-              alert('결제가 취소되었습니다.');
+              toast.error('결제가 취소되었습니다.');
             } else {
-              alert(`결제 요청 실패: ${error.message || '알 수 없는 오류'}`);
+              toast.error(`결제 요청 실패: ${error.message || '알 수 없는 오류'}`);
             }
           }
         };
@@ -185,12 +193,12 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
           window.location.href = response.next_redirect_pc_url;
         } else {
           console.error('next_redirect_pc_url이 없습니다:', response);
-          alert('결제 준비 중 오류가 발생했습니다.');
+          toast.error('결제 준비 중 오류가 발생했습니다.');
         }
       }
     } catch (error: any) {
       if (error.message && error.message.includes('원 이상')) {
-        alert(error.message);
+        toast.error(error.message);
         return;
       }
 
@@ -201,13 +209,13 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
         console.error('응답 상태:', error.response.status);
         console.error('응답 데이터:', error.response.data);
         console.error('응답 헤더:', error.response.headers);
-        alert(`결제 준비 실패: ${error.response.data.error || error.response.data.message || '알 수 없는 오류'}`);
+        toast.error(`결제 준비 실패: ${error.response.data.error || error.response.data.message || '알 수 없는 오류'}`);
       } else if (error.request) {
         console.error('요청은 전송되었으나 응답 없음:', error.request);
-        alert('서버 응답이 없습니다. 백엔드가 실행 중인지 확인해주세요.');
+        toast.error('서버 응답이 없습니다. 백엔드가 실행 중인지 확인해주세요.');
       } else {
         console.error('요청 설정 중 오류:', error.message);
-        alert('요청 중 오류가 발생했습니다.');
+        toast.error('요청 중 오류가 발생했습니다.');
       }
     } finally {
       setIsLoading(false);
@@ -244,21 +252,19 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
                   setUseCustomAmount(false);
                   setCustomAmount('');
                 }}
-                className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all ${
-                  !useCustomAmount
+                className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all ${!useCustomAmount
                     ? 'bg-red-500 text-white shadow-md'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 옵션 선택
               </button>
               <button
                 onClick={handleCustomAmountToggle}
-                className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all ${
-                  useCustomAmount
+                className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all ${useCustomAmount
                     ? 'bg-red-500 text-white shadow-md'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 직접 입력
               </button>
@@ -326,11 +332,10 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
                     <button
                       key={option.optionId}
                       onClick={() => handleOptionSelect(option)}
-                      className={`p-4 rounded-lg border-2 transition-all text-left hover:shadow-md ${
-                        selectedOption?.optionId === option.optionId
+                      className={`p-4 rounded-lg border-2 transition-all text-left hover:shadow-md ${selectedOption?.optionId === option.optionId
                           ? 'border-red-500 bg-red-50'
                           : 'border-gray-200 bg-white hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1">
@@ -422,22 +427,20 @@ const DonationModal: React.FC<DonationModalProps> = ({ projectId, projectTitle, 
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setPaymentMethod('KAKAO_PAY')}
-                className={`py-4 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
-                  paymentMethod === 'KAKAO_PAY'
+                className={`py-4 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 ${paymentMethod === 'KAKAO_PAY'
                     ? 'bg-yellow-400 text-gray-900 border-2 border-yellow-500'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
-                }`}
+                  }`}
               >
                 <Wallet size={20} />
                 카카오페이
               </button>
               <button
                 onClick={() => setPaymentMethod('TOSS_PAY')}
-                className={`py-4 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
-                  paymentMethod === 'TOSS_PAY'
+                className={`py-4 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 ${paymentMethod === 'TOSS_PAY'
                     ? 'bg-blue-500 text-white border-2 border-blue-600'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
-                }`}
+                  }`}
               >
                 <CreditCard size={20} />
                 토스페이

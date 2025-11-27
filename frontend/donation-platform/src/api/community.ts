@@ -26,6 +26,11 @@ export interface PostFilters {
   size?: number;
 }
 
+export interface CommentFilters {
+  page?: number;
+  size?: number;
+}
+
 // ==================== 응답 타입 ====================
 export interface PostResponse {
   postId: number;
@@ -149,10 +154,21 @@ export const likePost = async (id: number): Promise<PostResponse> => {
 };
 
 /**
- * 댓글 목록 조회
+ * 댓글 목록 조회 (페이지네이션 지원)
  */
-export const getComments = async (postId: number): Promise<CommentResponse[]> => {
-  const response = await apiClient.get<{ data: CommentResponse[] }>(`/posts/${postId}/comments`);
+export const getComments = async (
+  postId: number,
+  filters: CommentFilters = {}
+): Promise<{ content: CommentResponse[]; totalPages: number; currentPage: number; totalElements: number; size: number }> => {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      params.append(key, String(value));
+    }
+  });
+
+  const response = await apiClient.get<{ data: { content: CommentResponse[]; totalPages: number; currentPage: number; totalElements: number; size: number } }>(`/posts/${postId}/comments?${params.toString()}`);
   return response.data;
 };
 
