@@ -250,7 +250,56 @@ public class DonationService {
             } catch (Exception e) {
                 log.error("목표 달성 알림 생성 실패", e);
             }
+
+            // 해당 프로젝트에 기부한 모든 기부자에게 목표 달성 알림 생성
+            try {
+                sendGoalAchievedNotificationToDonors(project);
+            } catch (Exception e) {
+                log.error("기부자 목표 달성 알림 생성 실패", e);
+            }
         }
+    }
+
+    /**
+     * 프로젝트 목표 달성 시 모든 기부자에게 알림 전송
+     */
+    private void sendGoalAchievedNotificationToDonors(Project project) {
+        // 해당 프로젝트의 완료된 기부 내역 조회
+        List<Donation> completedDonations = donationRepository.findByProjectIdOrderByCreatedAtDesc(project.getProjectId())
+                .stream()
+                .filter(d -> d.getStatus() == Donation.DonationStatus.COMPLETED)
+                .collect(Collectors.toList());
+
+        // 중복 제거를 위해 userId 기준으로 Set 사용
+        java.util.Set<Long> notifiedUserIds = new java.util.HashSet<>();
+
+        for (Donation donation : completedDonations) {
+            Long userId = donation.getUserId();
+            // userId가 null이 아니고, 아직 알림을 보내지 않은 사용자이고, 프로젝트 소유자가 아닌 경우
+            if (userId != null && !notifiedUserIds.contains(userId) && !userId.equals(project.getOrgId())) {
+                try {
+                    notificationService.createNotification(
+                            userId,
+                            "goal_achieved",
+                            "project",
+                            "후원하신 프로젝트가 목표를 달성했습니다!",
+                            String.format("회원님이 후원하신 '%s' 프로젝트가 목표 금액 100%%를 달성했습니다! 감사합니다.",
+                                    project.getTitle()),
+                            "/project/" + project.getProjectId(),
+                            java.util.Map.of(
+                                    "projectId", project.getProjectId().toString(),
+                                    "projectTitle", project.getTitle()
+                            )
+                    );
+                    notifiedUserIds.add(userId);
+                } catch (Exception e) {
+                    log.error("기부자 목표 달성 알림 생성 실패 - userId: {}", userId, e);
+                }
+            }
+        }
+
+        log.info("프로젝트 목표 달성 기부자 알림 전송 완료 - projectId: {}, 알림 전송 수: {}",
+                project.getProjectId(), notifiedUserIds.size());
     }
 
     /**
