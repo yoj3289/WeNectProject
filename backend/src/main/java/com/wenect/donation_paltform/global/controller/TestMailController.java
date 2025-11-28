@@ -6,12 +6,15 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.context.annotation.Profile;
+
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/test")
 @RequiredArgsConstructor
+@Profile("!prod")
 public class TestMailController {
 
     private final JavaMailSender mailSender;
