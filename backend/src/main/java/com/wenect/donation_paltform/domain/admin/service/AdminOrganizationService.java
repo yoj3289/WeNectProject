@@ -5,6 +5,7 @@ import com.wenect.donation_paltform.domain.organization.entity.Organization;
 import com.wenect.donation_paltform.domain.organization.entity.OrganizationDocument;
 import com.wenect.donation_paltform.domain.organization.repository.OrganizationDocumentRepository;
 import com.wenect.donation_paltform.domain.organization.repository.OrganizationRepository;
+import com.wenect.donation_paltform.domain.organization.service.OrganizationEmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ public class AdminOrganizationService {
 
     private final OrganizationRepository organizationRepository;
     private final OrganizationDocumentRepository documentRepository;
+    private final OrganizationEmailService emailService;
 
     /**
      * 모든 기관 목록 조회 (승인 상태별)
@@ -64,6 +66,9 @@ public class AdminOrganizationService {
 
         org.setApprovalStatus(Organization.ApprovalStatus.APPROVED);
         organizationRepository.save(org);
+
+        // 승인 알림 메일 발송
+        emailService.sendApprovalEmail(org);
     }
 
     /**
@@ -79,5 +84,8 @@ public class AdminOrganizationService {
         org.setRejectionFields(rejectionFields);  // JSON 형식으로 저장
         org.setLastRejectedAt(java.time.LocalDateTime.now());
         organizationRepository.save(org);
+
+        // 반려 알림 메일 발송
+        emailService.sendRejectionEmail(org);
     }
 }
