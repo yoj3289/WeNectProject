@@ -504,54 +504,64 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div className="p-6 border-b border-gray-200 flex items-center gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                value={userSearchTerm}
-                onChange={(e) => setUserSearchTerm(e.target.value)}
-                placeholder="이름, 이메일로 검색..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              />
+          <div className="p-4 md:p-6 border-b border-gray-200">
+            {/* 검색창 */}
+            <div className="relative mb-3 md:mb-0 md:flex md:items-center md:gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  value={userSearchTerm}
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
+                  placeholder="이름, 이메일로 검색..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* 필터 - 모바일에서는 한 줄에 나란히 */}
+              <div className="flex gap-2 mt-3 md:mt-0">
+                <select
+                  value={userTypeFilter}
+                  onChange={(e) => setUserTypeFilter(e.target.value)}
+                  className="flex-1 md:flex-none px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+                >
+                  <option value="all">모든 유형</option>
+                  <option value="individual">일반</option>
+                  <option value="organization">기관</option>
+                  <option value="admin">관리자</option>
+                </select>
+                <select
+                  value={userStatusFilter}
+                  onChange={(e) => setUserStatusFilter(e.target.value)}
+                  className="flex-1 md:flex-none px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+                >
+                  <option value="all">모든 상태</option>
+                  <option value="active">활성</option>
+                  <option value="inactive">비활성</option>
+                  <option value="suspended">정지</option>
+                </select>
+              </div>
+
+              {/* 선택 항목 관리 버튼 - 데스크톱만 */}
+              <button
+                className="hidden md:block px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap text-sm"
+                disabled={selectedUsers.length === 0}
+                onClick={() => {
+                  toast.success(`${selectedUsers.length}명의 사용자를 관리합니다.`);
+                  setSelectedUsers([]);
+                }}
+              >
+                선택 관리 ({selectedUsers.length})
+              </button>
             </div>
-            <select
-              value={userTypeFilter}
-              onChange={(e) => setUserTypeFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            >
-              <option value="all">모든 유형</option>
-              <option value="individual">일반</option>
-              <option value="organization">기관관리자</option>
-              <option value="admin">최고관리자</option>
-            </select>
-            <select
-              value={userStatusFilter}
-              onChange={(e) => setUserStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            >
-              <option value="all">모든 상태</option>
-              <option value="active">활성</option>
-              <option value="inactive">비활성</option>
-              <option value="suspended">정지</option>
-            </select>
-            <button
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={selectedUsers.length === 0}
-              onClick={() => {
-                toast.success(`${selectedUsers.length}명의 사용자를 관리합니다.`);
-                setSelectedUsers([]);
-              }}
-            >
-              선택 항목 관리 ({selectedUsers.length})
-            </button>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* 데스크톱 테이블 뷰 */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left">
+                  <th className="px-4 py-3 text-left w-12">
                     <input
                       type="checkbox"
                       className="rounded"
@@ -565,19 +575,16 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
                       }}
                     />
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">이름</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">이메일</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">권한</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">상태</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">가입일</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">마지막 로그인</th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">이름</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">권한</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">상태</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <input
                         type="checkbox"
                         className="rounded"
@@ -591,22 +598,21 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
                         }}
                       />
                     </td>
-                    <td className="px-6 py-4 font-medium text-gray-800">{user.name}</td>
-                    <td className="px-6 py-4 text-gray-600">{user.email}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleColor(user.role)}`}>
+                    <td className="px-4 py-3">
+                      <span className="font-medium text-gray-800">{user.name}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getRoleColor(user.role)}`}>
                         {getRoleLabel(user.role)}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(user.status)}`}>
+                    <td className="px-4 py-3">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusColor(user.status)}`}>
                         {getStatusLabel(user.status)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">{user.registeredDate}</td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">{user.lastLogin}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-2">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-1">
                         <button
                           onClick={() => {
                             setSelectedUser(user);
@@ -635,6 +641,50 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* 모바일 카드 뷰 */}
+          <div className="md:hidden divide-y divide-gray-200">
+            {filteredUsers.map((user) => (
+              <div key={user.id} className="p-4 hover:bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      className="rounded"
+                      checked={selectedUsers.includes(user.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedUsers([...selectedUsers, user.id]);
+                        } else {
+                          setSelectedUsers(selectedUsers.filter(id => id !== user.id));
+                        }
+                      }}
+                    />
+                    <div>
+                      <p className="font-medium text-gray-800">{user.name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getRoleColor(user.role)}`}>
+                          {getRoleLabel(user.role)}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(user.status)}`}>
+                          {getStatusLabel(user.status)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedUser(user);
+                      setShowUserModal(true);
+                    }}
+                    className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+                  >
+                    <Eye size={18} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="p-6 border-t border-gray-200 flex items-center justify-between">

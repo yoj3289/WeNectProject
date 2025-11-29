@@ -4,13 +4,15 @@ import toast from 'react-hot-toast';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { getSettlementsByStatus, approveSettlement, rejectSettlement, type SettlementResponse, type SettlementDocument } from '../../api/admin';
 
-type StatusFilterType = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
+type TabType = 'pending' | 'processed';
+type ProcessedFilterType = 'ALL' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
 
 const PAGE_SIZE = 10;
 
 const SettlementManagementPage: React.FC = () => {
-  // 필터 상태
-  const [statusFilter, setStatusFilter] = useState<StatusFilterType>('PENDING');
+  // 탭 상태
+  const [activeTab, setActiveTab] = useState<TabType>('pending');
+  const [processedFilter, setProcessedFilter] = useState<ProcessedFilterType>('ALL');
 
   // 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(0);
@@ -154,9 +156,17 @@ const SettlementManagementPage: React.FC = () => {
   const getFilteredSettlements = () => {
     let filtered = allSettlements;
 
-    // 상태 필터링
-    if (statusFilter !== 'ALL') {
-      filtered = filtered.filter(s => s.status === statusFilter);
+    // 탭별 필터링
+    if (activeTab === 'pending') {
+      filtered = filtered.filter(s => s.status === 'PENDING');
+    } else {
+      // 처리 내역 탭
+      filtered = filtered.filter(s => s.status === 'APPROVED' || s.status === 'REJECTED' || s.status === 'COMPLETED');
+
+      // 추가 상태 필터링
+      if (processedFilter !== 'ALL') {
+        filtered = filtered.filter(s => s.status === processedFilter);
+      }
     }
 
     // 검색어 필터링
@@ -220,10 +230,10 @@ const SettlementManagementPage: React.FC = () => {
     (currentPage + 1) * PAGE_SIZE
   );
 
-  // 필터, 검색어 변경 시 페이지 초기화
+  // 탭, 필터, 검색어 변경 시 페이지 초기화
   useEffect(() => {
     setCurrentPage(0);
-  }, [statusFilter, searchTerm]);
+  }, [activeTab, processedFilter, searchTerm]);
 
   return (
     <>
@@ -458,33 +468,63 @@ const SettlementManagementPage: React.FC = () => {
           </button>
         </div>
 
+        {/* 탭 */}
+        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`px-6 py-2 rounded-lg font-semibold transition ${
+              activeTab === 'pending'
+                ? 'bg-white text-green-600 shadow'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            승인 대기
+            {pendingCount > 0 && (
+              <span className="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs">
+                {pendingCount}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('processed')}
+            className={`px-6 py-2 rounded-lg font-semibold transition ${
+              activeTab === 'processed'
+                ? 'bg-white text-green-600 shadow'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            처리 내역
+          </button>
+        </div>
+
         {/* 정산 목록 */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           {/* 필터 및 검색 */}
-          <div className="p-6 border-b border-gray-200 flex items-center gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="프로젝트명, 예금주, 은행명으로 검색..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
+          <div className="p-4 md:p-6 border-b border-gray-200">
+            <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="프로젝트명, 예금주로 검색..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                />
+              </div>
+              {activeTab === 'processed' && (
+                <select
+                  value={processedFilter}
+                  onChange={(e) => setProcessedFilter(e.target.value as ProcessedFilterType)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                >
+                  <option value="ALL">모든 상태</option>
+                  <option value="APPROVED">승인됨</option>
+                  <option value="COMPLETED">완료</option>
+                  <option value="REJECTED">반려됨</option>
+                </select>
+              )}
             </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilterType)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="PENDING">
-                대기중 {pendingCount > 0 ? `(${pendingCount})` : ''}
-              </option>
-              <option value="APPROVED">승인됨</option>
-              <option value="COMPLETED">완료</option>
-              <option value="REJECTED">반려됨</option>
-              <option value="ALL">전체 보기</option>
-            </select>
           </div>
 
           {/* 테이블 */}
@@ -499,108 +539,128 @@ const SettlementManagementPage: React.FC = () => {
               <p className="text-gray-500">
                 {searchTerm
                   ? '검색 결과가 없습니다.'
-                  : statusFilter === 'PENDING'
+                  : activeTab === 'pending'
                   ? '대기 중인 정산 요청이 없습니다.'
-                  : statusFilter === 'ALL'
-                  ? '정산 내역이 없습니다.'
-                  : '해당 상태의 정산 내역이 없습니다.'}
+                  : '처리된 정산 내역이 없습니다.'}
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트명</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">예금주</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">정산금액</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">신청일</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">서류</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">상태</th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {paginatedSettlements.map((settlement) => (
-                    <tr key={settlement.settlementId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 font-medium text-gray-800">{settlement.projectTitle || '-'}</td>
-                      <td className="px-6 py-4 text-gray-600">{settlement.accountHolder}</td>
-                      <td className="px-6 py-4 text-gray-800 font-bold">{formatAmount(settlement.settlementAmount)}</td>
-                      <td className="px-6 py-4 text-gray-600 text-sm">{formatDate(settlement.requestedAt)}</td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-gray-600">
-                          {settlement.documents?.length || 0}개 파일
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">{renderStatusBadge(settlement.status)}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => {
-                              setSelectedSettlement(settlement);
-                              setShowDetailModal(true);
-                            }}
-                            className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
-                            title="상세보기"
-                          >
-                            <Eye size={18} />
-                          </button>
-                          {settlement.status === 'PENDING' && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setSelectedSettlement(settlement);
-                                  setConfirmModal({
-                                    isOpen: true,
-                                    title: '정산 승인',
-                                    message: '정산을 승인하시겠습니까?',
-                                    onConfirm: async () => {
-                                      try {
-                                        await approveSettlement({ settlementId: settlement.settlementId });
-                                        toast.success('정산이 승인되었습니다.');
-                                        loadData();
-                                      } catch (error) {
-                                        toast.error('정산 승인에 실패했습니다.');
-                                      }
-                                      setConfirmModal(prev => ({ ...prev, isOpen: false }));
-                                    },
-                                  });
-                                }}
-                                className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
-                                title="승인"
-                              >
-                                <CheckCircle size={18} />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedSettlement(settlement);
-                                  setShowDetailModal(true);
-                                }}
-                                className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-                                title="반려"
-                              >
-                                <XCircle size={18} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
+            <>
+              {/* 데스크톱 테이블 뷰 */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트명</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">정산금액</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">상태</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {paginatedSettlements.map((settlement) => (
+                      <tr key={settlement.settlementId} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <span className="font-medium text-gray-800 line-clamp-1">{settlement.projectTitle || '-'}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-gray-800 font-bold whitespace-nowrap">{formatAmount(settlement.settlementAmount)}</span>
+                        </td>
+                        <td className="px-4 py-3">{renderStatusBadge(settlement.status)}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => {
+                                setSelectedSettlement(settlement);
+                                setShowDetailModal(true);
+                              }}
+                              className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+                              title="상세보기"
+                            >
+                              <Eye size={18} />
+                            </button>
+                            {settlement.status === 'PENDING' && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setSelectedSettlement(settlement);
+                                    setConfirmModal({
+                                      isOpen: true,
+                                      title: '정산 승인',
+                                      message: '정산을 승인하시겠습니까?',
+                                      onConfirm: async () => {
+                                        try {
+                                          await approveSettlement({ settlementId: settlement.settlementId });
+                                          toast.success('정산이 승인되었습니다.');
+                                          loadData();
+                                        } catch (error) {
+                                          toast.error('정산 승인에 실패했습니다.');
+                                        }
+                                        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                                      },
+                                    });
+                                  }}
+                                  className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
+                                  title="승인"
+                                >
+                                  <CheckCircle size={18} />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedSettlement(settlement);
+                                    setShowDetailModal(true);
+                                  }}
+                                  className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                                  title="반려"
+                                >
+                                  <XCircle size={18} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 모바일 카드 뷰 */}
+              <div className="md:hidden divide-y divide-gray-200">
+                {paginatedSettlements.map((settlement) => (
+                  <div key={settlement.settlementId} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-800 truncate">{settlement.projectTitle || '-'}</p>
+                        <p className="text-lg font-bold text-green-600 mt-1">{formatAmount(settlement.settlementAmount)}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          {renderStatusBadge(settlement.status)}
+                          <span className="text-xs text-gray-500">{formatDate(settlement.requestedAt)}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedSettlement(settlement);
+                          setShowDetailModal(true);
+                        }}
+                        className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 flex-shrink-0"
+                      >
+                        <Eye size={18} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {/* 푸터 - 페이지네이션 */}
-          <div className="p-6 border-t border-gray-200 flex items-center justify-between">
+          <div className="p-4 md:p-6 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between gap-3">
             <p className="text-sm text-gray-600">
               총 <strong>{filteredSettlements.length}</strong>건
-              {filteredSettlements.length > 0 && (
-                <span className="ml-2">
-                  ({currentPage * PAGE_SIZE + 1}-{Math.min((currentPage + 1) * PAGE_SIZE, filteredSettlements.length)}건 표시)
-                </span>
-              )}
+              <span className="hidden md:inline ml-2">
+                {filteredSettlements.length > 0 && `(${currentPage * PAGE_SIZE + 1}-${Math.min((currentPage + 1) * PAGE_SIZE, filteredSettlements.length)}건 표시)`}
+              </span>
             </p>
             {totalPages > 1 && (
               <div className="flex items-center gap-2">

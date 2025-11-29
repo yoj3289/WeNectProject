@@ -17,9 +17,10 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // 업로드 파일 정적 리소스 서빙
         // /uploads/** 경로로 요청 시 실제 파일 시스템의 uploads 디렉토리에서 파일 제공
-        String absolutePath = Paths.get(uploadDir).toAbsolutePath().toString();
+        // toUri()를 사용하여 Windows/Linux 모두 호환되는 file:/// 형식으로 변환
+        String resourceLocation = Paths.get(uploadDir).toAbsolutePath().toUri().toString();
 
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:" + absolutePath + "/");
+                .addResourceLocations(resourceLocation);
     }
 }

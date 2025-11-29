@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Eye, Check, X, FileText, Building2, User, Phone, Mail, Calendar, Download, CheckCircle, XCircle, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { AdminDashboardProps } from '../../types/admin';
-import { getOrganizationApprovals, approveOrganization, rejectOrganization, type OrganizationApprovalResponse } from '../../api/admin';
+import { getOrganizationApprovals, approveOrganization, rejectOrganization, type OrganizationApprovalResponse, type OrganizationDocument } from '../../api/admin';
 
 interface OrganizationApprovalPageProps extends AdminDashboardProps {}
 
@@ -30,6 +30,43 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
   const [approvals, setApprovals] = useState<OrganizationApprovalResponse[]>([]);
   const [stats, setStats] = useState<ApprovalStats>({ pending: 0, approved: 0, rejected: 0 });
   const [loading, setLoading] = useState(true);
+  const [downloadingDocId, setDownloadingDocId] = useState<number | null>(null);
+
+  // 파일 다운로드 함수
+  const handleDownload = async (doc: OrganizationDocument) => {
+    setDownloadingDocId(doc.docId);
+    try {
+      const backendBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api').replace('/api', '');
+      const fullUrl = doc.filePath.startsWith('http') ? doc.filePath : `${backendBaseUrl}${doc.filePath}`;
+
+      const response = await fetch(fullUrl);
+      if (!response.ok) throw new Error('파일 다운로드 실패');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`${doc.fileName} 다운로드 완료`);
+    } catch (error) {
+      console.error('다운로드 오류:', error);
+      toast.error('파일 다운로드에 실패했습니다.');
+    } finally {
+      setDownloadingDocId(null);
+    }
+  };
+
+  // 파일 크기 포맷
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
 
   // 데이터 로딩
   useEffect(() => {
@@ -224,15 +261,22 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
                   제출 서류
                 </h4>
                 <div className="space-y-2">
-                  {selectedApproval.documents.map((doc, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                  {selectedApproval.documents.map((doc) => (
+                    <div key={doc.docId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
                       <div className="flex items-center gap-3">
                         <FileText size={18} className="text-red-500" />
-                        <span className="text-sm font-medium text-gray-800">{doc}</span>
+                        <div>
+                          <span className="text-sm font-medium text-gray-800">{doc.fileName}</span>
+                          <span className="text-xs text-gray-500 ml-2">({formatFileSize(doc.fileSize)})</span>
+                        </div>
                       </div>
-                      <button className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-semibold">
-                        <Download size={16} />
-                        다운로드
+                      <button
+                        onClick={() => handleDownload(doc)}
+                        disabled={downloadingDocId === doc.docId}
+                        className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Download size={16} className={downloadingDocId === doc.docId ? 'animate-bounce' : ''} />
+                        {downloadingDocId === doc.docId ? '다운로드 중...' : '다운로드'}
                       </button>
                     </div>
                   ))}

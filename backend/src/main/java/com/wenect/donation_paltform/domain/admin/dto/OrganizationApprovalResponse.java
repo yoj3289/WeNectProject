@@ -20,7 +20,7 @@ public class OrganizationApprovalResponse {
     private String organizationName;
     private String businessNumber;
     private String representativeName;
-    private List<String> documents;
+    private List<OrganizationDocumentDto> documents;
     private String status; // pending, approved, rejected
     private String appliedDate;
     private String processedDate;
@@ -42,7 +42,7 @@ public class OrganizationApprovalResponse {
                 .businessNumber(org.getRegistrationNumber())
                 .representativeName(org.getRepresentative())
                 .documents(documents.stream()
-                        .map(OrganizationDocument::getFileName)
+                        .map(OrganizationDocumentDto::from)
                         .collect(Collectors.toList()))
                 .status(status)
                 .appliedDate(formatDateTime(org.getUser().getCreatedAt()))

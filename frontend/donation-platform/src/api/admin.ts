@@ -94,6 +94,15 @@ export interface AdminUserResponse {
   verified?: boolean;
 }
 
+export interface OrganizationDocument {
+  docId: number;
+  fileName: string;
+  filePath: string;
+  fileSize: number;
+  docType: string;
+  uploadedAt: string;
+}
+
 export interface OrganizationApprovalResponse {
   id: number;
   userId: number;
@@ -103,7 +112,7 @@ export interface OrganizationApprovalResponse {
   organizationName: string;
   businessNumber: string;
   representativeName: string;
-  documents: string[];
+  documents: OrganizationDocument[];
   status: 'pending' | 'approved' | 'rejected';
   appliedDate: string;
   processedDate?: string;
