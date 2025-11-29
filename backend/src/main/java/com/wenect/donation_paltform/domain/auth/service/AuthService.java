@@ -36,6 +36,8 @@ public class AuthService {
 
     private final OrganizationDocumentRepository documentRepository;
 
+    private final com.wenect.donation_paltform.domain.auth.repository.EmailVerificationRepository emailVerificationRepository;
+
     @Transactional
     public SignupResponseDto signup(SignupRequestDto dto, MultipartFile file) {
         // 1. 이메일 중복 확인
@@ -97,7 +99,16 @@ public class AuthService {
                 documentRepository.save(document);
             }
         }
-        // 6. 응답 DTO 변환
+
+        // 6. 이메일 인증 데이터 삭제 (회원가입 완료 후 정리)
+        try {
+            emailVerificationRepository.deleteByEmail(dto.getEmail());
+        } catch (Exception e) {
+            // 삭제 실패해도 회원가입은 성공으로 처리
+            System.out.println("이메일 인증 데이터 삭제 실패 (무시): " + e.getMessage());
+        }
+
+        // 7. 응답 DTO 변환
         return SignupResponseDto.from(savedUser);
     }
 
@@ -120,7 +131,15 @@ public class AuthService {
         // 3. DB 저장
         User savedUser = userRepository.save(user);
 
-        // 4. 응답 DTO 변환
+        // 4. 이메일 인증 데이터 삭제 (회원가입 완료 후 정리)
+        try {
+            emailVerificationRepository.deleteByEmail(dto.getEmail());
+        } catch (Exception e) {
+            // 삭제 실패해도 회원가입은 성공으로 처리
+            System.out.println("이메일 인증 데이터 삭제 실패 (무시): " + e.getMessage());
+        }
+
+        // 5. 응답 DTO 변환
         return SignupResponseDto.from(savedUser);
     }
 

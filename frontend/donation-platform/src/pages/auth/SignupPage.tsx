@@ -159,6 +159,14 @@ const SignupPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
+  // 이메일 인증 상태
+  const [isVerificationSent, setIsVerificationSent] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(300); // 5분 = 300초
+
   // 약관 동의 상태
   const [agreeAll, setAgreeAll] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -171,6 +179,23 @@ const SignupPage: React.FC = () => {
   const [showMarketingModal, setShowMarketingModal] = useState(false);
 
   const { signup, isSigningUp, checkEmailAvailability } = useAuth();
+
+  // 타이머 효과
+  React.useEffect(() => {
+    if (isVerificationSent && !isVerified && remainingTime > 0) {
+      const timer = setInterval(() => {
+        setRemainingTime((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [isVerificationSent, isVerified, remainingTime]);
 
   // 전체 동의 핸들러
   const handleAgreeAll = (checked: boolean) => {
@@ -231,6 +256,87 @@ const SignupPage: React.FC = () => {
     }
   };
 
+  // 이메일 인증번호 발송
+  const sendVerificationCode = async () => {
+    if (!isEmailChecked || !isEmailAvailable) {
+      setErrorMessage('이메일 중복 확인을 먼저 해주세요.');
+      return;
+    }
+
+    try {
+      setIsSendingCode(true);
+      setErrorMessage('');
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'}/auth/email/send-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: signupEmail }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || '인증번호 발송에 실패했습니다.');
+      }
+
+      setIsVerificationSent(true);
+      setRemainingTime(300); // 5분 타이머 리셋
+      toast.success('인증번호가 이메일로 발송되었습니다.');
+    } catch (error: any) {
+      setErrorMessage(error.message || '인증번호 발송에 실패했습니다.');
+      toast.error(error.message || '인증번호 발송에 실패했습니다.');
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  // 인증번호 확인
+  const verifyCode = async () => {
+    if (!verificationCode || verificationCode.length !== 6) {
+      setErrorMessage('6자리 인증번호를 입력해주세요.');
+      return;
+    }
+
+    try {
+      setIsVerifyingCode(true);
+      setErrorMessage('');
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'}/auth/email/verify-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: signupEmail, code: verificationCode }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || '인증에 실패했습니다.');
+      }
+
+      if (data.data.verified) {
+        setIsVerified(true);
+        toast.success('이메일 인증이 완료되었습니다!');
+      } else {
+        setErrorMessage(data.data.message || '인증번호가 일치하지 않습니다.');
+      }
+    } catch (error: any) {
+      setErrorMessage(error.message || '인증 확인에 실패했습니다.');
+    } finally {
+      setIsVerifyingCode(false);
+    }
+  };
+
+  // 남은 시간 포맷팅 (5:00 형식)
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -262,6 +368,12 @@ const SignupPage: React.FC = () => {
 
     if (!isEmailAvailable) {
       setErrorMessage('사용할 수 없는 이메일입니다.');
+      return false;
+    }
+
+    // 이메일 인증 확인
+    if (!isVerified) {
+      setErrorMessage('이메일 인증을 완료해주세요.');
       return false;
     }
 
@@ -577,13 +689,16 @@ const SignupPage: React.FC = () => {
                 setSignupEmail(e.target.value);
                 setIsEmailChecked(false);
                 setIsEmailAvailable(false);
+                setIsVerificationSent(false);
+                setIsVerified(false);
+                setVerificationCode('');
               }}
-              disabled={isSigningUp || isCheckingEmail}
+              disabled={isSigningUp || isCheckingEmail || isVerified}
               className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
             <button
               onClick={() => checkEmailDuplicate(signupEmail)}
-              disabled={isSigningUp || isCheckingEmail || !signupEmail}
+              disabled={isSigningUp || isCheckingEmail || !signupEmail || isVerified}
               className="px-6 py-3 bg-gray-800 text-white rounded-lg font-bold hover:bg-gray-900 transition-all whitespace-nowrap disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isCheckingEmail ? (
@@ -596,7 +711,7 @@ const SignupPage: React.FC = () => {
               )}
             </button>
           </div>
-          {isEmailChecked && (
+          {isEmailChecked && !isVerified && (
             <div className={`flex items-center gap-2 text-sm mt-2 ${isEmailAvailable ? 'text-green-600' : 'text-red-600'}`}>
               {isEmailAvailable ? (
                 <>
@@ -611,7 +726,84 @@ const SignupPage: React.FC = () => {
               )}
             </div>
           )}
+          {isVerified && (
+            <div className="flex items-center gap-2 text-sm mt-2 text-green-600">
+              <CheckCircle size={16} />
+              <span>이메일 인증이 완료되었습니다.</span>
+            </div>
+          )}
         </div>
+
+        {/* 인증번호 발송 버튼 (이메일 중복 확인 후 표시) */}
+        {isEmailChecked && isEmailAvailable && !isVerified && (
+          <div>
+            <button
+              onClick={sendVerificationCode}
+              disabled={isSendingCode || isSigningUp}
+              className="w-full py-3 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSendingCode ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} />
+                  <span>발송 중...</span>
+                </>
+              ) : isVerificationSent ? (
+                '인증번호 재발송'
+              ) : (
+                '인증번호 발송'
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* 인증번호 입력 (인증번호 발송 후 표시) */}
+        {isVerificationSent && !isVerified && (
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              인증번호 <span className="text-red-500">*</span>
+              {remainingTime > 0 && (
+                <span className="ml-2 text-red-500 font-normal">
+                  ({formatTime(remainingTime)})
+                </span>
+              )}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="6자리 숫자"
+                value={verificationCode}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  if (value.length <= 6) {
+                    setVerificationCode(value);
+                  }
+                }}
+                maxLength={6}
+                disabled={isVerifyingCode || isSigningUp || remainingTime === 0}
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              />
+              <button
+                onClick={verifyCode}
+                disabled={isVerifyingCode || isSigningUp || !verificationCode || verificationCode.length !== 6 || remainingTime === 0}
+                className="px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 transition-all whitespace-nowrap disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isVerifyingCode ? (
+                  <>
+                    <Loader2 className="animate-spin" size={16} />
+                    <span>확인 중...</span>
+                  </>
+                ) : (
+                  '인증 확인'
+                )}
+              </button>
+            </div>
+            {remainingTime === 0 && (
+              <p className="text-xs text-red-500 mt-1">
+                인증번호가 만료되었습니다. 재발송 버튼을 눌러주세요.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* 비밀번호 */}
         <div>
@@ -780,7 +972,7 @@ const SignupPage: React.FC = () => {
       {/* 가입하기 버튼 */}
       <button
         onClick={handleSignup}
-        disabled={isSigningUp}
+        disabled={isSigningUp || !isVerified}
         className="w-full mt-8 py-4 bg-red-500 text-white rounded-lg font-bold text-lg hover:bg-red-600 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {isSigningUp ? (
@@ -792,6 +984,11 @@ const SignupPage: React.FC = () => {
           '가입하기'
         )}
       </button>
+      {!isVerified && (
+        <p className="text-sm text-gray-500 text-center mt-2">
+          이메일 인증을 완료하면 가입하기 버튼이 활성화됩니다.
+        </p>
+      )}
 
       <div className="text-center mt-6">
         <span className="text-gray-600">이미 계정이 있으신가요? </span>
