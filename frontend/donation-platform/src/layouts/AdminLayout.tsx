@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Bell, User, LogOut, Home } from 'lucide-react';
 import Sidebar from '../components/common/Sidebar';
 import { useAuth } from '../hooks/useAuth';
@@ -16,8 +16,31 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
   setActiveMenu,
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout } = useAuth();
+
+  // URL 경로를 기반으로 activeMenu 자동 업데이트
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes('/admin/dashboard')) {
+      setActiveMenu('dashboard');
+    } else if (path.includes('/admin/organizations')) {
+      setActiveMenu('organizations');
+    } else if (path.includes('/admin/projects')) {
+      setActiveMenu('projects');
+    } else if (path.includes('/admin/users')) {
+      setActiveMenu('users');
+    } else if (path.includes('/admin/settlements')) {
+      setActiveMenu('settlements');
+    } else if (path.includes('/admin/expenses')) {
+      setActiveMenu('expenses');
+    } else if (path.includes('/admin/reports')) {
+      setActiveMenu('reports');
+    } else if (path.includes('/admin/settings')) {
+      setActiveMenu('settings');
+    }
+  }, [location.pathname, setActiveMenu]);
 
   // 사용자 타입에 따른 레이블 결정
   const getUserTypeLabel = () => {

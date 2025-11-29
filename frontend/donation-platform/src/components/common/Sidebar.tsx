@@ -63,7 +63,7 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
   const menuItems: AdminMenuItem[] = [
     { id: 'dashboard', icon: LayoutDashboard, label: '대시보드' },
     { id: 'organizations', icon: Building2, label: '기관 승인', allowedUserTypes: ['admin'] },
-    { id: 'projects', icon: FolderCheck, label: '프로젝트 승인', allowedUserTypes: ['admin'] },
+    // { id: 'projects', icon: FolderCheck, label: '프로젝트 승인', allowedUserTypes: ['admin'] }, // 비활성화 (기능은 유지)
     { id: 'users', icon: Users, label: '사용자 관리', allowedUserTypes: ['admin'] },
     { id: 'settlements', icon: DollarSign, label: '정산 관리' },
     { id: 'expenses', icon: DollarSign, label: '지출 승인' },

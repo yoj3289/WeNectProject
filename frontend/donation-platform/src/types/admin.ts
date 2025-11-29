@@ -39,3 +39,52 @@ export interface AdminDashboardProps {
   showSettlementModal: boolean;
   setShowSettlementModal: (show: boolean) => void;
 }
+
+// 시스템 메트릭 타입
+export interface SystemMetrics {
+  cpuUsage: number;
+  memory: MemoryInfo;
+  disk: DiskInfo;
+  jvm: JvmInfo;
+  system: SystemInfo;
+  database: DatabaseInfo;
+}
+
+export interface MemoryInfo {
+  total: number;
+  used: number;
+  free: number;
+  usagePercent: number;
+}
+
+export interface DiskInfo {
+  total: number;
+  free: number;
+  used: number;
+  usagePercent: number;
+}
+
+export interface JvmInfo {
+  totalMemory: number;
+  freeMemory: number;
+  maxMemory: number;
+  usedMemory: number;
+  activeThreads: number;
+}
+
+export interface SystemInfo {
+  osName: string;
+  osVersion: string;
+  osArch: string;
+  availableProcessors: number;
+  uptime: number;
+}
+
+export interface DatabaseInfo {
+  isConnected: boolean;
+  activeConnections: number | null;
+  maxConnections: number | null;
+  databaseType: string;
+  databaseVersion: string;
+  responseTime: number;
+}

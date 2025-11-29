@@ -2,7 +2,9 @@ package com.wenect.donation_paltform.domain.admin.controller;
 
 import com.wenect.donation_paltform.domain.admin.dto.CategoryDistributionResponse;
 import com.wenect.donation_paltform.domain.admin.dto.DashboardStatsResponse;
+import com.wenect.donation_paltform.domain.admin.dto.SystemMetricsResponse;
 import com.wenect.donation_paltform.domain.admin.service.AdminDashboardService;
+import com.wenect.donation_paltform.domain.admin.service.SystemMetricsService;
 import com.wenect.donation_paltform.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,7 @@ import java.util.List;
 public class AdminDashboardController {
 
     private final AdminDashboardService adminDashboardService;
+    private final SystemMetricsService systemMetricsService;
 
     /**
      * 대시보드 통계 조회
@@ -37,5 +40,14 @@ public class AdminDashboardController {
     public ResponseEntity<ApiResponse<List<CategoryDistributionResponse>>> getCategoryDistribution() {
         List<CategoryDistributionResponse> distribution = adminDashboardService.getCategoryDistribution();
         return ResponseEntity.ok(ApiResponse.success(distribution, "카테고리 분포 조회 성공"));
+    }
+
+    /**
+     * 시스템 메트릭 조회
+     */
+    @GetMapping("/metrics/system")
+    public ResponseEntity<ApiResponse<SystemMetricsResponse>> getSystemMetrics() {
+        SystemMetricsResponse metrics = systemMetricsService.getSystemMetrics();
+        return ResponseEntity.ok(ApiResponse.success(metrics, "시스템 메트릭 조회 성공"));
     }
 }

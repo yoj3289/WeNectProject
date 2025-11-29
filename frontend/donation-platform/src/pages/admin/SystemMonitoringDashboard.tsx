@@ -1,63 +1,101 @@
 import React, { useState, useEffect } from 'react';
-import { Server, Database, Cpu, HardDrive, Activity, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
-
-interface ServerStatus {
-  name: string;
-  status: 'online' | 'offline' | 'warning';
-  cpu: number;
-  memory: number;
-  disk: number;
-  uptime: string;
-}
-
-interface ErrorLog {
-  id: number;
-  level: 'error' | 'warning' | 'info';
-  message: string;
-  timestamp: string;
-  source: string;
-}
+import { Server, Database, Cpu, HardDrive, Activity, AlertTriangle, TrendingUp, Loader } from 'lucide-react';
+import { getSystemMetrics } from '../../api/admin';
+import type { SystemMetrics } from '../../types/admin';
 
 const SystemMonitoringDashboard: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [serverStatus, setServerStatus] = useState<ServerStatus[]>([
-    { name: 'Web Server 1', status: 'online', cpu: 45, memory: 62, disk: 73, uptime: '15일 3시간' },
-    { name: 'Web Server 2', status: 'online', cpu: 38, memory: 58, disk: 71, uptime: '15일 3시간' },
-    { name: 'DB Server', status: 'online', cpu: 72, memory: 85, disk: 68, uptime: '30일 12시간' },
-    { name: 'Cache Server', status: 'warning', cpu: 88, memory: 91, disk: 45, uptime: '7일 8시간' },
-  ]);
+  const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [trafficData, setTrafficData] = useState([65, 72, 68, 85, 79, 92, 88, 95, 90, 102, 98, 105]);
-  const [paymentFailures, setPaymentFailures] = useState(3);
-
-  const errorLogs: ErrorLog[] = [
-    { id: 1, level: 'error', message: 'Database connection timeout', timestamp: '2024-03-16 17:23:45', source: 'DB Server' },
-    { id: 2, level: 'warning', message: 'High memory usage detected', timestamp: '2024-03-16 17:20:12', source: 'Cache Server' },
-    { id: 3, level: 'info', message: 'Backup completed successfully', timestamp: '2024-03-16 17:15:00', source: 'Backup Service' },
-    { id: 4, level: 'warning', message: 'Slow query detected (3.2s)', timestamp: '2024-03-16 17:10:33', source: 'DB Server' },
-    { id: 5, level: 'error', message: 'Payment gateway timeout', timestamp: '2024-03-16 17:05:21', source: 'Payment Service' },
-  ];
+  // 시스템 메트릭 로드
+  const loadMetrics = async () => {
+    try {
+      const response = await getSystemMetrics();
+      setMetrics(response.data);
+      setError(null);
+    } catch (err) {
+      console.error('시스템 메트릭 조회 실패:', err);
+      setError('시스템 메트릭을 불러올 수 없습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const timer = setInterval(() => {
+    // 초기 로드
+    loadMetrics();
+
+    // 3초마다 자동 갱신
+    const metricsTimer = setInterval(loadMetrics, 3000);
+
+    // 시간 업데이트
+    const clockTimer = setInterval(() => {
       setCurrentTime(new Date());
+    }, 1000);
 
-      // 서버 상태 랜덤 업데이트 (실시간 시뮬레이션)
-      setServerStatus(prev => prev.map(server => ({
-        ...server,
-        cpu: Math.max(20, Math.min(95, server.cpu + (Math.random() - 0.5) * 10)),
-        memory: Math.max(30, Math.min(95, server.memory + (Math.random() - 0.5) * 8)),
-      })));
-
-      // 트래픽 데이터 업데이트
-      setTrafficData(prev => {
-        const newData = [...prev.slice(1), Math.floor(Math.random() * 40) + 80];
-        return newData;
-      });
-    }, 3000);
-
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(metricsTimer);
+      clearInterval(clockTimer);
+    };
   }, []);
+
+  // 로딩 상태
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader className="animate-spin text-red-500" size={48} />
+      </div>
+    );
+  }
+
+  // 에러 상태
+  if (error || !metrics) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-red-500 text-lg mb-4">{error || '데이터를 불러올 수 없습니다.'}</p>
+          <button
+            onClick={loadMetrics}
+            className="px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Uptime을 읽기 쉬운 형식으로 변환
+  const formatUptime = (milliseconds: number): string => {
+    const seconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) {
+      return `${days}일 ${hours % 24}시간`;
+    } else if (hours > 0) {
+      return `${hours}시간 ${minutes % 60}분`;
+    } else {
+      return `${minutes}분`;
+    }
+  };
+
+  // 바이트를 GB로 변환
+  const formatBytes = (bytes: number): string => {
+    const gb = bytes / (1024 * 1024 * 1024);
+    return gb.toFixed(2);
+  };
+
+  // 서버 상태 결정
+  const getServerStatus = (): 'online' | 'warning' | 'offline' => {
+    if (metrics.cpuUsage > 90 || metrics.memory.usagePercent > 90) {
+      return 'warning';
+    }
+    return 'online';
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -92,6 +130,8 @@ const SystemMonitoringDashboard: React.FC = () => {
     return 'bg-green-500';
   };
 
+  const serverStatus = getServerStatus();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -105,164 +145,265 @@ const SystemMonitoringDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 서버 상태 카드 */}
-      <div className="grid grid-cols-4 gap-6">
-        {serverStatus.map((server, index) => (
-          <div key={index} className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Server size={20} className="text-blue-500" />
-                <h3 className="font-bold text-gray-800">{server.name}</h3>
-              </div>
-              {getStatusIcon(server.status)}
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-600">CPU</span>
-                  <span className="text-xs font-semibold text-gray-800">{server.cpu.toFixed(1)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all ${getUsageColor(server.cpu)}`}
-                    style={{ width: `${server.cpu}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-600">Memory</span>
-                  <span className="text-xs font-semibold text-gray-800">{server.memory.toFixed(1)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all ${getUsageColor(server.memory)}`}
-                    style={{ width: `${server.memory}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-600">Disk</span>
-                  <span className="text-xs font-semibold text-gray-800">{server.disk}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all ${getUsageColor(server.disk)}`}
-                    style={{ width: `${server.disk}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-gray-200">
-                <p className="text-xs text-gray-600">가동시간: <span className="font-semibold text-gray-800">{server.uptime}</span></p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* 트래픽 및 통계 */}
-      <div className="grid grid-cols-3 gap-6">
-        {/* 트래픽 그래프 */}
-        <div className="col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <Activity size={20} className="text-red-500" />
-                실시간 트래픽
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">최근 12개 데이터 포인트</p>
-            </div>
+      {/* 시스템 정보 카드 */}
+      <div className="grid grid-cols-5 gap-6">
+        {/* 서버 상태 */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <TrendingUp size={20} className="text-red-500" />
-              <span className="text-lg font-bold text-red-600">+12.5%</span>
+              <Server size={20} className="text-blue-500" />
+              <h3 className="font-bold text-gray-800">서버 상태</h3>
             </div>
+            {getStatusIcon(serverStatus)}
           </div>
 
-          <div className="h-48 flex items-end justify-between gap-2">
-            {trafficData.map((value, idx) => (
-              <div key={idx} className="flex-1 flex flex-col items-center">
-                <div
-                  className="w-full bg-gradient-to-t from-red-500 to-pink-500 rounded-t-lg transition-all hover:opacity-80"
-                  style={{ height: `${(value / 120) * 100}%` }}
-                ></div>
-                <span className="text-xs text-gray-600 mt-2">{value}</span>
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-600">CPU</span>
+                <span className="text-xs font-semibold text-gray-800">{metrics.cpuUsage.toFixed(1)}%</span>
               </div>
-            ))}
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full transition-all ${getUsageColor(metrics.cpuUsage)}`}
+                  style={{ width: `${Math.min(metrics.cpuUsage, 100)}%` }}
+                ></div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-600">Memory</span>
+                <span className="text-xs font-semibold text-gray-800">{metrics.memory.usagePercent.toFixed(1)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full transition-all ${getUsageColor(metrics.memory.usagePercent)}`}
+                  style={{ width: `${metrics.memory.usagePercent}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {formatBytes(metrics.memory.used)} GB / {formatBytes(metrics.memory.total)} GB
+              </p>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-600">Disk</span>
+                <span className="text-xs font-semibold text-gray-800">{metrics.disk.usagePercent.toFixed(1)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full transition-all ${getUsageColor(metrics.disk.usagePercent)}`}
+                  style={{ width: `${metrics.disk.usagePercent}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {formatBytes(metrics.disk.used)} GB / {formatBytes(metrics.disk.total)} GB
+              </p>
+            </div>
+
+            <div className="pt-2 border-t border-gray-200">
+              <p className="text-xs text-gray-600">가동시간: <span className="font-semibold text-gray-800">{formatUptime(metrics.system.uptime)}</span></p>
+            </div>
           </div>
         </div>
 
-        {/* 주요 지표 */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <AlertTriangle size={20} className="text-orange-500" />
-            주요 알림
-          </h3>
+        {/* JVM 정보 */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Cpu size={20} className="text-purple-500" />
+              <h3 className="font-bold text-gray-800">JVM</h3>
+            </div>
+          </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs text-gray-600 mb-1">JVM 메모리</p>
+              <p className="text-lg font-bold text-gray-800">
+                {formatBytes(metrics.jvm.usedMemory)} GB
+              </p>
+              <p className="text-xs text-gray-500">
+                / {formatBytes(metrics.jvm.maxMemory)} GB
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs text-gray-600 mb-1">활성 스레드</p>
+              <p className="text-lg font-bold text-gray-800">{metrics.jvm.activeThreads}개</p>
+            </div>
+
+            <div className="pt-2 border-t border-gray-200">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full transition-all ${getUsageColor((metrics.jvm.usedMemory / metrics.jvm.maxMemory) * 100)}`}
+                  style={{ width: `${(metrics.jvm.usedMemory / metrics.jvm.maxMemory) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 데이터베이스 */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Database size={20} className="text-orange-500" />
+              <h3 className="font-bold text-gray-800">데이터베이스</h3>
+            </div>
+            {metrics.database.isConnected ? (
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            ) : (
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs text-gray-600 mb-1">DB 타입</p>
+              <p className="text-sm font-semibold text-gray-800">{metrics.database.databaseType}</p>
+            </div>
+
+            <div>
+              <p className="text-xs text-gray-600 mb-1">버전</p>
+              <p className="text-xs text-gray-800">{metrics.database.databaseVersion}</p>
+            </div>
+
+            {metrics.database.activeConnections !== null && (
+              <div>
+                <p className="text-xs text-gray-600 mb-1">활성 연결 / 최대 연결</p>
+                <p className="text-lg font-bold text-gray-800">
+                  {metrics.database.activeConnections}
+                  {metrics.database.maxConnections && (
+                    <span className="text-xs text-gray-500 font-normal ml-1">
+                      / {metrics.database.maxConnections}
+                    </span>
+                  )}
+                </p>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                  <div
+                    className={`h-1.5 rounded-full transition-all ${
+                      metrics.database.maxConnections &&
+                      (metrics.database.activeConnections / metrics.database.maxConnections) > 0.8
+                        ? 'bg-red-500'
+                        : (metrics.database.activeConnections / (metrics.database.maxConnections || 1)) > 0.5
+                        ? 'bg-yellow-500'
+                        : 'bg-green-500'
+                    }`}
+                    style={{
+                      width: `${metrics.database.maxConnections
+                        ? (metrics.database.activeConnections / metrics.database.maxConnections) * 100
+                        : 0}%`
+                    }}
+                  ></div>
+                </div>
+              </div>
+            )}
+
+            <div className="pt-2 border-t border-gray-200">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-600">응답 시간</span>
+                <span className={`text-xs font-semibold ${
+                  metrics.database.responseTime < 10 ? 'text-green-600' :
+                  metrics.database.responseTime < 50 ? 'text-yellow-600' :
+                  'text-red-600'
+                }`}>
+                  {metrics.database.responseTime}ms
+                </span>
+              </div>
+              <div className="flex items-center gap-1 mt-1">
+                <div className={`w-2 h-2 rounded-full ${metrics.database.isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className={`text-xs ${metrics.database.isConnected ? 'text-green-600' : 'text-red-600'}`}>
+                  {metrics.database.isConnected ? '연결됨' : '연결 끊김'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 시스템 정보 */}
+        <div className="col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition">
+          <div className="flex items-center gap-2 mb-4">
+            <HardDrive size={20} className="text-green-500" />
+            <h3 className="font-bold text-gray-800">시스템 정보</h3>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-gray-600 mb-1">운영체제</p>
+              <p className="text-sm font-semibold text-gray-800">{metrics.system.osName}</p>
+            </div>
+
+            <div>
+              <p className="text-xs text-gray-600 mb-1">버전</p>
+              <p className="text-sm font-semibold text-gray-800">{metrics.system.osVersion}</p>
+            </div>
+
+            <div>
+              <p className="text-xs text-gray-600 mb-1">아키텍처</p>
+              <p className="text-sm font-semibold text-gray-800">{metrics.system.osArch}</p>
+            </div>
+
+            <div>
+              <p className="text-xs text-gray-600 mb-1">프로세서</p>
+              <p className="text-sm font-semibold text-gray-800">{metrics.system.availableProcessors}코어</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 주요 알림 */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <AlertTriangle size={20} className="text-orange-500" />
+          시스템 상태 알림
+        </h3>
+
+        <div className="space-y-4">
+          {metrics.cpuUsage > 80 && (
             <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-              <p className="text-sm font-semibold text-yellow-800">캐시 서버 과부하</p>
-              <p className="text-xs text-yellow-700 mt-1">CPU 사용률 88%</p>
+              <p className="text-sm font-semibold text-yellow-800">CPU 사용률 높음</p>
+              <p className="text-xs text-yellow-700 mt-1">CPU 사용률: {metrics.cpuUsage.toFixed(1)}%</p>
               <div className="flex items-center gap-1 mt-2">
                 <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
                 <span className="text-xs text-yellow-600">주의 필요</span>
               </div>
             </div>
+          )}
 
+          {metrics.memory.usagePercent > 80 && (
+            <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+              <p className="text-sm font-semibold text-orange-800">메모리 사용률 높음</p>
+              <p className="text-xs text-orange-700 mt-1">메모리 사용률: {metrics.memory.usagePercent.toFixed(1)}%</p>
+              <div className="flex items-center gap-1 mt-2">
+                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                <span className="text-xs text-orange-600">주의 필요</span>
+              </div>
+            </div>
+          )}
+
+          {metrics.disk.usagePercent > 80 && (
             <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-              <p className="text-sm font-semibold text-red-800">결제 실패</p>
-              <p className="text-xs text-red-700 mt-1">최근 1시간: {paymentFailures}건</p>
+              <p className="text-sm font-semibold text-red-800">디스크 용량 부족</p>
+              <p className="text-xs text-red-700 mt-1">디스크 사용률: {metrics.disk.usagePercent.toFixed(1)}%</p>
               <div className="flex items-center gap-1 mt-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                 <span className="text-xs text-red-600">즉시 조치</span>
               </div>
             </div>
+          )}
 
+          {metrics.cpuUsage <= 80 && metrics.memory.usagePercent <= 80 && metrics.disk.usagePercent <= 80 && (
             <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-              <p className="text-sm font-semibold text-green-800">백업 완료</p>
-              <p className="text-xs text-green-700 mt-1">일일 백업 성공</p>
+              <p className="text-sm font-semibold text-green-800">시스템 정상</p>
+              <p className="text-xs text-green-700 mt-1">모든 지표가 정상 범위 내에 있습니다</p>
               <div className="flex items-center gap-1 mt-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-xs text-green-600">정상</span>
+                <span className="text-xs text-green-600">정상 작동 중</span>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 에러 로그 */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-            <AlertTriangle size={20} className="text-red-500" />
-            최근 에러 로그
-          </h3>
-          <p className="text-sm text-gray-600 mt-1">시스템 이벤트 및 오류 기록</p>
-        </div>
-
-        <div className="p-6">
-          <div className="space-y-3">
-            {errorLogs.map((log) => (
-              <div key={log.id} className={`rounded-lg p-4 border ${getLevelColor(log.level)}`}>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="px-2 py-1 text-xs font-bold uppercase rounded">
-                        {log.level}
-                      </span>
-                      <span className="text-xs text-gray-600">{log.source}</span>
-                    </div>
-                    <p className="font-semibold">{log.message}</p>
-                  </div>
-                  <span className="text-xs text-gray-500 whitespace-nowrap ml-4">{log.timestamp}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          )}
         </div>
       </div>
     </div>

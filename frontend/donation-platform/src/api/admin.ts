@@ -374,3 +374,10 @@ export const getAdminSettlements = async (
 export const completeSettlement = async (settlementId: number): Promise<{ data: SettlementResponse }> => {
   return apiClient.post<{ data: SettlementResponse }>(`/settlement-requests/${settlementId}/complete`, {});
 };
+
+/**
+ * 시스템 메트릭 조회
+ */
+export const getSystemMetrics = async (): Promise<{ data: import('../types/admin').SystemMetrics }> => {
+  return apiClient.get<{ data: import('../types/admin').SystemMetrics }>('/admin/metrics/system');
+};
