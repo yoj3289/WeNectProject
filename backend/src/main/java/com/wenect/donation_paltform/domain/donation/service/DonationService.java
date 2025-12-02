@@ -383,7 +383,18 @@ public class DonationService {
         }
 
         List<DonationResponse> content = donationPage.getContent().stream()
-                .map(DonationResponse::from)
+                .map(donation -> {
+                    // 프로젝트 정보 조회
+                    String projectTitle = "프로젝트명 없음";
+                    String organizationName = null;
+                    if (donation.getProjectId() != null) {
+                        Project project = projectRepository.findById(donation.getProjectId()).orElse(null);
+                        if (project != null) {
+                            projectTitle = project.getTitle();
+                        }
+                    }
+                    return DonationResponse.from(donation, projectTitle, organizationName);
+                })
                 .collect(Collectors.toList());
 
         return PageResponse.<DonationResponse>builder()

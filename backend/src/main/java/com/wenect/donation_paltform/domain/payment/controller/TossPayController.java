@@ -10,6 +10,8 @@ import com.wenect.donation_paltform.domain.payment.service.TossPayService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -38,16 +40,24 @@ public class TossPayController {
             log.info("=== 토스페이 결제 준비 요청 시작 ===");
             log.info("요청 데이터: {}", donationRequest);
 
-            // 1. 기부 내역 생성 (PENDING 상태)
-            Donation donation = donationService.createDonation(donationRequest, null);
+            // 1. 로그인한 사용자 ID 가져오기
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            Long currentUserId = null;
+            if (authentication != null && authentication.getPrincipal() instanceof Long) {
+                currentUserId = (Long) authentication.getPrincipal();
+            }
+            log.info("현재 로그인 사용자 ID: {}", currentUserId);
+
+            // 2. 기부 내역 생성 (PENDING 상태)
+            Donation donation = donationService.createDonation(donationRequest, currentUserId);
             String orderId = donation.getOrderId();
             log.info("기부 내역 생성 완료 - donationId: {}, orderId: {}",
                     donation.getDonationId(), orderId);
 
-            // 2. 고객 키 생성 (브랜드페이용 - 사용자 식별)
+            // 3. 고객 키 생성 (브랜드페이용 - 사용자 식별)
             String customerKey = "customer_" + System.currentTimeMillis();
 
-            // 3. 결제 준비 응답 생성
+            // 4. 결제 준비 응답 생성
             TossPayReadyResponse response = TossPayReadyResponse.builder()
                     .orderId(orderId)
                     .clientKey(tossPayService.getClientKey())
