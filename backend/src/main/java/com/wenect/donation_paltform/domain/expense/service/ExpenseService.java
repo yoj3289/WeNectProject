@@ -24,6 +24,8 @@ public class ExpenseService {
     private final ExpenseRepository expenseRepository;
     private final ProjectRepository projectRepository;
     private final PiggyBankRepository piggyBankRepository;
+    private final ExpenseEmailService expenseEmailService;
+    private final com.wenect.donation_paltform.domain.organization.repository.OrganizationRepository organizationRepository;
 
     /**
      * 지출 내역 등록
@@ -48,6 +50,12 @@ public class ExpenseService {
 
         Expense savedExpense = expenseRepository.save(expense);
         log.info("지출 내역 등록 완료 - expenseId: {}, projectId: {}", savedExpense.getExpenseId(), request.getProjectId());
+
+        // Project → Organization 조회 및 출금 요청 접수 이메일 발송
+        com.wenect.donation_paltform.domain.organization.entity.Organization organization =
+                organizationRepository.findById(project.getOrgId())
+                        .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
+        expenseEmailService.sendWithdrawalRequestEmail(savedExpense, organization);
 
         return ExpenseResponse.from(savedExpense);
     }
@@ -188,6 +196,14 @@ public class ExpenseService {
                 expenseId, piggyBank.getPiggyId(), expense.getAmount(),
                 piggyBank.getBalance().add(expense.getAmount()), piggyBank.getBalance());
 
+        // 9. Project → Organization 조회 및 출금 승인 완료 이메일 발송
+        Project project = projectRepository.findById(expense.getProjectId())
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+        com.wenect.donation_paltform.domain.organization.entity.Organization organization =
+                organizationRepository.findById(project.getOrgId())
+                        .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
+        expenseEmailService.sendWithdrawalApprovalEmail(approvedExpense, organization);
+
         return ExpenseResponse.from(approvedExpense);
     }
 
@@ -215,6 +231,14 @@ public class ExpenseService {
         Expense rejectedExpense = expenseRepository.save(expense);
 
         log.info("지출 반려 완료 - expenseId: {}, reason: {}", expenseId, rejectionReason);
+
+        // 5. Project → Organization 조회 및 출금 반려 이메일 발송
+        Project project = projectRepository.findById(expense.getProjectId())
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+        com.wenect.donation_paltform.domain.organization.entity.Organization organization =
+                organizationRepository.findById(project.getOrgId())
+                        .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
+        expenseEmailService.sendWithdrawalRejectionEmail(rejectedExpense, organization);
 
         return ExpenseResponse.from(rejectedExpense);
     }

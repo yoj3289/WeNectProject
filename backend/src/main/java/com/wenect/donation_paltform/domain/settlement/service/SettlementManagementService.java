@@ -39,6 +39,8 @@ public class SettlementManagementService {
     private final PiggyBankRepository piggyBankRepository;
     private final ProjectRepository projectRepository;
     private final RemoteFileStorageService fileStorageService;
+    private final SettlementEmailService settlementEmailService;
+    private final com.wenect.donation_paltform.domain.organization.repository.OrganizationRepository organizationRepository;
 
     // ==================== 상태 전환 중앙화 메서드 ====================
 
@@ -210,6 +212,12 @@ public class SettlementManagementService {
         log.info("정산 요청 생성 완료 - settlementId: {}, projectId: {}",
             savedSettlement.getSettlementId(), requestDto.getProjectId());
 
+        // 9. Organization 조회 및 정산 요청 접수 이메일 발송
+        com.wenect.donation_paltform.domain.organization.entity.Organization organization =
+            organizationRepository.findById(project.getOrgId())
+                .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
+        settlementEmailService.sendSettlementRequestEmail(savedSettlement, organization, project.getTitle());
+
         // NOTE: 프로젝트 상태는 정산 승인 시에만 SETTLEMENT로 변경됨
         // 정산 요청 단계에서는 COMPLETED 상태를 유지
 
@@ -262,6 +270,12 @@ public class SettlementManagementService {
         Project project = projectRepository.findById(settlement.getProjectId())
             .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
 
+        // 8. Organization 조회 및 정산 승인 완료 이메일 발송
+        com.wenect.donation_paltform.domain.organization.entity.Organization organization =
+            organizationRepository.findById(project.getOrgId())
+                .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
+        settlementEmailService.sendSettlementApprovalEmail(savedSettlement, organization, project.getTitle());
+
         return SettlementResponseDto.fromEntityWithProject(savedSettlement, project.getTitle());
     }
 
@@ -297,6 +311,12 @@ public class SettlementManagementService {
         // 6. 프로젝트 정보 조회
         Project project = projectRepository.findById(settlement.getProjectId())
             .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+
+        // 7. Organization 조회 및 정산 반려 이메일 발송
+        com.wenect.donation_paltform.domain.organization.entity.Organization organization =
+            organizationRepository.findById(project.getOrgId())
+                .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
+        settlementEmailService.sendSettlementRejectionEmail(savedSettlement, organization, project.getTitle());
 
         return SettlementResponseDto.fromEntityWithProject(savedSettlement, project.getTitle());
     }
