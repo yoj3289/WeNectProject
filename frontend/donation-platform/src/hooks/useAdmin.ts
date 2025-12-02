@@ -152,3 +152,43 @@ export function useCompleteSettlement() {
     },
   });
 }
+
+/**
+ * 기관 승인 요청 목록
+ */
+export function useOrganizationApprovals(filters: adminApi.OrganizationApprovalFilters = {}) {
+  return useQuery({
+    queryKey: ['organization-approvals', filters],
+    queryFn: () => adminApi.getOrganizationApprovals(filters),
+  });
+}
+
+/**
+ * 기부 추이 차트 데이터
+ */
+export function useDonationTrend(period: 'weekly' | 'monthly' = 'weekly') {
+  return useQuery({
+    queryKey: ['donation-trend', period],
+    queryFn: () => adminApi.getDonationTrend(period),
+  });
+}
+
+/**
+ * 사용자 가입 추이 차트 데이터
+ */
+export function useUserTrend(period: 'weekly' | 'monthly' = 'weekly') {
+  return useQuery({
+    queryKey: ['user-trend', period],
+    queryFn: () => adminApi.getUserTrend(period),
+  });
+}
+
+/**
+ * 프로젝트 통계 및 추이 차트 데이터
+ */
+export function useProjectStats(period: 'weekly' | 'monthly' = 'weekly') {
+  return useQuery({
+    queryKey: ['project-stats', period],
+    queryFn: () => adminApi.getProjectStats(period),
+  });
+}

@@ -1,15 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CheckCircle, Heart, Home } from 'lucide-react';
+import { CheckCircle, Heart, Home, ArrowRight } from 'lucide-react';
 import { apiClient } from '../../lib/apiClient';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const TossPaySuccessPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const isConfirmingRef = useRef(false); // 중복 요청 방지
+  const isConfirmingRef = useRef(false);
 
   const paymentKey = searchParams.get('paymentKey');
   const orderId = searchParams.get('orderId');
@@ -18,28 +17,19 @@ const TossPaySuccessPage: React.FC = () => {
 
   // 결제 성공 페이지에서 뒤로가기 방지
   useEffect(() => {
-    // 현재 페이지를 히스토리에서 대체 (뒤로가기 시 이 페이지로 오지 않음)
     window.history.replaceState(null, '', window.location.href);
 
-    // popstate 이벤트 (뒤로가기/앞으로가기) 감지
     const handlePopState = () => {
-      // 뒤로가기 시 홈으로 이동
       navigate('/', { replace: true });
     };
 
     window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
+    return () => window.removeEventListener('popstate', handlePopState);
   }, [navigate]);
 
   useEffect(() => {
     const confirmPayment = async () => {
-      // 이미 요청 중이면 무시 (StrictMode 중복 실행 방지)
-      if (isConfirmingRef.current) {
-        return;
-      }
+      if (isConfirmingRef.current) return;
       isConfirmingRef.current = true;
 
       if (!paymentKey || !orderId || !amount) {
@@ -49,14 +39,12 @@ const TossPaySuccessPage: React.FC = () => {
       }
 
       try {
-        // 토스페이 결제 승인 API 호출
         const response = await apiClient.post<any>('/payments/toss/confirm', {
           paymentKey,
           orderId,
           amount: parseInt(amount)
         });
 
-        // 성공 응답 처리 (이미 처리된 결제 포함)
         if (response.status === 'already_completed' || response.status === 'success') {
           console.log('결제 처리 완료:', response);
         }
@@ -66,13 +54,8 @@ const TossPaySuccessPage: React.FC = () => {
         console.error('토스페이 결제 승인 실패:', err);
         const errorMsg = err.response?.data?.error || '결제 승인 중 오류가 발생했습니다.';
 
-        // "기존 요청을 처리중" 에러는 잠시 후 재시도
         if (errorMsg.includes('기존 요청을 처리중') || errorMsg.includes('FAILED_PAYMENT_INTERNAL_SYSTEM_PROCESSING')) {
-          console.log('기존 요청 처리 중, 잠시 후 성공 처리...');
-          // 이 경우 결제는 이미 진행 중이므로 성공으로 간주
-          setTimeout(() => {
-            setIsProcessing(false);
-          }, 1500);
+          setTimeout(() => setIsProcessing(false), 1500);
           return;
         }
 
@@ -86,32 +69,32 @@ const TossPaySuccessPage: React.FC = () => {
 
   if (isProcessing) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
-        <LoadingSpinner
-          size="xl"
-          message="기부 처리 중입니다..."
-          subMessage="잠시만 기다려주세요"
-        />
+      <div className="min-h-screen flex items-center justify-center bg-stone-100">
+        <div className="text-center">
+          <div className="w-12 h-12 border-3 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-stone-600 font-medium">기부 처리 중입니다...</p>
+          <p className="text-stone-400 text-sm mt-1">잠시만 기다려주세요</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-pink-50 p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="min-h-screen flex items-center justify-center bg-stone-100 p-4">
+        <div className="max-w-md w-full bg-white border border-stone-300 p-8 text-center">
+          <div className="w-16 h-16 bg-red-100 flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">결제 오류</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h1 className="text-xl font-bold text-stone-800 mb-2">결제 오류</h1>
+          <p className="text-stone-600 mb-6">{error}</p>
           <button
             onClick={() => navigate('/', { replace: true })}
-            className="w-full py-3 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2"
+            className="w-full py-3 bg-stone-800 text-white font-medium hover:bg-stone-900 transition flex items-center justify-center gap-2"
           >
-            <Home size={20} />
+            <Home size={18} />
             홈으로 돌아가기
           </button>
         </div>
@@ -120,59 +103,65 @@ const TossPaySuccessPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
-          <CheckCircle className="text-green-500" size={48} />
+    <div className="min-h-screen flex items-center justify-center bg-stone-100 p-4">
+      <div className="max-w-md w-full bg-white border border-stone-300 overflow-hidden">
+        {/* 헤더 */}
+        <div className="bg-stone-800 px-6 py-8 text-center">
+          <div className="w-16 h-16 bg-green-500 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="text-white" size={36} />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-1">기부 완료!</h1>
+          <p className="text-stone-400">따뜻한 마음 감사합니다</p>
         </div>
 
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">기부 완료!</h1>
-        <p className="text-gray-600 mb-8">따뜻한 마음 감사합니다.</p>
+        {/* 본문 */}
+        <div className="p-6">
+          <div className="bg-amber-50 border border-amber-200 p-5 mb-6">
+            <Heart className="text-amber-500 mx-auto mb-3" size={28} />
+            <p className="text-sm text-stone-700 leading-relaxed text-center">
+              여러분의 기부가 세상을 더 나은 곳으로 만듭니다.
+              <br />
+              진심으로 감사드립니다.
+            </p>
+          </div>
 
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 mb-8">
-          <Heart className="text-red-500 mx-auto mb-3" size={32} />
-          <p className="text-sm text-gray-700 leading-relaxed">
-            여러분의 기부가 세상을 더 나은 곳으로 만듭니다.
-            <br />
-            진심으로 감사드립니다.
+          {amount && (
+            <div className="bg-stone-50 border border-stone-200 p-4 mb-6 text-center">
+              <p className="text-xs text-stone-500 uppercase tracking-wider mb-1">기부 금액</p>
+              <p className="text-2xl font-bold text-amber-600">{parseInt(amount).toLocaleString()}원</p>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {projectId && (
+              <button
+                onClick={() => navigate(`/projects/${projectId}`, { replace: true })}
+                className="w-full py-3 bg-amber-500 text-white font-medium hover:bg-amber-600 transition flex items-center justify-center gap-2"
+              >
+                <Heart size={18} />
+                기부한 프로젝트로 돌아가기
+              </button>
+            )}
+            <button
+              onClick={() => navigate('/projects', { replace: true })}
+              className="w-full py-3 bg-stone-800 text-white font-medium hover:bg-stone-900 transition flex items-center justify-center gap-2"
+            >
+              다른 프로젝트 둘러보기
+              <ArrowRight size={18} />
+            </button>
+            <button
+              onClick={() => navigate('/', { replace: true })}
+              className="w-full py-3 border border-stone-300 text-stone-600 font-medium hover:bg-stone-50 transition flex items-center justify-center gap-2"
+            >
+              <Home size={18} />
+              홈으로 돌아가기
+            </button>
+          </div>
+
+          <p className="text-xs text-stone-400 mt-6 text-center">
+            기부 영수증은 이메일로 발송됩니다.
           </p>
         </div>
-
-        {amount && (
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <p className="text-sm text-gray-600">기부 금액</p>
-            <p className="text-2xl font-bold text-blue-600">{parseInt(amount).toLocaleString()}원</p>
-          </div>
-        )}
-
-        <div className="space-y-3">
-          {projectId && (
-            <button
-              onClick={() => navigate(`/projects/${projectId}`, { replace: true })}
-              className="w-full py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold rounded-lg hover:from-red-600 hover:to-pink-600 transition flex items-center justify-center gap-2"
-            >
-              <Heart size={20} />
-              기부한 프로젝트로 돌아가기
-            </button>
-          )}
-          <button
-            onClick={() => navigate('/projects', { replace: true })}
-            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition"
-          >
-            다른 프로젝트 둘러보기
-          </button>
-          <button
-            onClick={() => navigate('/', { replace: true })}
-            className="w-full py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition flex items-center justify-center gap-2"
-          >
-            <Home size={20} />
-            홈으로 돌아가기
-          </button>
-        </div>
-
-        <p className="text-xs text-gray-500 mt-6">
-          기부 영수증은 이메일로 발송됩니다.
-        </p>
       </div>
     </div>
   );

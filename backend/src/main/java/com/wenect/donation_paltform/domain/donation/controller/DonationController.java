@@ -1,6 +1,7 @@
 package com.wenect.donation_paltform.domain.donation.controller;
 
 import com.wenect.donation_paltform.domain.donation.dto.DonationResponse;
+import com.wenect.donation_paltform.domain.donation.dto.FeaturedMessageResponse;
 import com.wenect.donation_paltform.domain.donation.service.DonationService;
 import com.wenect.donation_paltform.global.common.PageResponse;
 import com.wenect.donation_paltform.global.util.JwtTokenProvider;
@@ -98,6 +99,65 @@ public class DonationController {
             @RequestParam(value = "limit", defaultValue = "10") int limit) {
         log.info("최근 기부 내역 조회 요청 - limit: {}", limit);
         List<DonationResponse> donations = donationService.getRecentDonations(limit);
+        return ResponseEntity.ok(donations);
+    }
+
+    // ==================== Featured Messages (홈페이지 노출용) ====================
+
+    /**
+     * 홈페이지 후기 섹션용 Featured 응원 메시지 조회 (공개 API)
+     * 하이브리드 방식: 관리자 선정 메시지 우선 + 부족하면 최근 메시지로 자동 보충
+     */
+    @GetMapping("/featured")
+    public ResponseEntity<List<FeaturedMessageResponse>> getFeaturedMessages(
+            @RequestParam(value = "limit", defaultValue = "3") int limit) {
+        log.info("홈페이지 Featured 메시지 조회 요청 - limit: {}", limit);
+        List<FeaturedMessageResponse> messages = donationService.getFeaturedMessages(limit);
+        return ResponseEntity.ok(messages);
+    }
+
+    /**
+     * 기부 메시지의 Featured 상태 토글 (관리자용)
+     */
+    @PatchMapping("/{donationId}/featured")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> toggleFeatured(
+            @PathVariable Long donationId,
+            @RequestParam boolean isFeatured) {
+        log.info("Featured 상태 토글 요청 - donationId: {}, isFeatured: {}", donationId, isFeatured);
+        try {
+            donationService.toggleFeatured(donationId, isFeatured);
+            return ResponseEntity.ok(isFeatured ? "홈페이지 노출로 설정되었습니다." : "홈페이지 노출이 해제되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // ==================== 관리자용 전체 기부 조회 ====================
+
+    /**
+     * 관리자용 전체 기부 내역 조회 (필터 지원)
+     *
+     * @param status 상태 필터 (all/completed/pending/cancelled/failed)
+     * @param hasMessage 메시지 유무 필터 (true/false)
+     * @param isFeatured Featured 필터 (true/false)
+     * @param period 기간 필터 (week/month/3months/all)
+     * @param page 페이지 번호 (0부터 시작)
+     * @param size 페이지 크기 (기본값: 20)
+     */
+    @GetMapping("/admin/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PageResponse<DonationResponse>> getAllDonationsForAdmin(
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "hasMessage", required = false) Boolean hasMessage,
+            @RequestParam(value = "isFeatured", required = false) Boolean isFeatured,
+            @RequestParam(value = "period", required = false, defaultValue = "all") String period,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size) {
+        log.info("관리자 전체 기부 조회 요청 - status: {}, hasMessage: {}, isFeatured: {}, period: {}, page: {}, size: {}",
+                status, hasMessage, isFeatured, period, page, size);
+        PageResponse<DonationResponse> donations = donationService.getAllDonationsForAdmin(
+                status, hasMessage, isFeatured, period, page, size);
         return ResponseEntity.ok(donations);
     }
 

@@ -34,7 +34,7 @@ const NotificationPageWithAPI: React.FC = () => {
     message: n.message,
     timestamp: new Date(n.createdAt),
     isRead: n.isRead,
-    isArchived: false, // 백엔드에 isArchived가 없으면 false로 처리
+    isArchived: false,
     link: n.link,
     metadata: n.metadata
   })) || [];
@@ -63,9 +63,9 @@ const NotificationPageWithAPI: React.FC = () => {
       case 'donation':
         return {
           icon: <Heart {...iconProps} />,
-          gradient: 'from-red-500 to-red-600',
-          bgColor: 'bg-red-50',
-          textColor: 'text-red-600',
+          gradient: 'from-amber-500 to-amber-600',
+          bgColor: 'bg-amber-50',
+          textColor: 'text-amber-600',
           label: '기부'
         };
       case 'comment':
@@ -120,9 +120,9 @@ const NotificationPageWithAPI: React.FC = () => {
       default:
         return {
           icon: <AlertCircle {...iconProps} />,
-          gradient: 'from-gray-500 to-gray-600',
-          bgColor: 'bg-gray-50',
-          textColor: 'text-gray-600',
+          gradient: 'from-stone-500 to-stone-600',
+          bgColor: 'bg-stone-50',
+          textColor: 'text-stone-600',
           label: '알림'
         };
     }
@@ -209,10 +209,10 @@ const NotificationPageWithAPI: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-red-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">알림을 불러오는 중...</p>
+          <Loader2 className="w-12 h-12 text-amber-500 animate-spin mx-auto mb-4" />
+          <p className="text-stone-600">알림을 불러오는 중...</p>
         </div>
       </div>
     );
@@ -220,14 +220,14 @@ const NotificationPageWithAPI: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-900 font-bold mb-2">알림을 불러올 수 없습니다</p>
-          <p className="text-gray-600">로그인이 필요하거나 오류가 발생했습니다.</p>
+          <p className="text-stone-900 font-bold mb-2">알림을 불러올 수 없습니다</p>
+          <p className="text-stone-600">로그인이 필요하거나 오류가 발생했습니다.</p>
           <button
             onClick={() => navigate('/login')}
-            className="mt-4 px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+            className="mt-4 px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition"
           >
             로그인하기
           </button>
@@ -237,24 +237,24 @@ const NotificationPageWithAPI: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-stone-50">
       {/* 헤더 */}
-      <div className="bg-red-500 text-white py-8 px-6 shadow-lg">
+      <div className="bg-stone-800 text-white py-8 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate(-1)}
-                className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+                className="p-2 hover:bg-stone-700 rounded-xl transition-colors"
               >
                 <ArrowLeft size={28} />
               </button>
-              <div className="p-3 bg-white/20 backdrop-blur rounded-2xl">
+              <div className="p-3 bg-amber-500 rounded-2xl">
                 <Bell size={32} />
               </div>
               <div>
-                <h1 className="text-4xl font-extrabold mb-1">알림 센터</h1>
-                <p className="text-red-100">
+                <h1 className="text-3xl font-bold mb-1">알림 센터</h1>
+                <p className="text-stone-400">
                   {unreadCount > 0 ? `${unreadCount}개의 읽지 않은 알림` : '모든 알림을 확인했습니다'}
                 </p>
               </div>
@@ -262,7 +262,7 @@ const NotificationPageWithAPI: React.FC = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="p-3 hover:bg-white/20 rounded-xl transition-colors"
+                className="p-3 hover:bg-stone-700 rounded-xl transition-colors"
               >
                 <Settings size={28} />
               </button>
@@ -271,13 +271,13 @@ const NotificationPageWithAPI: React.FC = () => {
 
           {/* 검색바 */}
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/70" size={20} />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-stone-400" size={20} />
             <input
               type="text"
               placeholder="알림 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white/20 border-2 border-white/40 rounded-xl text-white placeholder-white/70 focus:bg-white/30 focus:border-white transition-all"
+              className="w-full pl-12 pr-4 py-3 bg-stone-700 border border-stone-600 rounded-xl text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
             />
           </div>
         </div>
@@ -288,8 +288,8 @@ const NotificationPageWithAPI: React.FC = () => {
           {/* 왼쪽 사이드바 */}
           <div className="col-span-3 space-y-4">
             {/* 탭 */}
-            <div className="bg-white rounded-2xl shadow-md p-4">
-              <h3 className="font-bold text-sm text-gray-500 mb-3 uppercase">필터</h3>
+            <div className="bg-white rounded-2xl border border-stone-200 p-4">
+              <h3 className="font-bold text-sm text-stone-500 mb-3 uppercase tracking-wider">필터</h3>
               <div className="space-y-1">
                 {[
                   { id: 'all', label: '전체 알림', count: notifications.filter(n => !n.isArchived).length },
@@ -300,12 +300,12 @@ const NotificationPageWithAPI: React.FC = () => {
                     key={tab.id}
                     onClick={() => setSelectedTab(tab.id)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-medium transition-all ${selectedTab === tab.id
-                      ? 'bg-red-500 text-white shadow-lg'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-amber-500 text-white'
+                      : 'text-stone-700 hover:bg-stone-50'
                       }`}
                   >
                     <span>{tab.label}</span>
-                    <span className={`text-sm ${selectedTab === tab.id ? 'text-white/90' : 'text-gray-500'}`}>
+                    <span className={`text-sm ${selectedTab === tab.id ? 'text-white/90' : 'text-stone-500'}`}>
                       {tab.count}
                     </span>
                   </button>
@@ -314,8 +314,8 @@ const NotificationPageWithAPI: React.FC = () => {
             </div>
 
             {/* 날짜 필터 */}
-            <div className="bg-white rounded-2xl shadow-md p-4">
-              <h3 className="font-bold text-sm text-gray-500 mb-3 uppercase">기간</h3>
+            <div className="bg-white rounded-2xl border border-stone-200 p-4">
+              <h3 className="font-bold text-sm text-stone-500 mb-3 uppercase tracking-wider">기간</h3>
               <div className="space-y-1">
                 {[
                   { id: 'all', label: '전체' },
@@ -327,8 +327,8 @@ const NotificationPageWithAPI: React.FC = () => {
                     key={filter.id}
                     onClick={() => setDateFilter(filter.id)}
                     className={`w-full flex items-center px-4 py-2.5 rounded-xl font-medium transition-all ${dateFilter === filter.id
-                      ? 'bg-red-50 text-red-600'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-amber-50 text-amber-600'
+                      : 'text-stone-700 hover:bg-stone-50'
                       }`}
                   >
                     <span>{filter.label}</span>
@@ -338,16 +338,16 @@ const NotificationPageWithAPI: React.FC = () => {
             </div>
 
             {/* 카테고리 */}
-            <div className="bg-white rounded-2xl shadow-md p-4">
-              <h3 className="font-bold text-sm text-gray-500 mb-3 uppercase">카테고리</h3>
+            <div className="bg-white rounded-2xl border border-stone-200 p-4">
+              <h3 className="font-bold text-sm text-stone-500 mb-3 uppercase tracking-wider">카테고리</h3>
               <div className="space-y-1">
                 {categories.map(cat => (
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
                     className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all ${selectedCategory === cat.id
-                      ? 'bg-red-50 text-red-600'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-amber-50 text-amber-600'
+                      : 'text-stone-700 hover:bg-stone-50'
                       }`}
                   >
                     {cat.icon}
@@ -358,14 +358,14 @@ const NotificationPageWithAPI: React.FC = () => {
             </div>
 
             {/* 그룹화 옵션 */}
-            <div className="bg-white rounded-2xl shadow-md p-4">
+            <div className="bg-white rounded-2xl border border-stone-200 p-4">
               <label className="flex items-center justify-between cursor-pointer">
-                <span className="text-sm font-medium text-gray-700">프로젝트별 그룹화</span>
+                <span className="text-sm font-medium text-stone-700">프로젝트별 그룹화</span>
                 <input
                   type="checkbox"
                   checked={groupByProject}
                   onChange={() => setGroupByProject(!groupByProject)}
-                  className="w-4 h-4 text-red-500 rounded focus:ring-2 focus:ring-red-500"
+                  className="w-4 h-4 text-amber-500 rounded focus:ring-2 focus:ring-amber-500"
                 />
               </label>
             </div>
@@ -374,12 +374,12 @@ const NotificationPageWithAPI: React.FC = () => {
           {/* 메인 콘텐츠 */}
           <div className="col-span-9">
             {/* 액션 바 */}
-            <div className="bg-white rounded-2xl shadow-md p-4 mb-6">
+            <div className="bg-white rounded-2xl border border-stone-200 p-4 mb-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {selectedNotifications.size > 0 && (
                     <>
-                      <span className="text-sm font-medium text-gray-600">
+                      <span className="text-sm font-medium text-stone-600">
                         {selectedNotifications.size}개 선택됨
                       </span>
                       <button
@@ -395,7 +395,7 @@ const NotificationPageWithAPI: React.FC = () => {
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllAsRead}
-                    className="px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors flex items-center gap-2"
+                    className="px-4 py-2 bg-amber-50 text-amber-600 rounded-lg font-medium hover:bg-amber-100 transition-colors flex items-center gap-2"
                   >
                     <CheckCheck size={16} />
                     모두 읽음
@@ -406,10 +406,10 @@ const NotificationPageWithAPI: React.FC = () => {
 
             {/* 알림 목록 */}
             {filteredNotifications.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-md p-12 text-center">
-                <Bell className="mx-auto mb-4 text-gray-300" size={64} />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">알림이 없습니다</h3>
-                <p className="text-gray-500">
+              <div className="bg-white rounded-2xl border border-stone-200 p-12 text-center">
+                <Bell className="mx-auto mb-4 text-stone-300" size={64} />
+                <h3 className="text-xl font-bold text-stone-900 mb-2">알림이 없습니다</h3>
+                <p className="text-stone-500">
                   {searchQuery ? '검색 결과가 없습니다' : '새로운 알림이 오면 여기에 표시됩니다'}
                 </p>
               </div>
@@ -418,9 +418,9 @@ const NotificationPageWithAPI: React.FC = () => {
                 {Object.entries(groupedNotifications).map(([groupName, groupNotifications]) => (
                   <div key={groupName}>
                     {groupByProject && (
-                      <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <h4 className="text-lg font-bold text-stone-900 mb-3 flex items-center gap-2">
                         {groupName}
-                        <span className="text-sm font-normal text-gray-500">({groupNotifications.length})</span>
+                        <span className="text-sm font-normal text-stone-500">({groupNotifications.length})</span>
                       </h4>
                     )}
                     <div className="space-y-4">
@@ -431,8 +431,8 @@ const NotificationPageWithAPI: React.FC = () => {
                         return (
                           <div
                             key={notification.id}
-                            className={`bg-white rounded-2xl shadow-md hover:shadow-lg transition-all border-2 ${!notification.isRead ? 'border-red-200' : 'border-transparent'
-                              } ${isSelected ? 'ring-2 ring-red-500' : ''}`}
+                            className={`bg-white rounded-2xl border-2 hover:shadow-md transition-all ${!notification.isRead ? 'border-amber-200' : 'border-stone-200'
+                              } ${isSelected ? 'ring-2 ring-amber-500' : ''}`}
                           >
                             <div className="p-6">
                               <div className="flex gap-4">
@@ -440,7 +440,7 @@ const NotificationPageWithAPI: React.FC = () => {
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={() => toggleSelectNotification(notification.id)}
-                                  className="w-5 h-5 text-red-500 rounded focus:ring-2 focus:ring-red-500 cursor-pointer mt-1"
+                                  className="w-5 h-5 text-amber-500 rounded focus:ring-2 focus:ring-amber-500 cursor-pointer mt-1"
                                 />
 
                                 <div className={`bg-gradient-to-br ${config.gradient} w-14 h-14 rounded-2xl flex items-center justify-center text-white flex-shrink-0 shadow-lg relative`}>
@@ -453,11 +453,11 @@ const NotificationPageWithAPI: React.FC = () => {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-start justify-between mb-2">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <h4 className={`font-bold text-lg ${!notification.isRead ? 'text-gray-900' : 'text-gray-700'}`}>
+                                      <h4 className={`font-bold text-lg ${!notification.isRead ? 'text-stone-900' : 'text-stone-700'}`}>
                                         {notification.title}
                                       </h4>
                                       {!notification.isRead && (
-                                        <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                                        <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">
                                           NEW
                                         </span>
                                       )}
@@ -472,19 +472,19 @@ const NotificationPageWithAPI: React.FC = () => {
                                     </div>
                                   </div>
 
-                                  <p className="text-gray-600 mb-4 leading-relaxed">
+                                  <p className="text-stone-600 mb-4 leading-relaxed">
                                     {notification.message}
                                   </p>
 
                                   <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-500 font-medium">
+                                    <span className="text-sm text-stone-500 font-medium">
                                       {getTimeAgo(notification.timestamp)}
                                     </span>
                                     <div className="flex gap-2">
                                       {notification.link && (
                                         <button
                                           onClick={() => handleNotificationClick(notification)}
-                                          className="px-3 py-1.5 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium flex items-center gap-1"
+                                          className="px-3 py-1.5 text-xs bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors font-medium flex items-center gap-1"
                                         >
                                           <ExternalLink size={12} />
                                           바로가기
@@ -493,16 +493,16 @@ const NotificationPageWithAPI: React.FC = () => {
                                       {!notification.isRead && (
                                         <button
                                           onClick={() => handleMarkAsRead(notification.id)}
-                                          className="px-3 py-1.5 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium"
+                                          className="px-3 py-1.5 text-xs bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors font-medium"
                                         >
                                           읽음 표시
                                         </button>
                                       )}
                                       <button
                                         onClick={() => handleDelete(notification.id)}
-                                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                                        className="p-1.5 hover:bg-stone-100 rounded-lg transition-colors"
                                       >
-                                        <Trash2 size={16} className="text-gray-500" />
+                                        <Trash2 size={16} className="text-stone-500" />
                                       </button>
                                     </div>
                                   </div>

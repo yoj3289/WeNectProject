@@ -5,8 +5,12 @@ import com.wenect.donation_paltform.domain.admin.dto.DashboardStatsResponse;
 import com.wenect.donation_paltform.domain.auth.repository.UserRepository;
 import com.wenect.donation_paltform.domain.donation.entity.Donation;
 import com.wenect.donation_paltform.domain.donation.repository.DonationRepository;
+import com.wenect.donation_paltform.domain.organization.entity.Organization;
+import com.wenect.donation_paltform.domain.organization.repository.OrganizationRepository;
 import com.wenect.donation_paltform.domain.project.entity.Project;
 import com.wenect.donation_paltform.domain.project.repository.ProjectRepository;
+import com.wenect.donation_paltform.domain.settlement.entity.Settlement;
+import com.wenect.donation_paltform.domain.settlement.repository.SettlementRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +33,8 @@ public class AdminDashboardService {
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final com.wenect.donation_paltform.domain.expense.repository.ExpenseRepository expenseRepository;
+    private final OrganizationRepository organizationRepository;
+    private final SettlementRepository settlementRepository;
 
     /**
      * 대시보드 통계 조회
@@ -97,13 +103,19 @@ public class AdminDashboardService {
                 com.wenect.donation_paltform.domain.expense.entity.Expense.ExpenseStatus.PENDING
         ).stream().count();
 
+        // 8. 기관 승인 대기 건수 (PENDING 상태)
+        Long pendingApprovals = organizationRepository.countByApprovalStatus(Organization.ApprovalStatus.PENDING);
+
+        // 9. 정산 승인 대기 건수 (PENDING 상태)
+        Long pendingSettlements = settlementRepository.countByStatus(Settlement.SettlementStatus.PENDING);
+
         return DashboardStatsResponse.builder()
                 .todayDonation(todayDonation)
                 .donationChange(donationChange)
                 .newUsers(newUsersThisWeek)
                 .userChange(userChange)
-                .pendingApprovals(0)  // 목업 데이터
-                .pendingSettlements(0)  // 목업 데이터
+                .pendingApprovals(pendingApprovals)
+                .pendingSettlements(pendingSettlements)
                 .pendingExpenses(pendingExpenses)
                 .build();
     }

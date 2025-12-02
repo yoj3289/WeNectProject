@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
-import { X, FileText, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Upload, CheckCircle, Wallet, Building, CreditCard, User, Trash2, File, Image, FileType } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCreateSettlement } from '../../hooks/useSettlements';
-import type { CreateSettlementRequest } from '../../api/settlements';
 
-interface Props {
+interface SettlementRequestModalProps {
   projectId: number;
   projectTitle: string;
   totalAmount: number;
@@ -12,266 +11,320 @@ interface Props {
   onSuccess: () => void;
 }
 
-export function SettlementRequestModal({
+/**
+ * 정산 요청 모달
+ * - 입금 계좌 정보 입력
+ * - 증빙 서류 첨부 (최대 10개, 각 10MB 이하)
+ */
+export const SettlementRequestModal: React.FC<SettlementRequestModalProps> = ({
   projectId,
   projectTitle,
   totalAmount,
   onClose,
-  onSuccess,
-}: Props) {
-  const [formData, setFormData] = useState<CreateSettlementRequest>({
-    projectId,
-    settlementAmount: totalAmount,
-    bankName: '',
-    accountNumber: '',
-    accountHolder: '',
-  });
-  const [documents, setDocuments] = useState<File[]>([]);
+  onSuccess
+}) => {
+  const [bankName, setBankName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [accountHolder, setAccountHolder] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const createSettlement = useCreateSettlement();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const formatAmount = (amount: number) => {
+    return Math.floor(amount).toLocaleString('ko-KR');
+  };
 
-    if (!formData.bankName || !formData.accountNumber || !formData.accountHolder) {
-      toast.error('모든 필수 항목을 입력해주세요.');
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+
+    if (files.length + selectedFiles.length > 10) {
+      toast.error('최대 10개의 파일만 첨부할 수 있습니다.');
       return;
     }
 
-    // 계좌번호 형식 검증 (숫자만, 10~14자리)
-    const cleanAccountNumber = formData.accountNumber.replace(/-/g, '');
-    if (!/^\d{10,14}$/.test(cleanAccountNumber)) {
-      toast.error('올바른 계좌번호 형식이 아닙니다. (10~14자리 숫자)');
-    return;
-    }
+    const validFiles = selectedFiles.filter(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`${file.name}: 파일 크기는 10MB 이하여야 합니다.`);
+        return false;
+      }
+      return true;
+    });
 
-    if (documents.length === 0) {
-      toast.error('증빙 서류를 최소 1개 이상 첨부해주세요.');
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const filteredFiles = validFiles.filter(file => {
+      const isAllowed = allowedTypes.some(type => file.type === type) ||
+        ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'].some(ext => file.name.toLowerCase().endsWith(ext));
+      if (!isAllowed) {
+        toast.error(`${file.name}: 지원하지 않는 파일 형식입니다.`);
+      }
+      return isAllowed;
+    });
+
+    setFiles(prev => [...prev, ...filteredFiles]);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const getFileIcon = (fileName: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
+      return <Image size={16} className="text-blue-500" />;
+    }
+    if (ext === 'pdf') {
+      return <FileType size={16} className="text-red-500" />;
+    }
+    return <File size={16} className="text-stone-500" />;
+  };
+
+  const handleSubmit = async () => {
+    if (!bankName.trim()) {
+      toast.error('은행명을 입력해주세요.');
+      return;
+    }
+    if (!accountNumber.trim()) {
+      toast.error('계좌번호를 입력해주세요.');
+      return;
+    }
+    if (!accountHolder.trim()) {
+      toast.error('예금주명을 입력해주세요.');
       return;
     }
 
     try {
-      await createSettlement.mutateAsync({ data: formData, documents });
+      await createSettlement.mutateAsync({
+        data: {
+          projectId,
+          settlementAmount: totalAmount,
+          bankName: bankName.trim(),
+          accountNumber: accountNumber.trim(),
+          accountHolder: accountHolder.trim(),
+        },
+        documents: files
+      });
       toast.success('정산 요청이 완료되었습니다.');
       onSuccess();
       onClose();
     } catch (error: any) {
-      toast.error(error.message || '정산 요청에 실패했습니다.');
+      const errorMessage = error.response?.data?.message || '정산 요청에 실패했습니다.';
+      toast.error(errorMessage);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (documents.length + files.length > 10) {
-      toast.error('서류는 최대 10개까지 첨부 가능합니다.');
-      return;
-    }
-
-    for (const file of files) {
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error(`${file.name} 파일 크기가 10MB를 초과합니다.`);
-        return;
-      }
-    }
-
-    setDocuments([...documents, ...files]);
-  };
-
-  const removeDocument = (index: number) => {
-    setDocuments(documents.filter((_, i) => i !== index));
-  };
+  const isFormValid = bankName.trim() && accountNumber.trim() && accountHolder.trim();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* 헤더 */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between rounded-t-2xl">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <FileText className="text-green-600" size={24} />
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+        {/* 헤더 - 다크 스타일 */}
+        <div className="bg-stone-800 px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                <Wallet size={20} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-medium text-white">정산 요청</h2>
+                <p className="text-sm text-stone-400">프로젝트 정산을 신청합니다</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">정산 요청</h2>
-              <p className="text-sm text-gray-600 mt-1">프로젝트 정산을 신청합니다</p>
-            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-stone-700 rounded-xl transition-colors"
+            >
+              <X size={20} className="text-stone-400" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
-            disabled={createSettlement.isPending}
-          >
-            <X size={24} />
-          </button>
         </div>
 
-        {/* 본문 */}
-        <div className="p-6">
+        {/* 콘텐츠 영역 */}
+        <div className="flex-1 overflow-y-auto">
           {/* 프로젝트 정보 카드 */}
-          <div className="bg-gradient-to-br from-green-50 to-blue-50 p-5 rounded-xl mb-6 border border-green-100">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className="text-sm text-gray-600 mb-1">프로젝트</p>
-                <p className="font-bold text-lg text-gray-900 mb-3">{projectTitle}</p>
+          <div className="bg-amber-500 px-6 py-5">
+            <p className="text-amber-100 text-sm mb-1">정산 대상 프로젝트</p>
+            <h3 className="text-white font-medium text-lg mb-4 line-clamp-1">{projectTitle}</h3>
+            <div className="bg-white/20 backdrop-blur rounded-xl px-4 py-3">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="text-green-600" size={20} />
-                  <div>
-                    <p className="text-sm text-gray-600">정산 신청 금액</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {totalAmount.toLocaleString()}원
+                  <CheckCircle size={18} className="text-white" />
+                  <span className="text-white/90 text-sm">정산 신청 금액</span>
+                </div>
+                <span className="text-white text-xl font-bold">{formatAmount(totalAmount)}원</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            {/* STEP 1: 계좌 정보 */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                <h4 className="font-medium text-stone-800">입금 계좌 정보</h4>
+              </div>
+
+              <div className="bg-white rounded-xl border border-stone-200 p-4 space-y-4">
+                <div>
+                  <label className="flex items-center gap-1.5 text-sm text-stone-600 mb-1.5">
+                    <Building size={14} />
+                    은행명
+                  </label>
+                  <input
+                    type="text"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    placeholder="예: 국민은행"
+                    className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-1.5 text-sm text-stone-600 mb-1.5">
+                    <CreditCard size={14} />
+                    계좌번호
+                  </label>
+                  <input
+                    type="text"
+                    value={accountNumber}
+                    onChange={(e) => setAccountNumber(e.target.value)}
+                    placeholder="예: 123-456-789012"
+                    className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-1.5 text-sm text-stone-600 mb-1.5">
+                    <User size={14} />
+                    예금주명
+                  </label>
+                  <input
+                    type="text"
+                    value={accountHolder}
+                    onChange={(e) => setAccountHolder(e.target.value)}
+                    placeholder="예: 사단법인 희망나눔"
+                    className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* STEP 2: 증빙 서류 */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                <h4 className="font-medium text-stone-800">증빙 서류 첨부</h4>
+                <span className="text-xs text-stone-500">(선택)</span>
+              </div>
+
+              <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
+                {/* 파일 업로드 영역 */}
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-6 border-b border-dashed border-stone-200 cursor-pointer hover:bg-stone-50 transition-colors"
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-stone-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <Upload size={24} className="text-stone-400" />
+                    </div>
+                    <p className="text-sm text-stone-600 mb-1">
+                      클릭하여 파일을 선택하세요
+                    </p>
+                    <p className="text-xs text-stone-400">
+                      PDF, JPG, PNG, DOC, DOCX (최대 10개, 각 10MB)
                     </p>
                   </div>
                 </div>
+
+                {/* 첨부된 파일 목록 */}
+                {files.length > 0 && (
+                  <div className="p-3 space-y-2 max-h-[180px] overflow-y-auto">
+                    {files.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-2.5 bg-stone-50 rounded-lg group"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-stone-200">
+                            {getFileIcon(file.name)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm text-stone-700 truncate max-w-[200px]">{file.name}</p>
+                            <p className="text-xs text-stone-400">
+                              {(file.size / 1024 / 1024).toFixed(2)}MB
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFile(index);
+                          }}
+                          className="p-1.5 hover:bg-red-100 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                        >
+                          <Trash2 size={14} className="text-red-500" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {files.length === 0 && (
+                  <div className="px-4 py-3 bg-stone-50 text-center">
+                    <p className="text-xs text-stone-500">첨부된 파일이 없습니다</p>
+                  </div>
+                )}
               </div>
-            </div>
-            <div className="mt-3 pt-3 border-t border-green-200">
-              <p className="text-xs text-gray-600 flex items-start gap-2">
-                <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
-                모금액 전액을 정산 요청합니다. 승인 후 저금통에서 관리됩니다.
-              </p>
             </div>
           </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-
-            {/* 계좌 정보 섹션 */}
-            <div className="space-y-4 bg-gray-50 p-5 rounded-xl border border-gray-200">
-              <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                <FileText size={18} />
-                입금 계좌 정보
-              </h3>
-
-              {/* 은행명 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  은행명 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.bankName}
-                  onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="예: 국민은행"
-                  required
-                />
-              </div>
-
-              {/* 계좌번호 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  계좌번호 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.accountNumber}
-                  onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="예: 123-456-789012"
-                  required
-                />
-              </div>
-
-              {/* 예금주 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  예금주명 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.accountHolder}
-                  onChange={(e) => setFormData({ ...formData, accountHolder: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="예: 사단법인 희망나눔"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* 서류 첨부 */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                증빙 서류 첨부 <span className="text-red-500">*</span>
-              </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-green-400 transition">
-                <input
-                  type="file"
-                  multiple
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                  onChange={handleFileChange}
-                  className="w-full"
-                  id="file-upload"
-                />
-                <div className="flex items-start gap-2 mt-2 text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                  <AlertCircle size={16} className="flex-shrink-0 mt-0.5 text-blue-500" />
-                  <p>
-                    최대 <span className="font-semibold">10개</span> 파일, 각 <span className="font-semibold">10MB</span> 이하<br/>
-                    허용 형식: PDF, JPG, PNG, DOC, DOCX
-                  </p>
-                </div>
-              </div>
-
-              {documents.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  <p className="text-sm font-medium text-gray-700">첨부된 파일 ({documents.length}개)</p>
-                  {documents.map((file, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between bg-white border border-gray-200 px-4 py-3 rounded-lg hover:shadow-sm transition"
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <FileText size={18} className="text-gray-400 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
-                          <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeDocument(index)}
-                        className="ml-3 text-red-600 hover:text-red-800 text-sm font-medium flex-shrink-0"
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </form>
         </div>
 
-        {/* 푸터 */}
-        <div className="sticky bottom-0 bg-gray-50 p-6 rounded-b-2xl border-t border-gray-200">
+        {/* 하단 버튼 영역 */}
+        <div className="bg-white border-t border-stone-200 px-6 py-4">
           <div className="flex gap-3">
             <button
-              type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition font-medium"
-              disabled={createSettlement.isPending}
+              className="flex-1 px-6 py-3 text-stone-600 rounded-xl font-medium hover:bg-stone-100 transition-colors"
             >
               취소
             </button>
             <button
               onClick={handleSubmit}
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-lg hover:from-green-600 hover:to-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              disabled={createSettlement.isPending}
+              disabled={createSettlement.isPending || !isFormValid}
+              className="flex-1 px-6 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 disabled:bg-stone-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >
               {createSettlement.isPending ? (
                 <>
-                  <Loader2 className="animate-spin" size={20} />
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   요청 중...
                 </>
               ) : (
                 <>
-                  <CheckCircle size={20} />
-                  정산 요청 제출
+                  <CheckCircle size={18} />
+                  정산 요청
                 </>
               )}
             </button>
           </div>
-          <p className="text-xs text-gray-500 text-center mt-3">
-            정산 요청 후 관리자 승인 시 저금통이 생성됩니다.
+          <p className="text-xs text-stone-500 text-center mt-3">
+            정산 요청 후 관리자 승인 시 저금통이 생성됩니다
           </p>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default SettlementRequestModal;

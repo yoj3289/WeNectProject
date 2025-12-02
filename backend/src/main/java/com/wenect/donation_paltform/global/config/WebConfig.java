@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.util.UrlPathHelper;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 
 import java.nio.file.Paths;
 
@@ -12,6 +14,14 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Value("${file.upload.dir:uploads}")
     private String uploadDir;
+
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        // URL 디코딩 설정 - 한글 파일명 지원
+        UrlPathHelper urlPathHelper = new UrlPathHelper();
+        urlPathHelper.setUrlDecode(true);
+        configurer.setUrlPathHelper(urlPathHelper);
+    }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {

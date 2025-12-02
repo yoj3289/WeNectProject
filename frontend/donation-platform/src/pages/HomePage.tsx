@@ -1,10 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Users, CheckCircle, Eye, Award, Heart, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, ChevronDown, Quote, ArrowRight, Users, Target, HandHeart, ChevronLeft, ChevronRight, TrendingUp, Award } from 'lucide-react';
 import type { UserType } from '../types';
 import { getCategoryLabel } from '../types';
 import { usePopularProjects, useTopFundedProjects } from '../hooks/useProjects';
-import { useRecentDonations } from '../hooks/useDonations';
+import { useRecentDonations, useFeaturedMessages } from '../hooks/useDonations';
 import { useStatisticsSummary } from '../hooks/useStatistics';
 import { formatAmount, calculatePercentage } from '../utils/formatters';
 
@@ -13,378 +13,294 @@ interface HomePageProps {
   userType: UserType;
 }
 
+
 const HomePage: React.FC<HomePageProps> = ({
   isLoggedIn,
   userType,
 }) => {
-  // ✅ API 호출로 데이터 가져오기 (하드코딩 제거!)
-  const { data: projects, isLoading: projectsLoading } = usePopularProjects(8);
+  // API 호출
+  const { data: popularProjects, isLoading: popularLoading } = usePopularProjects(8);
   const { data: topFundedProjects, isLoading: topFundedLoading } = useTopFundedProjects(8);
-  const { data: recentDonations, isLoading: donationsLoading } = useRecentDonations(4);
+  const { data: recentDonations } = useRecentDonations(10);
   const { data: stats, isLoading: statsLoading } = useStatisticsSummary();
+  const { data: featuredMessages } = useFeaturedMessages(10);
 
-  // 스크롤 컨테이너 ref (2개 필요)
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const topFundedScrollRef = useRef<HTMLDivElement>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const trendingScrollRef = useRef<HTMLDivElement>(null);
 
-  // 스크롤 함수
+  // 실제 API 응답을 stories 형식으로 변환
+  const stories = featuredMessages && featuredMessages.length > 0
+    ? featuredMessages.map(msg => ({
+        quote: msg.message,
+        name: msg.donorName,
+        role: msg.projectTitle,
+        year: new Date(msg.donatedAt).getFullYear().toString()
+      }))
+    : [];
+
+  // 가로 스크롤 함수
   const scroll = (direction: 'left' | 'right', ref: React.RefObject<HTMLDivElement | null>) => {
     if (ref.current) {
-      const container = ref.current;
-      const scrollAmount = container.clientWidth; // 컨테이너 너비만큼 스크롤
-      const targetScroll = direction === 'left'
-        ? container.scrollLeft - scrollAmount
-        : container.scrollLeft + scrollAmount;
-
-      container.scrollTo({
-        left: targetScroll,
+      const scrollAmount = ref.current.clientWidth * 0.8;
+      ref.current.scrollTo({
+        left: direction === 'left'
+          ? ref.current.scrollLeft - scrollAmount
+          : ref.current.scrollLeft + scrollAmount,
         behavior: 'smooth'
       });
     }
   };
 
-  // 카테고리별 아이콘과 색상 매핑
-  const getCategoryIcon = (category: string) => {
-    const iconMap: Record<string, { icon: React.ReactNode, bgColor: string }> = {
-      '아동복지': { icon: <Baby size={80} />, bgColor: 'from-pink-100 to-rose-100' },
-      '동물보호': { icon: <Dog size={80} />, bgColor: 'from-cyan-100 to-teal-100' },
-      '노인복지': { icon: <UserCircle size={80} />, bgColor: 'from-emerald-100 to-green-100' },
-      '환경보호': { icon: <TreePine size={80} />, bgColor: 'from-red-100 to-orange-100' },
-      '교육': { icon: <GraduationCap size={80} />, bgColor: 'from-purple-100 to-indigo-100' },
-      '장애인복지': { icon: <Accessibility size={80} />, bgColor: 'from-rose-100 to-pink-100' }
-    };
-    return iconMap[category] || { icon: <Heart size={80} />, bgColor: 'from-gray-100 to-gray-200' };
+  // 후기 자동 슬라이드 (stories가 있을 때만 실행)
+  useEffect(() => {
+    if (stories.length === 0) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % stories.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [stories.length]);
+
+  // 누적 기부금 포맷팅
+  const formatDonationAmount = (amount: number | undefined) => {
+    if (!amount || amount === 0) return '0원';
+    if (amount >= 100000000) {
+      return `${Math.floor(amount / 100000000)}억+`;
+    }
+    if (amount >= 10000) {
+      return `${Math.floor(amount / 10000)}만+`;
+    }
+    return formatAmount(amount) + '원';
   };
 
   return (
-    <div>
-      {/* Hero Section - 정적 콘텐츠 */}
-      <section className="bg-gradient-to-r from-red-500 to-pink-600 text-white">
-        <div className="max-w-[1400px] mx-auto px-4 py-8 md:px-6 md:py-16 lg:px-8 lg:py-24">
-          <div className="grid grid-cols-1 lg:grid-cols-7 gap-6 md:gap-8 lg:gap-12 items-center">
-            {/* 정적 텍스트 및 버튼 - 즉시 렌더링 */}
-            <div className="lg:col-span-2 text-center lg:text-left">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 md:mb-6 leading-tight">
-                함께 만드는<br />따뜻한 세상
-              </h1>
-              <p className="text-base md:text-lg lg:text-xl mb-6 md:mb-8 text-white/90">
-                작은 나눔이 모여 큰 변화를 만듭니다
-              </p>
-              <div className="flex flex-col gap-3">
-                <Link
-                  to="/projects"
-                  className="w-full px-6 md:px-8 py-3 md:py-4 bg-white text-red-500 rounded-lg font-bold text-base md:text-lg hover:bg-gray-100 transition-all inline-block text-center"
-                >
-                  프로젝트 둘러보기
-                </Link>
-                {isLoggedIn && userType === 'organization' && (
-                  <Link
-                    to="/projects/create"
-                    className="w-full px-6 md:px-8 py-3 md:py-4 border-2 border-white text-white rounded-lg font-bold text-base md:text-lg hover:bg-white hover:text-red-500 transition-all inline-block text-center"
-                  >
-                    프로젝트 등록하기
-                  </Link>
-                )}
-              </div>
-            </div>
+    <div className="bg-stone-50">
 
-            {/* 동적 통계 섹션 - 스켈레톤 UI */}
-            <div className="lg:col-span-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-white/30 relative overflow-hidden">
-                  <div className="absolute top-2 right-2 md:top-3 md:right-3">
-                    <Shield className="text-white/40" size={60} />
-                  </div>
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Shield className="text-green-300" size={16} />
-                      <span className="text-xs md:text-sm text-white/80 font-semibold">검증된 프로젝트</span>
-                    </div>
-                    <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1">
-                      {stats?.totalProjects.toLocaleString() || '0'}
-                    </div>
-                    <div className="text-sm md:text-base text-white/90">진행중인 프로젝트</div>
-                  </div>
-                </div>
+      {/* 히어로 섹션 */}
+      <section className="relative min-h-[600px] md:min-h-[700px] bg-stone-900 overflow-hidden">
+        {/* 배경 오버레이 패턴 */}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
+            backgroundSize: '32px 32px'
+          }}
+        />
 
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-white/30 relative overflow-hidden">
-                  <div className="absolute top-2 right-2 md:top-3 md:right-3">
-                    <Users className="text-white/40" size={60} />
-                  </div>
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle className="text-blue-300" size={16} />
-                      <span className="text-xs md:text-sm text-white/80 font-semibold">신뢰하는 기부자</span>
-                    </div>
-                    <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1">
-                      {stats?.totalDonors.toLocaleString() || '0'}
-                    </div>
-                    <div className="text-sm md:text-base text-white/90">참여 기부자</div>
-                  </div>
-                </div>
+        {/* 그라디언트 오버레이 */}
+        <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-transparent to-stone-900" />
 
-                <div className="md:col-span-2 bg-white/20 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-white/30 relative overflow-hidden">
-                  <div className="absolute top-2 right-2 md:top-3 md:right-3">
-                    <Award className="text-white/40" size={70} />
-                  </div>
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Eye className="text-yellow-300" size={16} />
-                      <span className="text-xs md:text-sm text-white/80 font-semibold">투명하게 공개된 금액</span>
-                    </div>
-                    <div className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-1">
-                      {stats && stats.totalDonationAmount > 0
-                        ? `${Math.floor(stats.totalDonationAmount)}원`
-                        : '0원'}
-                    </div>
-                    <div className="text-sm md:text-base text-white/90">누적 기부금액</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+        <div className="relative h-full min-h-[600px] md:min-h-[700px] flex flex-col items-center justify-center text-center px-4 py-16">
+          <p className="text-amber-400 uppercase tracking-[0.3em] text-xs md:text-sm mb-6">
+            Together We Can Make a Difference
+          </p>
 
-      {/* Popular Projects Section - 좌우 스크롤 UI */}
-      <section className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12 lg:py-16">
-        {/* 정적 헤더 - 즉시 렌더링 */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 md:mb-10 gap-4">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold">지금 주목받는 프로젝트</h2>
-          <Link
-            to="/projects?sortBy=mostFavorited"
-            className="text-red-500 font-bold hover:underline text-sm md:text-base whitespace-nowrap"
-          >
-            전체보기 →
-          </Link>
-        </div>
+          <h1 className="text-3xl md:text-5xl lg:text-6xl text-white font-light leading-tight mb-6 max-w-3xl">
+            당신의 <span className="text-amber-400 font-medium">작은 나눔</span>이<br />
+            누군가의 <span className="text-amber-400 font-medium">전부</span>가 됩니다
+          </h1>
 
-        {/* 동적 프로젝트 목록 - 좌우 스크롤 */}
-        {projectsLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-            {[...Array(4)].map((_, idx) => (
-              <div key={idx} className="border border-gray-200 rounded-xl overflow-hidden">
-                <div className="h-40 md:h-48 bg-gray-200 animate-pulse"></div>
-                <div className="p-4 md:p-5">
-                  <div className="h-4 bg-gray-200 rounded animate-pulse mb-2 w-16"></div>
-                  <div className="h-6 bg-gray-200 rounded animate-pulse mb-3"></div>
-                  <div className="mb-4">
-                    <div className="flex justify-between mb-2">
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2"></div>
-                  </div>
-                  <div className="flex justify-between">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : projects && projects.length > 0 ? (
-          <div className="relative group">
-            {/* 좌측 스크롤 버튼 */}
-            <button
-              onClick={() => scroll('left', scrollContainerRef)}
-              className="hidden xl:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-12 h-12 items-center justify-center bg-white rounded-full shadow-lg hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
-              aria-label="이전 프로젝트"
-            >
-              <ChevronLeft size={24} className="text-gray-700" />
-            </button>
+          <p className="text-stone-300 text-base md:text-lg mb-8 max-w-xl">
+            {stats?.totalDonors?.toLocaleString() || 0}명의 기부자와 함께 {stats?.totalDonationAmount ? formatAmount(stats.totalDonationAmount) : '0'}원의 사랑을 전달했습니다.
+          </p>
 
-            {/* 스크롤 컨테이너 */}
-            <div
-              ref={scrollContainerRef}
-              className="overflow-x-auto scrollbar-hide scroll-smooth"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              <div className="grid grid-flow-col auto-cols-[calc(100%-1rem)] sm:auto-cols-[calc(50%-0.75rem)] lg:auto-cols-[calc(33.333%-1rem)] xl:auto-cols-[calc(25%-1.125rem)] gap-4 md:gap-6">
-                {projects.map(project => {
-                  const progress = calculatePercentage(project.currentAmount, project.targetAmount);
-                  const categoryKo = getCategoryLabel(project.category);
-                  const categoryInfo = getCategoryIcon(categoryKo);
-                  return (
-                    <Link
-                      key={project.id}
-                      to={`/projects/${project.id}`}
-                      className="block border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow"
-                    >
-                      {project.image ? (
-                        <div className="h-40 md:h-48 bg-gray-900 overflow-hidden flex items-center justify-center">
-                          <img
-                            src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.image}`}
-                            alt={project.title}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div className={`h-40 md:h-48 bg-gradient-to-br ${categoryInfo.bgColor} flex items-center justify-center text-gray-400`}>
-                          {categoryInfo.icon}
-                        </div>
-                      )}
-                      <div className="p-4 md:p-5">
-                        <div className="text-xs md:text-sm text-red-500 font-semibold mb-2">{categoryKo}</div>
-                        <h4 className="text-base md:text-lg font-bold mb-3 line-clamp-2">{project.title}</h4>
-
-                        <div className="mb-4">
-                          <div className="flex justify-between text-xs md:text-sm mb-2">
-                            <span className="font-bold text-red-500">{progress}%</span>
-                            <span className="text-gray-500">D-{project.dday}</span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-red-500 h-2 rounded-full transition-all"
-                              style={{ width: `${progress}%` }}
-                            ></div>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-between text-xs md:text-sm">
-                          <div>
-                            <span className="font-bold text-gray-900">{formatAmount(project.currentAmount)}</span>
-                            <span className="text-gray-500 ml-1">원</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-gray-600">
-                            <Users size={14} className="md:w-4 md:h-4" />
-                            <span>{project.donors}명</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 우측 스크롤 버튼 */}
-            <button
-              onClick={() => scroll('right', scrollContainerRef)}
-              className="hidden xl:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-12 h-12 items-center justify-center bg-white rounded-full shadow-lg hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
-              aria-label="다음 프로젝트"
-            >
-              <ChevronRight size={24} className="text-gray-700" />
-            </button>
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500">프로젝트가 없습니다.</p>
-          </div>
-        )}
-      </section>
-
-      {/* Top Funded Projects Section - 좌우 스크롤 UI */}
-      <section className="bg-gray-50 py-8 md:py-12 lg:py-16">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
-          {/* 정적 헤더 - 즉시 렌더링 */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 md:mb-10 gap-4">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold">가장 많은 후원을 받고 있는 프로젝트</h2>
+          <div className="flex items-center gap-4">
             <Link
-              to="/projects?sortBy=mostDonated"
-              className="text-red-500 font-bold hover:underline text-sm md:text-base whitespace-nowrap"
+              to="/projects"
+              className="bg-amber-500 text-stone-900 px-8 py-4 text-base font-medium hover:bg-amber-400 transition-colors"
             >
-              전체보기 →
+              함께하기
+            </Link>
+            <Link
+              to="/community"
+              className="text-white border-b-2 border-white/30 hover:border-white pb-1 transition-all text-sm"
+            >
+              이야기 보기
+            </Link>
+          </div>
+        </div>
+
+        {/* 스크롤 다운 인디케이터 */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 flex flex-col items-center gap-2 animate-bounce">
+          <span className="text-xs uppercase tracking-widest">Scroll</span>
+          <ChevronDown size={20} />
+        </div>
+      </section>
+
+      {/* Our Impact 섹션 */}
+      <section className="py-16 md:py-20 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-amber-600 uppercase tracking-[0.2em] text-xs mb-3">Our Impact</p>
+            <h2 className="text-2xl md:text-3xl text-stone-800 font-light">
+              당신의 나눔이 만든 <span className="font-medium">변화</span>
+            </h2>
+          </div>
+
+          {/* 임팩트 숫자 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+            <div className="text-center group">
+              <div className="w-12 h-12 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                <HandHeart className="text-amber-600" size={22} />
+              </div>
+              <p className="text-2xl md:text-3xl font-light text-stone-800 mb-1">
+                {statsLoading ? '-' : formatDonationAmount(stats?.totalDonationAmount)}
+              </p>
+              <p className="text-stone-500 text-sm">누적 기부금</p>
+            </div>
+
+            <div className="text-center group">
+              <div className="w-12 h-12 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                <Users className="text-amber-600" size={22} />
+              </div>
+              <p className="text-2xl md:text-3xl font-light text-stone-800 mb-1">
+                {statsLoading ? '-' : (stats?.totalDonors?.toLocaleString() || 0)}
+              </p>
+              <p className="text-stone-500 text-sm">참여 기부자</p>
+            </div>
+
+            <div className="text-center group">
+              <div className="w-12 h-12 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                <Target className="text-amber-600" size={22} />
+              </div>
+              <p className="text-2xl md:text-3xl font-light text-stone-800 mb-1">
+                {statsLoading ? '-' : (stats?.totalProjects || 0)}
+              </p>
+              <p className="text-stone-500 text-sm">완료 프로젝트</p>
+            </div>
+
+            <div className="text-center group">
+              <div className="w-12 h-12 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                <Heart className="text-amber-600" size={22} />
+              </div>
+              <p className="text-2xl md:text-3xl font-light text-stone-800 mb-1">100%</p>
+              <p className="text-stone-500 text-sm">투명한 전달</p>
+            </div>
+          </div>
+
+          {/* 인용문 슬라이드 - Featured 메시지가 있을 때만 표시 */}
+          {stories.length > 0 && (
+            <div className="bg-white rounded-2xl p-6 md:p-10 shadow-lg relative overflow-hidden max-w-2xl mx-auto">
+              <Quote className="absolute top-4 left-4 text-amber-100" size={50} />
+
+              <div className="relative z-10 text-center">
+                <p className="text-lg md:text-xl text-stone-700 leading-relaxed mb-6 italic">
+                  "{stories[currentSlide]?.quote}"
+                </p>
+                <div>
+                  <p className="font-medium text-stone-800">{stories[currentSlide]?.name}</p>
+                  <p className="text-stone-500 text-sm">
+                    {stories[currentSlide]?.role} · {stories[currentSlide]?.year}
+                  </p>
+                </div>
+              </div>
+
+              {/* 슬라이드 인디케이터 */}
+              <div className="flex justify-center gap-2 mt-6">
+                {stories.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentSlide(idx)}
+                    className={`h-1.5 rounded-full transition-all ${
+                      idx === currentSlide ? 'w-6 bg-amber-500' : 'w-1.5 bg-stone-300'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* 주목받는 프로젝트 섹션 */}
+      <section className="py-16 md:py-20 px-4 bg-stone-100">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp size={18} className="text-amber-600" />
+                <p className="text-amber-600 uppercase tracking-[0.2em] text-xs">Now Trending</p>
+              </div>
+              <h2 className="text-xl md:text-2xl text-stone-800 font-light">
+                지금 <span className="font-medium">주목받는</span> 프로젝트
+              </h2>
+            </div>
+            <Link
+              to="/projects?sortBy=mostFavorited"
+              className="hidden md:flex items-center gap-2 text-stone-600 hover:text-amber-600 transition-colors text-sm"
+            >
+              전체보기 <ArrowRight size={16} />
             </Link>
           </div>
 
-          {/* 동적 프로젝트 목록 - 좌우 스크롤 */}
-          {topFundedLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          {popularLoading ? (
+            <div className="flex gap-5 overflow-hidden">
               {[...Array(4)].map((_, idx) => (
-                <div key={idx} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-                  <div className="h-40 md:h-48 bg-gray-200 animate-pulse"></div>
-                  <div className="p-4 md:p-5">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse mb-2 w-16"></div>
-                    <div className="h-6 bg-gray-200 rounded animate-pulse mb-3"></div>
-                    <div className="mb-4">
-                      <div className="flex justify-between mb-2">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2"></div>
-                    </div>
-                    <div className="flex justify-between">
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
-                    </div>
-                  </div>
+                <div key={idx} className="w-[280px] flex-shrink-0 animate-pulse">
+                  <div className="aspect-[4/3] bg-stone-200 rounded-xl mb-4" />
+                  <div className="h-4 bg-stone-200 rounded w-20 mb-2" />
+                  <div className="h-5 bg-stone-200 rounded w-full" />
                 </div>
               ))}
             </div>
-          ) : topFundedProjects && topFundedProjects.length > 0 ? (
+          ) : popularProjects && popularProjects.length > 0 ? (
             <div className="relative group">
-              {/* 좌측 스크롤 버튼 */}
               <button
-                onClick={() => scroll('left', topFundedScrollRef)}
-                className="hidden xl:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-12 h-12 items-center justify-center bg-white rounded-full shadow-lg hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
-                aria-label="이전 프로젝트"
+                onClick={() => scroll('left', trendingScrollRef)}
+                className="hidden md:flex absolute -left-4 top-1/3 z-10 w-10 h-10 items-center justify-center bg-white border border-stone-200 rounded-full shadow-md hover:shadow-lg transition opacity-0 group-hover:opacity-100"
               >
-                <ChevronLeft size={24} className="text-gray-700" />
+                <ChevronLeft size={20} className="text-stone-600" />
               </button>
 
-              {/* 스크롤 컨테이너 */}
               <div
-                ref={topFundedScrollRef}
-                className="overflow-x-auto scrollbar-hide scroll-smooth"
+                ref={trendingScrollRef}
+                className="overflow-x-auto scrollbar-hide scroll-smooth -mx-4 px-4"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
-                <div className="grid grid-flow-col auto-cols-[calc(100%-1rem)] sm:auto-cols-[calc(50%-0.75rem)] lg:auto-cols-[calc(33.333%-1rem)] xl:auto-cols-[calc(25%-1.125rem)] gap-4 md:gap-6">
-                  {topFundedProjects.map(project => {
+                <div className="flex gap-5" style={{ width: 'max-content' }}>
+                  {popularProjects.map(project => {
                     const progress = calculatePercentage(project.currentAmount, project.targetAmount);
-                    const categoryKo = getCategoryLabel(project.category);
-                    const categoryInfo = getCategoryIcon(categoryKo);
                     return (
                       <Link
                         key={project.id}
                         to={`/projects/${project.id}`}
-                        className="block border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow bg-white"
+                        className="w-[280px] flex-shrink-0 bg-white border border-stone-200 rounded-xl overflow-hidden hover:border-amber-300 hover:shadow-lg transition-all duration-300"
                       >
-                        {project.image ? (
-                          <div className="h-40 md:h-48 bg-gray-900 overflow-hidden flex items-center justify-center">
+                        <div className="aspect-[4/3] bg-stone-100 overflow-hidden relative">
+                          {project.image ? (
                             <img
                               src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.image}`}
                               alt={project.title}
-                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                              }}
+                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-stone-300">
+                              <Heart size={48} />
+                            </div>
+                          )}
+                          <div className="absolute top-3 right-3 bg-stone-800 text-white text-xs font-medium px-2.5 py-1 rounded-lg">
+                            D-{project.dday}
+                          </div>
+                        </div>
+
+                        <div className="p-4">
+                          <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
+                            {getCategoryLabel(project.category)}
+                          </span>
+                          <h3 className="font-medium text-stone-800 mt-2 mb-3 line-clamp-2 leading-snug">
+                            {project.title}
+                          </h3>
+
+                          <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden mb-2">
+                            <div
+                              className="h-full bg-amber-500 rounded-full"
+                              style={{ width: `${Math.min(progress, 100)}%` }}
                             />
                           </div>
-                        ) : (
-                          <div className={`h-40 md:h-48 bg-gradient-to-br ${categoryInfo.bgColor} flex items-center justify-center text-gray-400`}>
-                            {categoryInfo.icon}
-                          </div>
-                        )}
-                        <div className="p-4 md:p-5">
-                          <div className="text-xs md:text-sm text-red-500 font-semibold mb-2">{categoryKo}</div>
-                          <h4 className="text-base md:text-lg font-bold mb-3 line-clamp-2">{project.title}</h4>
 
-                          <div className="mb-4">
-                            <div className="flex justify-between text-xs md:text-sm mb-2">
-                              <span className="font-bold text-red-500">{progress}%</span>
-                              <span className="text-gray-500">D-{project.dday}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-red-500 h-2 rounded-full transition-all"
-                                style={{ width: `${progress}%` }}
-                              ></div>
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between text-xs md:text-sm">
-                            <div>
-                              <span className="font-bold text-gray-900">{formatAmount(project.currentAmount)}</span>
-                              <span className="text-gray-500 ml-1">원</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-gray-600">
-                              <Users size={14} className="md:w-4 md:h-4" />
-                              <span>{project.donors}명</span>
-                            </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-amber-600 font-bold">{progress}%</span>
+                            <span className="text-stone-500">{formatAmount(project.currentAmount)}원</span>
                           </div>
                         </div>
                       </Link>
@@ -393,73 +309,243 @@ const HomePage: React.FC<HomePageProps> = ({
                 </div>
               </div>
 
-              {/* 우측 스크롤 버튼 */}
               <button
-                onClick={() => scroll('right', topFundedScrollRef)}
-                className="hidden xl:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-12 h-12 items-center justify-center bg-white rounded-full shadow-lg hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
-                aria-label="다음 프로젝트"
+                onClick={() => scroll('right', trendingScrollRef)}
+                className="hidden md:flex absolute -right-4 top-1/3 z-10 w-10 h-10 items-center justify-center bg-white border border-stone-200 rounded-full shadow-md hover:shadow-lg transition opacity-0 group-hover:opacity-100"
               >
-                <ChevronRight size={24} className="text-gray-700" />
+                <ChevronRight size={20} className="text-stone-600" />
               </button>
             </div>
           ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-500">프로젝트가 없습니다.</p>
-            </div>
+            <div className="text-center py-8 text-stone-500">프로젝트가 없습니다.</div>
           )}
+
+          <Link
+            to="/projects?sortBy=mostFavorited"
+            className="md:hidden flex items-center justify-center gap-2 text-stone-600 hover:text-amber-600 transition-colors mt-6 text-sm"
+          >
+            전체보기 <ArrowRight size={16} />
+          </Link>
         </div>
       </section>
 
-      {/* Recent Donations Section - 스켈레톤 UI */}
-      <section className="py-8 md:py-12 lg:py-16">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
-          {/* 정적 헤더 - 즉시 렌더링 */}
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-6 md:mb-10">실시간 기부 현황</h2>
+      {/* 후원 TOP 프로젝트 섹션 - 1+2 그리드 레이아웃 */}
+      <section className="py-16 md:py-20 px-4 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Award size={18} className="text-amber-600" />
+                <p className="text-amber-600 uppercase tracking-[0.2em] text-xs">Top Funded</p>
+              </div>
+              <h2 className="text-xl md:text-2xl text-stone-800 font-light">
+                후원 <span className="font-medium">TOP</span> 프로젝트
+              </h2>
+            </div>
+            <Link
+              to="/projects?sortBy=mostDonated"
+              className="hidden md:flex items-center gap-2 text-stone-600 hover:text-amber-600 transition-colors text-sm"
+            >
+              전체보기 <ArrowRight size={16} />
+            </Link>
+          </div>
 
-          {/* 동적 기부 내역 - 스켈레톤 UI */}
-          <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 border border-gray-200">
-            {donationsLoading ? (
-              <div className="space-y-3 md:space-y-4">
-                {[...Array(4)].map((_, idx) => (
-                  <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 p-4 md:p-5 bg-gray-50 rounded-xl">
-                    <div className="flex items-center gap-3 md:gap-4 w-full sm:w-auto">
-                      <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-200 rounded-full animate-pulse flex-shrink-0"></div>
-                      <div className="min-w-0 flex-1 space-y-2">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-40"></div>
-                        <div className="h-3 bg-gray-200 rounded animate-pulse w-32"></div>
-                      </div>
+          {topFundedLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="row-span-2 bg-stone-100 rounded-2xl overflow-hidden animate-pulse">
+                <div className="h-56 bg-stone-200" />
+                <div className="p-6">
+                  <div className="h-5 bg-stone-200 rounded w-3/4 mb-3" />
+                  <div className="h-4 bg-stone-200 rounded w-1/2" />
+                </div>
+              </div>
+              <div className="bg-stone-100 rounded-xl overflow-hidden animate-pulse">
+                <div className="h-32 bg-stone-200" />
+                <div className="p-4"><div className="h-4 bg-stone-200 rounded" /></div>
+              </div>
+              <div className="bg-stone-100 rounded-xl overflow-hidden animate-pulse">
+                <div className="h-32 bg-stone-200" />
+                <div className="p-4"><div className="h-4 bg-stone-200 rounded" /></div>
+              </div>
+            </div>
+          ) : topFundedProjects && topFundedProjects.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 1위 프로젝트 - 메인 카드 */}
+              {topFundedProjects[0] && (
+                <Link
+                  to={`/projects/${topFundedProjects[0].id}`}
+                  className="row-span-2 bg-stone-50 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer group border border-stone-200"
+                >
+                  <div className="h-56 bg-stone-100 relative overflow-hidden">
+                    {topFundedProjects[0].image ? (
+                      <img
+                        src={`${import.meta.env.VITE_IMAGE_BASE_URL}${topFundedProjects[0].image}`}
+                        alt={topFundedProjects[0].title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <Heart
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-stone-300 group-hover:scale-110 transition-transform duration-500"
+                        size={100}
+                      />
+                    )}
+                    {/* 1위 배지 */}
+                    <div className="absolute top-0 left-0 bg-amber-500 text-white px-4 py-2 font-bold text-lg rounded-br-xl">
+                      1위
                     </div>
-                    <div className="text-left sm:text-right w-full sm:w-auto flex-shrink-0 space-y-2">
-                      <div className="h-5 bg-gray-200 rounded animate-pulse w-24 ml-auto"></div>
-                      <div className="h-3 bg-gray-200 rounded animate-pulse w-20 ml-auto"></div>
+                    <div className="absolute top-4 right-4">
+                      <span className="bg-white/90 text-amber-700 text-xs font-medium px-3 py-1.5 rounded-full">
+                        {getCategoryLabel(topFundedProjects[0].category)}
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : recentDonations && recentDonations.length > 0 ? (
-              <div className="space-y-3 md:space-y-4">
-                {recentDonations.map((donation, idx) => (
-                  <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 p-4 md:p-5 bg-gray-50 rounded-xl">
-                    <div className="flex items-center gap-3 md:gap-4 w-full sm:w-auto">
-                      <div className="w-10 h-10 md:w-12 md:h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Heart className="text-red-500" size={20} fill="currentColor" />
+                  <div className="p-5">
+                    <h3 className="text-lg font-medium text-stone-800 mb-2 group-hover:text-amber-600 transition-colors line-clamp-2">
+                      {topFundedProjects[0].title}
+                    </h3>
+
+                    {/* 프로그레스 */}
+                    <div className="mb-4">
+                      <div className="flex justify-between text-sm mb-1.5">
+                        <span className="text-amber-600 font-bold text-lg">
+                          {calculatePercentage(topFundedProjects[0].currentAmount, topFundedProjects[0].targetAmount)}%
+                        </span>
+                        <span className="text-stone-400">D-{topFundedProjects[0].dday}</span>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-bold text-sm md:text-base">{donation.donorName}님이 기부했습니다</p>
-                        <p className="text-xs md:text-sm text-gray-600 truncate">{donation.projectTitle}</p>
+                      <div className="w-full bg-stone-200 rounded-full h-2">
+                        <div
+                          className="bg-amber-500 h-2 rounded-full"
+                          style={{ width: `${Math.min(calculatePercentage(topFundedProjects[0].currentAmount, topFundedProjects[0].targetAmount), 100)}%` }}
+                        />
                       </div>
                     </div>
-                    <div className="text-left sm:text-right w-full sm:w-auto flex-shrink-0">
-                      <p className="font-bold text-lg md:text-xl text-red-500">{formatAmount(donation.amount)}원</p>
-                      <p className="text-xs md:text-sm text-gray-500">{new Date(donation.timestamp).toLocaleString('ko-KR')}</p>
+
+                    <div className="flex items-center justify-between text-xs text-stone-500">
+                      <span>{formatAmount(topFundedProjects[0].currentAmount)}원 달성</span>
+                      <div className="flex items-center gap-1">
+                        <Users size={14} />
+                        <span>{topFundedProjects[0].donors}명 참여</span>
+                      </div>
                     </div>
                   </div>
+                </Link>
+              )}
+
+              {/* 2위, 3위 프로젝트 - 서브 카드 */}
+              {topFundedProjects.slice(1, 3).map((project, idx) => {
+                const progress = calculatePercentage(project.currentAmount, project.targetAmount);
+                const rankColors = ['bg-stone-400', 'bg-amber-700'];
+                const rankColor = rankColors[idx] || 'bg-stone-300';
+
+                return (
+                  <Link
+                    key={project.id}
+                    to={`/projects/${project.id}`}
+                    className="bg-stone-50 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all cursor-pointer group border border-stone-200"
+                  >
+                    <div className="h-32 bg-stone-100 relative overflow-hidden">
+                      {project.image ? (
+                        <img
+                          src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.image}`}
+                          alt={project.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <Heart
+                          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-stone-300 group-hover:scale-110 transition-transform"
+                          size={40}
+                        />
+                      )}
+                      {/* 순위 배지 */}
+                      <div className={`absolute top-0 left-0 ${rankColor} text-white px-3 py-1.5 font-bold text-sm rounded-br-xl`}>
+                        {idx + 2}위
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <span className="text-xs text-amber-600 font-medium">{getCategoryLabel(project.category)}</span>
+                      <h3 className="text-base font-medium text-stone-800 mt-1 mb-2 line-clamp-1 group-hover:text-amber-600 transition-colors">
+                        {project.title}
+                      </h3>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-amber-600 font-bold">{progress}%</span>
+                        <div className="flex items-center gap-1 text-stone-400 text-xs">
+                          <Users size={12} />
+                          <span>{project.donors}명</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-stone-500">프로젝트가 없습니다.</div>
+          )}
+
+          <Link
+            to="/projects?sortBy=mostDonated"
+            className="md:hidden flex items-center justify-center gap-2 text-stone-600 hover:text-amber-600 transition-colors mt-6 text-sm"
+          >
+            전체보기 <ArrowRight size={16} />
+          </Link>
+        </div>
+      </section>
+
+      {/* 실시간 기부 스트립 */}
+      {recentDonations && recentDonations.length > 0 && (
+        <section className="py-4 px-4 bg-stone-800 text-white">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                <span className="text-stone-300 text-sm">실시간 기부</span>
+              </div>
+              <div className="flex items-center gap-6 overflow-hidden text-sm">
+                {recentDonations.slice(0, 3).map((donation, idx) => (
+                  <span key={idx} className="text-stone-400 whitespace-nowrap">
+                    <span className="text-white font-medium">{donation.donorName}</span>님{' '}
+                    <span className="text-amber-400">{formatAmount(donation.amount)}원</span>
+                  </span>
                 ))}
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-gray-500">최근 기부 내역이 없습니다.</p>
-              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 하단 CTA */}
+      <section className="py-16 md:py-20 px-4 bg-amber-500 text-center">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl md:text-3xl text-stone-900 font-light mb-4">
+            오늘, <span className="font-medium">당신의 이야기</span>를 시작하세요
+          </h2>
+          <p className="text-stone-700 mb-8">
+            작은 나눔이 모여 큰 변화를 만듭니다
+          </p>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <Link
+              to="/projects"
+              className="bg-stone-900 text-white px-8 py-4 font-medium hover:bg-stone-800 transition-colors"
+            >
+              기부 시작하기
+            </Link>
+            {isLoggedIn && userType === 'organization' && (
+              <Link
+                to="/projects/create"
+                className="bg-white text-stone-900 px-8 py-4 font-medium hover:bg-stone-100 transition-colors"
+              >
+                프로젝트 등록
+              </Link>
+            )}
+            {!isLoggedIn && (
+              <Link
+                to="/register"
+                className="bg-white text-stone-900 px-8 py-4 font-medium hover:bg-stone-100 transition-colors"
+              >
+                프로젝트 등록
+              </Link>
             )}
           </div>
         </div>

@@ -1,6 +1,7 @@
 package com.wenect.donation_paltform.global.util;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -78,7 +79,25 @@ public class JwtTokenProvider {
             return false;
         }
     }
-    
+
+    /**
+     * JWT 토큰이 만료되었는지 확인
+     * @return true: 만료됨, false: 만료 아님 또는 다른 에러
+     */
+    public boolean isTokenExpired(String token) {
+        try {
+            Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token);
+            return false; // 유효한 토큰
+        } catch (ExpiredJwtException e) {
+            return true; // 만료된 토큰
+        } catch (Exception e) {
+            return false; // 다른 에러 (잘못된 서명 등)
+        }
+    }
+
     /**
      * JWT 토큰에서 Claims 추출
      */

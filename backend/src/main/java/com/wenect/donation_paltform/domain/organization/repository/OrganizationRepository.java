@@ -19,4 +19,7 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
     // 모든 기관 조회 (User 정보 함께 로드)
     @Query("SELECT o FROM Organization o JOIN FETCH o.user")
     List<Organization> findAllWithUser();
+
+    // 승인 상태별 기관 개수 조회
+    Long countByApprovalStatus(Organization.ApprovalStatus approvalStatus);
 }

@@ -26,20 +26,21 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const location = useLocation();
   const hasShownToast = useRef(false);
 
-  // 권한 체크
+  // 권한 체크 (로그인 상태이고 user가 있을 때만 체크)
   const hasPermission = !allowedUserTypes || !user || allowedUserTypes.includes(user.userType);
 
   // 권한 없을 때 toast 표시 (렌더링 후 useEffect에서 실행)
+  // 로그인 상태일 때만 권한 없음 메시지 표시 (자동 로그아웃 시에는 표시 안 함)
   useEffect(() => {
-    if (!hasPermission && !hasShownToast.current) {
+    if (isLoggedIn && !hasPermission && !hasShownToast.current) {
       hasShownToast.current = true;
       toast.error('접근 권한이 없습니다.');
     }
-  }, [hasPermission]);
+  }, [isLoggedIn, hasPermission]);
 
   if (requireAuth && !isLoggedIn) {
-    // 로그인하지 않은 경우 로그인 페이지로 리다이렉트
-    // 현재 경로를 redirect 파라미터로 전달
+    // 로그인하지 않은 경우 - 로그인 페이지로 리다이렉트
+    // 현재 경로를 redirect 파라미터로 전달 (로그인 후 돌아오기 위함)
     return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
   }
 

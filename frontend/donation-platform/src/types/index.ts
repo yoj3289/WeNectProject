@@ -188,6 +188,7 @@ export type ExpenseStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export interface Expense {
   expenseId: number;
   projectId: number;
+  projectTitle?: string;         // 프로젝트 제목
   expenseDate: string;           // 지출 날짜
   category: string;              // 카테고리 (의료비, 운영비, 장비구매 등)
   description: string;           // 상세 설명

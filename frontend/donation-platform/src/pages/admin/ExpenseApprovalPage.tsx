@@ -233,9 +233,9 @@ const ExpenseApprovalPage: React.FC = () => {
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(expense =>
+        expense.projectTitle?.toLowerCase().includes(term) ||
         expense.category?.toLowerCase().includes(term) ||
-        expense.description?.toLowerCase().includes(term) ||
-        String(expense.projectId).includes(term)
+        expense.description?.toLowerCase().includes(term)
       );
     }
 
@@ -313,7 +313,7 @@ const ExpenseApprovalPage: React.FC = () => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="프로젝트 ID, 카테고리, 설명으로 검색..."
+              placeholder="프로젝트명, 카테고리, 설명으로 검색..."
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             />
           </div>
@@ -351,7 +351,7 @@ const ExpenseApprovalPage: React.FC = () => {
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
                   <th className="text-left py-4 px-6 font-semibold text-gray-700 whitespace-nowrap">날짜</th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-700 whitespace-nowrap">프로젝트 ID</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 whitespace-nowrap">프로젝트</th>
                   <th className="text-left py-4 px-6 font-semibold text-gray-700 whitespace-nowrap">카테고리</th>
                   <th className="text-right py-4 px-6 font-semibold text-gray-700 whitespace-nowrap">금액</th>
                   <th className="text-center py-4 px-6 font-semibold text-gray-700 whitespace-nowrap">상태</th>
@@ -367,8 +367,10 @@ const ExpenseApprovalPage: React.FC = () => {
                         <span className="text-sm">{formatDate(expense.expenseDate)}</span>
                       </div>
                     </td>
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      <span className="text-sm font-mono text-gray-600">#{expense.projectId}</span>
+                    <td className="py-4 px-6">
+                      <span className="text-sm font-medium text-gray-800 line-clamp-1 max-w-[200px]" title={expense.projectTitle || `#${expense.projectId}`}>
+                        {expense.projectTitle || `#${expense.projectId}`}
+                      </span>
                     </td>
                     <td className="py-4 px-6 whitespace-nowrap">
                       <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium inline-block max-w-[120px] truncate" title={expense.category}>
@@ -506,7 +508,8 @@ const ExpenseApprovalPage: React.FC = () => {
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(selectedExpense.status)}`}>
                   {getStatusLabel(selectedExpense.status)}
                 </span>
-                <h3 className="text-2xl font-bold text-gray-800 mt-3">프로젝트 #{selectedExpense.projectId}</h3>
+                <h3 className="text-2xl font-bold text-gray-800 mt-3">{selectedExpense.projectTitle || `프로젝트 #${selectedExpense.projectId}`}</h3>
+                <p className="text-sm text-gray-500 mt-1">프로젝트 ID: #{selectedExpense.projectId}</p>
                 <div className="bg-white rounded-lg p-6 mt-4">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-gray-600">지출 금액</span>

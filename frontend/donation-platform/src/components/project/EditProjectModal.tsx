@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { X, Save, AlertCircle } from 'lucide-react';
-import RichTextEditor from '../editor/RichTextEditor';
+import React, { useState } from 'react';
+import { X, FileEdit, Lock, Calendar, Target, Tag, Building2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { Project } from '../../types';
+import { getCategoryLabel } from '../../types';
+import RichTextEditor from '../editor/RichTextEditor';
 
 interface EditProjectModalProps {
   project: Project;
@@ -12,194 +14,206 @@ interface EditProjectModalProps {
 /**
  * 프로젝트 수정 모달
  * - 제목과 소개만 수정 가능
- * - CLOSED, CANCELLED, REJECTED 상태는 수정 불가
+ * - 목표 금액, 기간, 카테고리 등 핵심 정보는 수정 불가
  */
 const EditProjectModal: React.FC<EditProjectModalProps> = ({
   project,
   onClose,
-  onSubmit,
+  onSubmit
 }) => {
-  const [title, setTitle] = useState(project.title || '');
+  const [title, setTitle] = useState(project.title);
   const [description, setDescription] = useState(project.description || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
 
-  // ESC 키로 모달 닫기
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isSubmitting) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [isSubmitting, onClose]);
+  const maxTitleLength = 200;
 
   const handleSubmit = async () => {
-    setErrorMessage('');
-
-    // 유효성 검사
     if (!title.trim()) {
-      setErrorMessage('프로젝트 제목을 입력해주세요.');
+      toast.error('프로젝트 제목을 입력해주세요.');
+      return;
+    }
+
+    if (title.length > maxTitleLength) {
+      toast.error(`제목은 ${maxTitleLength}자 이내로 입력해주세요.`);
       return;
     }
 
     if (!description.trim()) {
-      setErrorMessage('프로젝트 소개를 입력해주세요.');
-      return;
-    }
-
-    if (title.length > 200) {
-      setErrorMessage('제목은 200자 이내로 입력해주세요.');
+      toast.error('프로젝트 소개를 입력해주세요.');
       return;
     }
 
     setIsSubmitting(true);
-
     try {
       await onSubmit(title, description);
+      toast.success('프로젝트가 수정되었습니다.');
       onClose();
     } catch (error: any) {
-      setErrorMessage(error.message || '프로젝트 수정 중 오류가 발생했습니다.');
+      const errorMessage = error.response?.data?.message || '프로젝트 수정에 실패했습니다.';
+      toast.error(errorMessage);
+    } finally {
       setIsSubmitting(false);
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'PENDING': '승인 대기',
+      'APPROVED': '승인됨',
+      'ACTIVE': '진행 중',
+      'COMPLETED': '모금 완료',
+      'SETTLEMENT': '결산 중',
+      'CLOSED': '종료됨',
+      'CANCELLED': '취소됨',
+      'REJECTED': '반려됨',
+    };
+    return statusMap[status.toUpperCase()] || status;
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* 헤더 */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">프로젝트 수정</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              제목과 소개만 수정할 수 있습니다
-            </p>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-stone-50 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+        {/* 헤더 - 다크 스타일 */}
+        <div className="bg-stone-800 px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                <FileEdit size={20} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-medium text-white">프로젝트 수정</h2>
+                <p className="text-sm text-stone-400">제목과 소개 내용을 수정합니다</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-stone-700 rounded-xl transition-colors"
+            >
+              <X size={20} className="text-stone-400" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50"
-          >
-            <X size={24} />
-          </button>
         </div>
 
-        {/* 본문 */}
-        <div className="p-6 space-y-6">
-          {/* 안내 메시지 */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-            <AlertCircle className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
-            <div className="text-sm text-blue-800">
-              <p className="font-semibold mb-1">수정 가능 항목</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>프로젝트 제목</li>
-                <li>프로젝트 소개 (이미지, 텍스트 스타일링 등 모든 기능 사용 가능)</li>
-              </ul>
-              <p className="mt-2 text-xs text-blue-700">
-                ※ 목표 금액, 기간, 카테고리 등 핵심 정보는 투명성을 위해 수정할 수 없습니다.
+        {/* 콘텐츠 영역 */}
+        <div className="flex-1 overflow-y-auto">
+          {/* 수정 불가 항목 - 상단 고정 배너 */}
+          <div className="bg-stone-100 border-b border-stone-200 px-6 py-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Lock size={14} className="text-stone-500" />
+              <span className="text-xs font-medium text-stone-500 uppercase tracking-wide">수정 불가 항목</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-white rounded-xl px-3 py-2.5 border border-stone-200">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Tag size={12} className="text-stone-400" />
+                  <span className="text-[10px] text-stone-500 uppercase">카테고리</span>
+                </div>
+                <p className="text-sm font-medium text-stone-800 truncate">{getCategoryLabel(project.category)}</p>
+              </div>
+              <div className="bg-white rounded-xl px-3 py-2.5 border border-stone-200">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Target size={12} className="text-stone-400" />
+                  <span className="text-[10px] text-stone-500 uppercase">목표 금액</span>
+                </div>
+                <p className="text-sm font-medium text-stone-800">{project.targetAmount.toLocaleString()}원</p>
+              </div>
+              <div className="bg-white rounded-xl px-3 py-2.5 border border-stone-200">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Calendar size={12} className="text-stone-400" />
+                  <span className="text-[10px] text-stone-500 uppercase">기간</span>
+                </div>
+                <p className="text-sm font-medium text-stone-800">
+                  {project.startDate && project.endDate
+                    ? `${formatDate(project.startDate).slice(5)} ~ ${formatDate(project.endDate).slice(5)}`
+                    : '-'}
+                </p>
+              </div>
+              <div className="bg-white rounded-xl px-3 py-2.5 border border-stone-200">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Building2 size={12} className="text-stone-400" />
+                  <span className="text-[10px] text-stone-500 uppercase">상태</span>
+                </div>
+                <p className="text-sm font-medium text-stone-800">{getStatusLabel(project.status)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 수정 가능 영역 */}
+          <div className="p-6 space-y-6">
+            {/* 프로젝트 제목 */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-stone-700">
+                  프로젝트 제목
+                </label>
+                <span className={`text-xs ${title.length > maxTitleLength * 0.9 ? 'text-amber-600' : 'text-stone-400'}`}>
+                  {title.length}/{maxTitleLength}
+                </span>
+              </div>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="프로젝트 제목을 입력하세요"
+                maxLength={maxTitleLength}
+                className="w-full px-4 py-3.5 bg-white border border-stone-200 rounded-xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
+              />
+            </div>
+
+            {/* 프로젝트 소개 */}
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                프로젝트 소개
+              </label>
+              <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
+                <RichTextEditor
+                  content={description}
+                  onChange={setDescription}
+                  placeholder="프로젝트에 대해 소개해주세요. 이미지, 텍스트 스타일링 등 모든 기능을 사용할 수 있습니다."
+                />
+              </div>
+              <p className="text-xs text-stone-500 mt-2">
+                이미지 삽입, 폰트 변경, 텍스트 스타일링 등 모든 기능을 사용할 수 있습니다.
               </p>
             </div>
           </div>
-
-          {/* 에러 메시지 */}
-          {errorMessage && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-              <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
-              <p className="text-sm text-red-800">{errorMessage}</p>
-            </div>
-          )}
-
-          {/* 프로젝트 제목 */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              프로젝트 제목 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              maxLength={200}
-              disabled={isSubmitting}
-              placeholder="프로젝트 제목을 입력하세요"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              {title.length}/200자
-            </p>
-          </div>
-
-          {/* 프로젝트 소개 */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              프로젝트 소개 <span className="text-red-500">*</span>
-            </label>
-            <div className="border border-gray-300 rounded-lg overflow-hidden">
-              <RichTextEditor
-                content={description}
-                onChange={setDescription}
-                placeholder="프로젝트에 대한 상세한 설명을 작성해주세요..."
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              이미지 삽입, 폰트 변경, 텍스트 스타일링 등 모든 기능을 사용할 수 있습니다.
-            </p>
-          </div>
-
-          {/* 수정 불가 항목 안내 */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <p className="text-sm font-semibold text-gray-700 mb-2">수정 불가 항목 (참고용)</p>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex justify-between">
-                <span>카테고리:</span>
-                <span className="font-medium">{project.category}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>목표 금액:</span>
-                <span className="font-medium">{project.targetAmount?.toLocaleString('ko-KR')}원</span>
-              </div>
-              <div className="flex justify-between">
-                <span>기간:</span>
-                <span className="font-medium">
-                  {project.startDate} ~ {project.endDate}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>프로젝트 상태:</span>
-                <span className="font-medium">{project.status}</span>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* 푸터 */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            취소
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isSubmitting ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                수정 중...
-              </>
-            ) : (
-              <>
-                <Save size={20} />
-                수정 완료
-              </>
-            )}
-          </button>
+        {/* 하단 버튼 영역 */}
+        <div className="bg-white border-t border-stone-200 px-6 py-4">
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-6 py-3 text-stone-600 rounded-xl font-medium hover:bg-stone-100 transition-colors"
+            >
+              취소
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting || !title.trim() || !description.trim()}
+              className="flex-1 px-6 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 disabled:bg-stone-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  수정 중...
+                </>
+              ) : (
+                <>
+                  <FileEdit size={18} />
+                  수정 완료
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -4,10 +4,12 @@ import com.wenect.donation_paltform.domain.donation.entity.Donation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,9 +37,20 @@ public interface DonationRepository extends JpaRepository<Donation, Long> {
     List<Donation> findByProjectIdAndStatus(Long projectId, Donation.DonationStatus status);
 
     /**
-     * 상태별로 최근 기부 내역 조회 (제한된 개수)
+     * 상태별로 최근 기부 내역 조회 (제한된 개수, List 반환)
      */
     List<Donation> findByStatusOrderByCreatedAtDesc(Donation.DonationStatus status, Pageable pageable);
+
+    /**
+     * 상태별 기부 내역 조회 (페이지네이션, Page 반환)
+     */
+    Page<Donation> findByStatus(Donation.DonationStatus status, Pageable pageable);
+
+    /**
+     * 상태 및 기간으로 최근 기부 내역 조회 (일주일 기준)
+     */
+    List<Donation> findByStatusAndDonatedAtAfterOrderByDonatedAtDesc(
+            Donation.DonationStatus status, LocalDateTime after, Pageable pageable);
 
     /**
      * 특정 프로젝트에 대해 해당 사용자의 완료된 기부가 있는지 확인
@@ -68,5 +81,68 @@ public interface DonationRepository extends JpaRepository<Donation, Long> {
      */
     @Query("SELECT d FROM Donation d WHERE d.userId = :userId AND YEAR(d.createdAt) = :year AND d.status = :status ORDER BY d.createdAt DESC")
     Page<Donation> findByUserIdAndYearAndStatus(@Param("userId") Long userId, @Param("year") int year, @Param("status") Donation.DonationStatus status, Pageable pageable);
+
+    // ==================== Featured Messages (홈페이지 노출용) ====================
+
+    /**
+     * 홈페이지에 노출할 Featured 기부 메시지 조회
+     * - isFeatured=true인 것만
+     * - 메시지가 있는 것만
+     */
+    @Query("SELECT d FROM Donation d WHERE d.isFeatured = true AND d.message IS NOT NULL AND d.message <> '' ORDER BY d.createdAt DESC")
+    List<Donation> findFeaturedDonations(Pageable pageable);
+
+    /**
+     * Featured 기부 개수 조회
+     */
+    @Query("SELECT COUNT(d) FROM Donation d WHERE d.isFeatured = true")
+    long countFeaturedDonations();
+
+    // ==================== 관리자용 전체 기부 조회 ====================
+
+    /**
+     * 전체 기부 내역 조회 (페이지네이션, 최신순)
+     */
+    Page<Donation> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    /**
+     * 메시지가 있는 기부만 조회 (페이지네이션)
+     */
+    @Query("SELECT d FROM Donation d WHERE d.message IS NOT NULL AND d.message <> '' ORDER BY d.createdAt DESC")
+    Page<Donation> findAllWithMessage(Pageable pageable);
+
+    /**
+     * 메시지가 있고 특정 상태인 기부 조회 (페이지네이션)
+     */
+    @Query("SELECT d FROM Donation d WHERE d.message IS NOT NULL AND d.message <> '' AND d.status = :status ORDER BY d.createdAt DESC")
+    Page<Donation> findWithMessageAndStatus(@Param("status") Donation.DonationStatus status, Pageable pageable);
+
+    /**
+     * Featured 상태별 기부 조회 (페이지네이션)
+     */
+    @Query("SELECT d FROM Donation d WHERE d.isFeatured = :isFeatured AND d.status = 'COMPLETED' ORDER BY d.createdAt DESC")
+    Page<Donation> findByIsFeatured(@Param("isFeatured") boolean isFeatured, Pageable pageable);
+
+    /**
+     * 기간 내 기부 조회 (페이지네이션)
+     */
+    @Query("SELECT d FROM Donation d WHERE d.createdAt >= :startDate ORDER BY d.createdAt DESC")
+    Page<Donation> findByCreatedAtAfter(@Param("startDate") LocalDateTime startDate, Pageable pageable);
+
+    /**
+     * 기간 내 + 상태별 기부 조회 (페이지네이션)
+     */
+    @Query("SELECT d FROM Donation d WHERE d.createdAt >= :startDate AND d.status = :status ORDER BY d.createdAt DESC")
+    Page<Donation> findByCreatedAtAfterAndStatus(@Param("startDate") LocalDateTime startDate, @Param("status") Donation.DonationStatus status, Pageable pageable);
+
+    // ==================== 스케줄러용 (오래된 PENDING 정리) ====================
+
+    /**
+     * 오래된 PENDING 상태 기부 삭제 (벌크 삭제)
+     * - PENDING 상태이고 생성일이 지정 시간 이전인 기부
+     */
+    @Modifying
+    @Query("DELETE FROM Donation d WHERE d.status = 'PENDING' AND d.createdAt < :cutoffDate")
+    int deleteOldPendingDonations(@Param("cutoffDate") LocalDateTime cutoffDate);
 
 }

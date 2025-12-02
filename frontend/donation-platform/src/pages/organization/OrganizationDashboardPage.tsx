@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Search, TrendingUp, BarChart3, CheckCircle, Clock, Wallet, Loader2, AlertCircle, Edit, Eye } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
+import { Search, TrendingUp, BarChart3, CheckCircle, Clock, Wallet, Loader2, AlertCircle, Edit, Eye, Plus, Target, Users, LayoutGrid, List } from 'lucide-react';
 import { useOrganizationStats, useOrganizationProjects } from '../../hooks/useOrganization';
 import { useUpdateProject } from '../../hooks/useProjects';
 import { getCategoryLabel } from '../../types';
@@ -12,14 +11,7 @@ import EditProjectModal from '../../components/project/EditProjectModal';
 import { getProjectStatusLabel, getProjectStatusBadgeStyle, canEditProject } from '../../utils/projectStatus';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
-/**
- * 기관 대시보드 페이지
- * - 기관이 등록한 프로젝트 관리
- * - 통계 요약, 프로젝트 목록, 검색/필터
- */
 const OrganizationDashboardPage: React.FC = () => {
-  const navigate = useNavigate();
-
   // State
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
@@ -37,28 +29,24 @@ const OrganizationDashboardPage: React.FC = () => {
     onConfirm: () => void;
     isDanger?: boolean;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  // API: 프로젝트 수정
   const updateProjectMutation = useUpdateProject();
 
-  // Debounce 검색
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchKeyword(searchKeyword);
-      setCurrentPage(1); // 검색 시 첫 페이지로 이동
+      setCurrentPage(1);
     }, 500);
     return () => clearTimeout(timer);
   }, [searchKeyword]);
 
-  // 필터 변경 시 첫 페이지로 이동
   useEffect(() => {
     setCurrentPage(1);
   }, [statusFilter, sortOption]);
 
-  // API: 통계 조회
   const { data: stats, isLoading: isLoadingStats, isError: isErrorStats } = useOrganizationStats();
 
-  // API: 프로젝트 목록 조회
   const {
     data: projects,
     isLoading: isLoadingProjects,
@@ -68,11 +56,10 @@ const OrganizationDashboardPage: React.FC = () => {
     status: statusFilter || undefined,
     search: debouncedSearchKeyword.trim() || undefined,
     sortBy: sortOption,
-    page: currentPage - 1, // 백엔드는 0부터 시작
+    page: currentPage - 1,
     size: pageSize,
   });
 
-  // Helper Functions
   const formatAmount = (amount: number): string => {
     return Math.floor(amount).toLocaleString('ko-KR');
   };
@@ -102,318 +89,495 @@ const OrganizationDashboardPage: React.FC = () => {
   const displayProjects = projects?.content || [];
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
-        {/* 헤더 */}
-        <div className="mb-6 md:mb-8">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl md:text-4xl font-bold">프로젝트 관리</h1>
+    <div className="bg-stone-50 min-h-screen">
+      {/* Hero Section */}
+      <section className="relative bg-stone-900 overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
+            backgroundSize: '32px 32px'
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-transparent to-stone-900" />
+
+        <div className="relative max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-12">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <p className="text-amber-400 uppercase tracking-[0.3em] text-xs mb-3">Dashboard</p>
+              <h1 className="text-2xl md:text-3xl text-white font-light">
+                프로젝트 <span className="font-medium">관리</span>
+              </h1>
+            </div>
             <Link
               to="/projects/create"
-              className="px-4 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 text-stone-900 rounded-xl font-medium hover:bg-amber-400 transition-colors"
             >
-              + 새 프로젝트 등록
+              <Plus size={18} />
+              새 프로젝트 등록
             </Link>
           </div>
+
+          {/* 통계 카드 */}
+          {isLoadingStats ? (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-8">
+              {[...Array(5)].map((_, idx) => (
+                <div key={idx} className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/20 animate-pulse">
+                  <div className="h-4 bg-white/20 rounded w-20 mb-3"></div>
+                  <div className="h-8 bg-white/20 rounded w-16"></div>
+                </div>
+              ))}
+            </div>
+          ) : isErrorStats ? (
+            <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 mt-8">
+              <p className="text-red-200">통계를 불러오는데 실패했습니다.</p>
+            </div>
+          ) : stats && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-8">
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <BarChart3 className="text-amber-400" size={18} />
+                  <span className="text-sm text-white/80">전체 프로젝트</span>
+                </div>
+                <p className="text-2xl font-light text-white">{stats.totalProjects}개</p>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="text-blue-400" size={18} />
+                  <span className="text-sm text-white/80">진행 중</span>
+                </div>
+                <p className="text-2xl font-light text-white">{stats.activeProjects}개</p>
+                <p className="text-xs text-white/60 mt-1">{formatAmount(stats.activeFunding)}원 모금 중</p>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Wallet className="text-orange-400" size={18} />
+                  <span className="text-sm text-white/80">결산 중</span>
+                </div>
+                <p className="text-2xl font-light text-white">{stats.settlementProjects}개</p>
+                <p className="text-xs text-white/60 mt-1">저금통 {formatAmount(stats.totalWalletBalance)}원</p>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="text-green-400" size={18} />
+                  <span className="text-sm text-white/80">종료됨</span>
+                </div>
+                <p className="text-2xl font-light text-white">{stats.closedProjects}개</p>
+              </div>
+
+              <div className="bg-amber-500/20 backdrop-blur-sm rounded-2xl p-5 border border-amber-500/30 col-span-2 md:col-span-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="text-amber-400" size={18} />
+                  <span className="text-sm text-white/80">누적 모금액</span>
+                </div>
+                <p className="text-2xl font-light text-white">{formatAmount(stats.totalFunding)}원</p>
+              </div>
+            </div>
+          )}
         </div>
+      </section>
 
-        {/* 통계 카드 */}
-        {isLoadingStats ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-            {[...Array(5)].map((_, idx) => (
-              <div key={idx} className="bg-white rounded-xl p-6 border border-gray-200">
-                <div className="h-4 bg-gray-200 rounded animate-pulse w-20 mb-4"></div>
-                <div className="h-8 bg-gray-200 rounded animate-pulse w-16 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded animate-pulse w-24"></div>
-              </div>
-            ))}
-          </div>
-        ) : isErrorStats ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
-            <p className="text-red-700">통계를 불러오는데 실패했습니다.</p>
-          </div>
-        ) : stats ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-            {/* 전체 프로젝트 */}
-            <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
-              <div className="flex items-center gap-2 mb-3">
-                <BarChart3 className="text-gray-600" size={20} />
-                <p className="text-sm text-gray-600 font-medium">전체 프로젝트</p>
-              </div>
-              <p className="text-3xl font-bold text-gray-900 mb-1">{stats.totalProjects}개</p>
-            </div>
-
-            {/* 진행 중 */}
-            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-200 hover:shadow-lg transition-shadow">
-              <div className="flex items-center gap-2 mb-3">
-                <Clock className="text-blue-600" size={20} />
-                <p className="text-sm text-blue-700 font-medium">진행 중</p>
-              </div>
-              <p className="text-3xl font-bold text-blue-900 mb-1">{stats.activeProjects}개</p>
-              <p className="text-xs text-blue-600">{formatAmount(stats.activeFunding)}원 모금 중</p>
-            </div>
-
-            {/* 결산 중 */}
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-200 hover:shadow-lg transition-shadow">
-              <div className="flex items-center gap-2 mb-3">
-                <Wallet className="text-orange-600" size={20} />
-                <p className="text-sm text-orange-700 font-medium">결산 중</p>
-              </div>
-              <p className="text-3xl font-bold text-orange-900 mb-1">{stats.settlementProjects}개</p>
-              <p className="text-xs text-orange-600">저금통 {formatAmount(stats.totalWalletBalance)}원</p>
-            </div>
-
-            {/* 종료됨 */}
-            <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
-              <div className="flex items-center gap-2 mb-3">
-                <CheckCircle className="text-gray-600" size={20} />
-                <p className="text-sm text-gray-700 font-medium">종료됨</p>
-              </div>
-              <p className="text-3xl font-bold text-gray-900 mb-1">{stats.closedProjects}개</p>
-            </div>
-
-            {/* 총 모금액 */}
-            <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-6 border border-red-200 hover:shadow-lg transition-shadow">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="text-red-600" size={20} />
-                <p className="text-sm text-red-700 font-medium">총 모금액</p>
-              </div>
-              <p className="text-2xl font-bold text-red-900 mb-1">{formatAmount(stats.totalFunding)}원</p>
-            </div>
-          </div>
-        ) : null}
-
-        {/* 검색 및 필터 */}
-        <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 mb-6">
-          <div className="flex flex-col md:flex-row gap-3 md:gap-4">
-            {/* 검색창 */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+      {/* Filter & List Section */}
+      <section className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-8">
+        {/* 필터 */}
+        <div className="bg-white rounded-2xl shadow-md p-4 md:p-6 mb-6">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
               <input
                 type="text"
-                placeholder="프로젝트 검색..."
+                placeholder="프로젝트명 검색..."
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500"
+                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 text-sm transition-all"
               />
               {isLoadingProjects && searchKeyword !== debouncedSearchKeyword && (
-                <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 animate-spin" size={18} />
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 animate-spin" size={18} />
               )}
             </div>
 
-            {/* 상태 필터 */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 cursor-pointer"
+              className="px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 text-sm"
             >
-              <option value="">전체</option>
-              <option value="active">모금 진행 중</option>
-              <option value="completed">모금 완료 (정산 대기 중)</option>
-              <option value="settlement">결산 중</option>
+              <option value="">전체 상태</option>
+              <option value="pending">심사중</option>
+              <option value="active">진행중</option>
+              <option value="completed">완료</option>
+              <option value="settlement">결산중</option>
               <option value="closed">종료</option>
             </select>
 
-            {/* 정렬 */}
             <select
               value={sortOption}
               onChange={(e) => setSortOption(e.target.value)}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 cursor-pointer"
+              className="px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 text-sm"
             >
               <option value="latest">최신순</option>
               <option value="deadline">마감임박순</option>
               <option value="fundingRate">모금률순</option>
             </select>
+
+            {/* 뷰 모드 토글 */}
+            <div className="flex border border-stone-200 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2.5 transition-colors ${viewMode === 'grid' ? 'bg-amber-500 text-stone-900' : 'bg-stone-50 text-stone-500 hover:bg-stone-100'}`}
+                title="카드 보기"
+              >
+                <LayoutGrid size={18} />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2.5 transition-colors ${viewMode === 'list' ? 'bg-amber-500 text-stone-900' : 'bg-stone-50 text-stone-500 hover:bg-stone-100'}`}
+                title="목록 보기"
+              >
+                <List size={18} />
+              </button>
+            </div>
           </div>
         </div>
 
         {/* 프로젝트 목록 */}
         {isLoadingProjects ? (
-          <div className="grid grid-cols-1 gap-4">
-            {[...Array(3)].map((_, idx) => (
-              <div key={idx} className="bg-white rounded-xl p-6 border border-gray-200">
-                <div className="flex gap-4">
-                  <div className="w-32 h-32 bg-gray-200 rounded-lg animate-pulse"></div>
-                  <div className="flex-1">
-                    <div className="h-6 bg-gray-200 rounded animate-pulse w-1/2 mb-3"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4 mb-4"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-1/4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[...Array(6)].map((_, idx) => (
+              <div key={idx} className="bg-white rounded-2xl overflow-hidden animate-pulse shadow-md">
+                <div className="h-40 bg-stone-200"></div>
+                <div className="p-5">
+                  <div className="h-4 bg-stone-200 rounded w-20 mb-3"></div>
+                  <div className="h-6 bg-stone-200 rounded w-full mb-4"></div>
+                  <div className="h-2 bg-stone-200 rounded w-full mb-4"></div>
+                  <div className="flex gap-2">
+                    <div className="h-10 bg-stone-200 rounded flex-1"></div>
+                    <div className="h-10 bg-stone-200 rounded flex-1"></div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         ) : isErrorProjects ? (
-          <div className="bg-white rounded-xl p-12 border border-gray-200 text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="text-gray-600 mb-4">프로젝트를 불러오는데 실패했습니다.</p>
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
+            <AlertCircle className="mx-auto mb-4 text-red-400" size={48} />
+            <p className="text-red-700 font-medium">프로젝트 목록을 불러오는데 실패했습니다.</p>
             <button
               onClick={() => refetch()}
-              className="px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600"
+              className="mt-4 px-6 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors"
             >
               다시 시도
             </button>
           </div>
         ) : displayProjects.length === 0 ? (
-          <div className="bg-white rounded-xl p-12 border border-gray-200 text-center">
-            <BarChart3 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg mb-4">
-              {searchKeyword || statusFilter
-                ? '검색 결과가 없습니다.'
-                : '등록된 프로젝트가 없습니다.'
-              }
+          <div className="bg-white rounded-2xl shadow-md p-12 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-stone-100 rounded-full flex items-center justify-center">
+              <Target className="text-stone-300" size={32} />
+            </div>
+            <p className="text-stone-600 font-medium mb-2">
+              {searchKeyword || statusFilter ? '검색 결과가 없습니다.' : '등록된 프로젝트가 없습니다.'}
             </p>
+            <p className="text-stone-500 text-sm mb-6">첫 번째 프로젝트를 등록해보세요!</p>
             <Link
               to="/projects/create"
-              className="inline-block px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 text-stone-900 rounded-xl font-medium hover:bg-amber-400 transition-colors"
             >
-              첫 프로젝트 등록하기
+              <Plus size={18} />
+              프로젝트 등록하기
             </Link>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {displayProjects.map((project) => {
+        ) : viewMode === 'grid' ? (
+          /* 카드 뷰 (Grid) */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {displayProjects.map((project: Project) => {
               const progress = calculatePercentage(project.currentAmount, project.targetAmount);
+              const statusInfo = getStatusBadge(project.status || 'pending');
               const categoryKo = getCategoryLabel(project.category);
-              const statusInfo = getStatusBadge(project.status || 'active');
 
               return (
                 <div
                   key={project.id}
-                  className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden"
+                  className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all group"
                 >
-                  <div className="flex flex-col md:flex-row">
-                    {/* 프로젝트 이미지 */}
-                    <div className="md:w-48 h-48 md:h-auto bg-gray-200 flex-shrink-0">
-                      {project.image ? (
-                        <img
-                          src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.image}`}
-                          alt={project.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
+                  <div className="h-40 bg-gradient-to-br from-amber-200 to-orange-200 relative overflow-hidden">
+                    {project.image ? (
+                      <img
+                        src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.image}`}
+                        alt={project.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Target size={48} className="text-white/40" />
+                      </div>
+                    )}
+
+                    <div className="absolute top-3 right-3">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${statusInfo.color}`}>
+                        {statusInfo.icon}
+                        {statusInfo.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium">
+                        {categoryKo}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-medium text-stone-800 mb-3 line-clamp-1 group-hover:text-amber-600 transition-colors">
+                      {project.title}
+                    </h3>
+
+                    <div className="mb-4">
+                      <div className="flex justify-between text-sm mb-1.5">
+                        <span className="font-medium text-amber-600">{progress}%</span>
+                        <span className="text-stone-400">D-{project.dday}</span>
+                      </div>
+                      <div className="w-full bg-stone-100 rounded-full h-2">
+                        <div
+                          className="bg-gradient-to-r from-amber-400 to-amber-500 h-2 rounded-full"
+                          style={{ width: `${Math.min(progress, 100)}%` }}
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          <BarChart3 size={48} />
-                        </div>
-                      )}
+                      </div>
                     </div>
 
-                    {/* 프로젝트 정보 */}
-                    <div className="flex-1 p-6">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs font-semibold">
-                              {categoryKo}
-                            </span>
-                            <span className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 ${statusInfo.color}`}>
-                              {statusInfo.icon}
-                              {statusInfo.label}
-                            </span>
-                          </div>
-                          <h3 className="text-xl font-bold text-gray-900 mb-2">{project.title}</h3>
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-4 text-xs text-stone-500 mb-4">
+                      <span>현재: <strong className="text-stone-800">{formatAmount(project.currentAmount)}원</strong></span>
+                      <span className="flex items-center gap-1">
+                        <Users size={12} />
+                        {project.donors}명
+                      </span>
+                    </div>
 
-                      {/* 진행률 */}
-                      <div className="mb-4">
-                        <div className="flex justify-between text-sm mb-2">
-                          <span className="font-bold text-red-500">{progress}%</span>
-                          <span className="text-gray-600">D-{project.dday}</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-red-500 h-2 rounded-full"
-                            style={{ width: `${Math.min(progress, 100)}%` }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      {/* 통계 */}
-                      <div className="flex items-center gap-6 text-sm text-gray-600 mb-4">
-                        <span>현재: <strong className="text-gray-900">{formatAmount(project.currentAmount)}원</strong></span>
-                        <span>목표: <strong className="text-gray-900">{formatAmount(project.targetAmount)}원</strong></span>
-                        <span>참여: <strong className="text-gray-900">{project.donors}명</strong></span>
-                      </div>
-
-                      {/* 액션 버튼 */}
-                      <div className="flex gap-2">
-                        {/* 수정 버튼: CLOSED, CANCELLED, REJECTED 제외한 모든 상태에서 표시 */}
-                        {canEditProject(project.status) && (
-                          <button
-                            onClick={() => {
-                              setSelectedProject(project);
-                              setShowEditModal(true);
-                            }}
-                            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            <Edit size={16} />
-                            수정
-                          </button>
-                        )}
-                        {(project.status?.toLowerCase() === 'settlement' || project.status?.toLowerCase() === 'closed') && (
-                          <Link
-                            to={`/organization/projects/${project.id}/piggybank`}
-                            className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                          >
-                            <Wallet size={16} />
-                            저금통 관리
-                          </Link>
-                        )}
-                        {project.status?.toLowerCase() === 'completed' && (
-                          <>
-                            {/* Settlement이 없거나 REJECTED인 경우: 정산 요청 버튼 */}
-                            {(!project.settlementStatus || project.settlementStatus === 'REJECTED') && (
-                              <button
-                                onClick={() => {
-                                  setSelectedProject(project);
-                                  setShowSettlementModal(true);
-                                }}
-                                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                              >
-                                <Wallet size={16} />
-                                정산 요청
-                              </button>
-                            )}
-                            {/* Settlement PENDING: 정산 대기 중 */}
-                            {project.settlementStatus === 'PENDING' && (
-                              <div className="flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg border border-yellow-300">
-                                <Wallet size={16} />
-                                정산 대기 중
-                              </div>
-                            )}
-                            {/* Settlement APPROVED: 저금통 관리 */}
-                            {project.settlementStatus === 'APPROVED' && (
-                              <Link
-                                to={`/organization/projects/${project.id}/piggybank`}
-                                className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                              >
-                                <Wallet size={16} />
-                                저금통 관리
-                              </Link>
-                            )}
-                          </>
-                        )}
-                        <Link
-                          to={`/projects/${project.id}`}
-                          className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                    <div className="flex gap-2">
+                      {canEditProject(project.status) && (
+                        <button
+                          onClick={() => {
+                            setSelectedProject(project);
+                            setShowEditModal(true);
+                          }}
+                          className="flex items-center justify-center gap-1.5 flex-1 px-3 py-2.5 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors text-sm text-stone-600"
                         >
-                          <Eye size={16} />
-                          상세보기
+                          <Edit size={14} />
+                          수정
+                        </button>
+                      )}
+                      {(project.status?.toLowerCase() === 'settlement' || project.status?.toLowerCase() === 'closed') && (
+                        <Link
+                          to={`/organization/projects/${project.id}/piggybank`}
+                          className="flex items-center justify-center gap-1.5 flex-1 px-3 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors text-sm"
+                        >
+                          <Wallet size={14} />
+                          저금통
                         </Link>
-                      </div>
+                      )}
+                      {project.status?.toLowerCase() === 'completed' && (
+                        <>
+                          {(!project.settlementStatus || project.settlementStatus === 'REJECTED') && (
+                            <button
+                              onClick={() => {
+                                setSelectedProject(project);
+                                setShowSettlementModal(true);
+                              }}
+                              className="flex items-center justify-center gap-1.5 flex-1 px-3 py-2.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors text-sm"
+                            >
+                              <Wallet size={14} />
+                              정산 요청
+                            </button>
+                          )}
+                          {project.settlementStatus === 'PENDING' && (
+                            <div className="flex items-center justify-center gap-1.5 flex-1 px-3 py-2.5 bg-yellow-100 text-yellow-700 rounded-xl text-sm border border-yellow-200">
+                              <Clock size={14} />
+                              정산 대기
+                            </div>
+                          )}
+                          {project.settlementStatus === 'APPROVED' && (
+                            <Link
+                              to={`/organization/projects/${project.id}/piggybank`}
+                              className="flex items-center justify-center gap-1.5 flex-1 px-3 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors text-sm"
+                            >
+                              <Wallet size={14} />
+                              저금통
+                            </Link>
+                          )}
+                        </>
+                      )}
+                      <Link
+                        to={`/projects/${project.id}`}
+                        className="flex items-center justify-center gap-1.5 flex-1 px-3 py-2.5 bg-amber-500 text-stone-900 rounded-xl hover:bg-amber-400 transition-colors text-sm font-medium"
+                      >
+                        <Eye size={14} />
+                        상세
+                      </Link>
                     </div>
                   </div>
                 </div>
               );
             })}
           </div>
+        ) : (
+          /* 리스트 뷰 (Table) */
+          <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+            {/* 테이블 헤더 */}
+            <div className="hidden md:grid md:grid-cols-12 gap-4 px-6 py-4 bg-stone-50 border-b border-stone-200 text-sm font-medium text-stone-600">
+              <div className="col-span-4">프로젝트</div>
+              <div className="col-span-2 text-center">상태</div>
+              <div className="col-span-2 text-right">모금현황</div>
+              <div className="col-span-1 text-center">D-Day</div>
+              <div className="col-span-1 text-center">참여</div>
+              <div className="col-span-2 text-center">관리</div>
+            </div>
+
+            {/* 테이블 바디 */}
+            <div className="divide-y divide-stone-100">
+              {displayProjects.map((project: Project) => {
+                const progress = calculatePercentage(project.currentAmount, project.targetAmount);
+                const statusInfo = getStatusBadge(project.status || 'pending');
+                const categoryKo = getCategoryLabel(project.category);
+
+                return (
+                  <div
+                    key={project.id}
+                    className="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-4 hover:bg-stone-50 transition-colors items-center"
+                  >
+                    {/* 프로젝트 정보 */}
+                    <div className="col-span-1 md:col-span-4 flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-200 to-orange-200 flex-shrink-0 overflow-hidden">
+                        {project.image ? (
+                          <img
+                            src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.image}`}
+                            alt={project.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Target size={20} className="text-white/60" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium">
+                            {categoryKo}
+                          </span>
+                        </div>
+                        <h3 className="text-sm font-medium text-stone-800 truncate">
+                          {project.title}
+                        </h3>
+                      </div>
+                    </div>
+
+                    {/* 상태 */}
+                    <div className="col-span-1 md:col-span-2 flex md:justify-center">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${statusInfo.color}`}>
+                        {statusInfo.icon}
+                        {statusInfo.label}
+                      </span>
+                    </div>
+
+                    {/* 모금현황 */}
+                    <div className="col-span-1 md:col-span-2 text-right">
+                      <div className="text-sm font-medium text-stone-800">{formatAmount(project.currentAmount)}원</div>
+                      <div className="flex items-center justify-end gap-2 mt-1">
+                        <div className="w-16 bg-stone-100 rounded-full h-1.5">
+                          <div
+                            className="bg-gradient-to-r from-amber-400 to-amber-500 h-1.5 rounded-full"
+                            style={{ width: `${Math.min(progress, 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-amber-600 font-medium">{progress}%</span>
+                      </div>
+                    </div>
+
+                    {/* D-Day */}
+                    <div className="col-span-1 md:col-span-1 text-center">
+                      <span className="text-sm text-stone-500">D-{project.dday}</span>
+                    </div>
+
+                    {/* 참여자 */}
+                    <div className="col-span-1 md:col-span-1 text-center">
+                      <span className="text-sm text-stone-600 flex items-center justify-center gap-1">
+                        <Users size={14} className="text-stone-400" />
+                        {project.donors}
+                      </span>
+                    </div>
+
+                    {/* 관리 버튼 */}
+                    <div className="col-span-1 md:col-span-2 flex items-center justify-center gap-1">
+                      {canEditProject(project.status) && (
+                        <button
+                          onClick={() => {
+                            setSelectedProject(project);
+                            setShowEditModal(true);
+                          }}
+                          className="p-2 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors"
+                          title="수정"
+                        >
+                          <Edit size={16} />
+                        </button>
+                      )}
+                      {(project.status?.toLowerCase() === 'settlement' || project.status?.toLowerCase() === 'closed') && (
+                        <Link
+                          to={`/organization/projects/${project.id}/piggybank`}
+                          className="p-2 text-orange-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                          title="저금통"
+                        >
+                          <Wallet size={16} />
+                        </Link>
+                      )}
+                      {project.status?.toLowerCase() === 'completed' && (
+                        <>
+                          {(!project.settlementStatus || project.settlementStatus === 'REJECTED') && (
+                            <button
+                              onClick={() => {
+                                setSelectedProject(project);
+                                setShowSettlementModal(true);
+                              }}
+                              className="p-2 text-green-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              title="정산 요청"
+                            >
+                              <Wallet size={16} />
+                            </button>
+                          )}
+                          {project.settlementStatus === 'PENDING' && (
+                            <span className="p-2 text-yellow-600" title="정산 대기 중">
+                              <Clock size={16} />
+                            </span>
+                          )}
+                          {project.settlementStatus === 'APPROVED' && (
+                            <Link
+                              to={`/organization/projects/${project.id}/piggybank`}
+                              className="p-2 text-orange-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                              title="저금통"
+                            >
+                              <Wallet size={16} />
+                            </Link>
+                          )}
+                        </>
+                      )}
+                      <Link
+                        to={`/projects/${project.id}`}
+                        className="p-2 text-amber-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                        title="상세보기"
+                      >
+                        <Eye size={16} />
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
 
-        {/* 페이지네이션 */}
         {projects && projects.totalPages > 1 && (
           <Pagination
             currentPage={currentPage}
@@ -426,7 +590,6 @@ const OrganizationDashboardPage: React.FC = () => {
           />
         )}
 
-        {/* 정산 요청 모달 */}
         {showSettlementModal && selectedProject && (
           <SettlementRequestModal
             projectId={selectedProject.id}
@@ -442,7 +605,6 @@ const OrganizationDashboardPage: React.FC = () => {
           />
         )}
 
-        {/* 프로젝트 수정 모달 */}
         {showEditModal && selectedProject && (
           <EditProjectModal
             project={selectedProject}
@@ -461,7 +623,6 @@ const OrganizationDashboardPage: React.FC = () => {
           />
         )}
 
-        {/* 확인 모달 */}
         <ConfirmModal
           isOpen={confirmModal.isOpen}
           title={confirmModal.title}
@@ -470,7 +631,7 @@ const OrganizationDashboardPage: React.FC = () => {
           onCancel={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
           isDanger={confirmModal.isDanger}
         />
-      </div>
+      </section>
     </div>
   );
 };

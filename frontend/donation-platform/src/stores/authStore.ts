@@ -23,6 +23,7 @@ interface AuthState {
   login: (token: string, user: User) => void;
   logout: () => void;
   updateUser: (user: Partial<User>) => void;
+  updateToken: (token: string) => void; // 토큰 갱신용
 }
 
 /**
@@ -61,6 +62,11 @@ export const useAuthStore = create<AuthState>()(
         set((state) => ({
           user: state.user ? { ...state.user, ...updatedUser } : null,
         }));
+      },
+
+      // 토큰만 업데이트 (세션 연장용)
+      updateToken: (token) => {
+        set({ token });
       },
     }),
     {
