@@ -20,10 +20,12 @@ import {
   Users,
   Lock,
   Mail,
-  Phone
+  Phone,
+  BarChart3
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DonationHistoryPage from './DonationHistoryPage';
+import StatisticsPage from './StatisticsPage';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserFavoriteProjects, useProjects, useSettlementProjects, useToggleFavoriteProject } from '../../hooks/useProjects';
 import { useMyDonations } from '../../hooks/useDonations';
@@ -67,15 +69,16 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   const { updateUser, isLoggedIn, logout } = useAuthStore();  // user는 MyPageMain 안에서 가져옴
 
   // URL 파라미터에서 초기 탭 설정
-  const getInitialTab = (): 'main' | 'profile-edit' | 'donation-history' | 'favorite-projects' => {
+  const getInitialTab = (): 'main' | 'profile-edit' | 'donation-history' | 'favorite-projects' | 'statistics' => {
     const tab = searchParams.get('tab');
     if (tab === 'favorite-projects' || tab === 'favorites') return 'favorite-projects';
     if (tab === 'donation-history' || tab === 'donations') return 'donation-history';
     if (tab === 'profile-edit') return 'profile-edit';
+    if (tab === 'statistics') return 'statistics';
     return 'main';
   };
 
-  const [selectedMenu, setSelectedMenu] = useState<'main' | 'profile-edit' | 'donation-history' | 'favorite-projects'>(getInitialTab());
+  const [selectedMenu, setSelectedMenu] = useState<'main' | 'profile-edit' | 'donation-history' | 'favorite-projects' | 'statistics'>(getInitialTab());
     
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
@@ -560,6 +563,13 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
                   >
                     <span>관심 프로젝트</span>
+                    <ChevronRight size={16} className="text-stone-400 group-hover:text-amber-500" />
+                  </button>
+                  <button
+                    onClick={() => setSelectedMenu('statistics')}
+                    className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
+                  >
+                    <span>통계</span>
                     <ChevronRight size={16} className="text-stone-400 group-hover:text-amber-500" />
                   </button>
                 </div>
@@ -1250,6 +1260,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         <DonationHistoryPage onBack={() => setSelectedMenu('main')} />
       )}
       {selectedMenu === 'favorite-projects' && <FavoriteProjectsPage />}
+      {selectedMenu === 'statistics' && (
+        <StatisticsPage onBack={() => setSelectedMenu('main')} />
+      )}
       {showPasswordModal && <PasswordChangeModal />}
       {showDeleteAccountModal && <DeleteAccountModal />}
 

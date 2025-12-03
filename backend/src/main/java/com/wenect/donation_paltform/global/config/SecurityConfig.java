@@ -65,7 +65,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/projects/**").permitAll()
                         .requestMatchers("/api/donations/**").permitAll()
                         .requestMatchers("/api/payments/**").permitAll() // 결제 API는 인증 불필요
-                        .requestMatchers("/api/statistics/**").permitAll()
+                        .requestMatchers("/api/statistics/user/**").hasRole("USER") // 사용자 통계 API는 USER 권한 필요
+                        .requestMatchers("/api/statistics/**").permitAll() // 기타 통계 API는 인증 불필요
                         .requestMatchers("/api/notifications/**").permitAll() // 알림 API 허용
                         .requestMatchers("/api/files/**").permitAll() // 파일 업로드 API 허용
                         .requestMatchers("/uploads/**").permitAll() // 업로드된 파일 접근 허용
