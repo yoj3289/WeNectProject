@@ -26,6 +26,34 @@ export function useRecentDonations(limit: number = 4) {
 }
 
 /**
+ * 홈페이지 후기 섹션용 Featured 응원 메시지 조회
+ */
+export function useFeaturedMessages(limit: number = 3) {
+  return useQuery({
+    queryKey: ['featured-messages', limit],
+    queryFn: () => donationsApi.getFeaturedMessages(limit),
+    staleTime: 5 * 60 * 1000, // 5분간 캐시
+    refetchOnWindowFocus: false, // 포커스 시 재조회 안 함 (자주 변경되지 않음)
+  });
+}
+
+/**
+ * 기부 메시지의 Featured 상태 토글 (관리자용)
+ */
+export function useToggleFeatured() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ donationId, isFeatured }: { donationId: number; isFeatured: boolean }) =>
+      donationsApi.toggleFeatured(donationId, isFeatured),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['featured-messages'] });
+      queryClient.invalidateQueries({ queryKey: ['project-donations'] });
+    },
+  });
+}
+
+/**
  * 프로젝트별 기부 내역
  */
 export function useProjectDonations(projectId: number) {
@@ -125,5 +153,19 @@ export function useDownloadReceiptPdf() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     },
+  });
+}
+
+// ==================== 관리자용 Hooks ====================
+
+/**
+ * 관리자용 전체 기부 내역 조회 (필터 지원)
+ */
+export function useAdminDonations(filters: donationsApi.AdminDonationFilters = {}) {
+  return useQuery({
+    queryKey: ['admin-donations', filters],
+    queryFn: () => donationsApi.getAdminDonations(filters),
+    staleTime: 1 * 60 * 1000, // 1분간 캐시
+    refetchOnWindowFocus: true,
   });
 }

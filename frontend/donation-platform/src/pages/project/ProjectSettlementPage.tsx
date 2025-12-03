@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2, ChevronLeft, ChevronRight, CheckCircle, FileText, Wallet, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useToggleFavoriteProject, useUserFavoriteProjects } from '../../hooks/useProjects';
 import { useExpenses, useSettlementSummary } from '../../hooks/useExpenses';
@@ -70,11 +70,11 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
       '아동복지': { icon: <Baby size={120} />, bgColor: 'from-pink-100 to-rose-100' },
       '동물보호': { icon: <Dog size={120} />, bgColor: 'from-cyan-100 to-teal-100' },
       '노인복지': { icon: <UserCircle size={120} />, bgColor: 'from-emerald-100 to-green-100' },
-      '환경보호': { icon: <TreePine size={120} />, bgColor: 'from-red-100 to-orange-100' },
+      '환경보호': { icon: <TreePine size={120} />, bgColor: 'from-lime-100 to-green-100' },
       '교육': { icon: <GraduationCap size={120} />, bgColor: 'from-purple-100 to-indigo-100' },
       '장애인복지': { icon: <Accessibility size={120} />, bgColor: 'from-rose-100 to-pink-100' }
     };
-    return iconMap[category] || { icon: <Heart size={120} />, bgColor: 'from-gray-100 to-gray-200' };
+    return iconMap[category] || { icon: <Heart size={120} />, bgColor: 'from-amber-50 to-orange-50' };
   };
 
   const copyToClipboard = (text: string) => {
@@ -108,38 +108,42 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
       case 'COMPLETED':
         return {
           badge: '모금 완료',
-          badgeColor: 'bg-blue-100 text-blue-600 border-blue-500',
+          badgeColor: 'bg-blue-500 text-white',
           title: '모금 완료',
           message: '정산 대기 중입니다',
-          iconColor: 'text-blue-600',
-          bgColor: 'bg-blue-50'
+          bgColor: 'from-blue-50 to-blue-100',
+          borderColor: 'border-blue-200',
+          textColor: 'text-blue-700'
         };
       case 'SETTLEMENT':
         return {
           badge: '결산 진행 중',
-          badgeColor: 'bg-purple-100 text-purple-600 border-purple-500',
+          badgeColor: 'bg-purple-500 text-white',
           title: '결산 진행 중',
           message: '저금통 관리 중입니다',
-          iconColor: 'text-purple-600',
-          bgColor: 'bg-purple-50'
+          bgColor: 'from-purple-50 to-purple-100',
+          borderColor: 'border-purple-200',
+          textColor: 'text-purple-700'
         };
       case 'CLOSED':
         return {
           badge: '프로젝트 완료',
-          badgeColor: 'bg-green-100 text-green-600 border-green-500',
+          badgeColor: 'bg-green-500 text-white',
           title: '프로젝트 완료',
           message: '성공적으로 종료되었습니다',
-          iconColor: 'text-green-600',
-          bgColor: 'bg-green-50'
+          bgColor: 'from-green-50 to-green-100',
+          borderColor: 'border-green-200',
+          textColor: 'text-green-700'
         };
       default:
         return {
           badge: '프로젝트 완료',
-          badgeColor: 'bg-green-100 text-green-600 border-green-500',
+          badgeColor: 'bg-green-500 text-white',
           title: '프로젝트 완료',
           message: '성공적으로 종료되었습니다',
-          iconColor: 'text-green-600',
-          bgColor: 'bg-green-50'
+          bgColor: 'from-green-50 to-green-100',
+          borderColor: 'border-green-200',
+          textColor: 'text-green-700'
         };
     }
   };
@@ -153,7 +157,7 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
         return (
           <div className="prose max-w-none">
             <div
-              className="text-gray-700 leading-relaxed"
+              className="text-stone-700 leading-relaxed"
               dangerouslySetInnerHTML={{ __html: sanitizeHTML(project.description) }}
             />
           </div>
@@ -165,15 +169,15 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
           />
         ) : (
           <div className="text-center py-8">
-            <Loader2 className="w-8 h-8 text-red-500 animate-spin mx-auto mb-2" />
-            <p className="text-gray-600">결산 정보를 불러오는 중...</p>
+            <Loader2 className="w-8 h-8 text-amber-500 animate-spin mx-auto mb-2" />
+            <p className="text-stone-600">결산 정보를 불러오는 중...</p>
           </div>
         );
       case 'expenses':
         return isLoadingExpenses ? (
           <div className="text-center py-8">
-            <Loader2 className="w-8 h-8 text-red-500 animate-spin mx-auto mb-2" />
-            <p className="text-gray-600">지출 내역을 불러오는 중...</p>
+            <Loader2 className="w-8 h-8 text-amber-500 animate-spin mx-auto mb-2" />
+            <p className="text-stone-600">지출 내역을 불러오는 중...</p>
           </div>
         ) : (
           <ExpenseListTab
@@ -184,8 +188,8 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
       case 'receipts':
         return isLoadingExpenses ? (
           <div className="text-center py-8">
-            <Loader2 className="w-8 h-8 text-red-500 animate-spin mx-auto mb-2" />
-            <p className="text-gray-600">영수증을 불러오는 중...</p>
+            <Loader2 className="w-8 h-8 text-amber-500 animate-spin mx-auto mb-2" />
+            <p className="text-stone-600">영수증을 불러오는 중...</p>
           </div>
         ) : (
           <ReceiptGalleryTab
@@ -199,23 +203,59 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen pb-12">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
-        <button
-          onClick={() => navigate(-1)}
-          className="mb-4 md:mb-6 text-gray-600 hover:text-gray-900 font-semibold text-sm md:text-base"
-        >
-          ← 목록으로
-        </button>
+    <div className="bg-stone-50 min-h-screen">
+      {/* 다크 헤더 - 간결하게 제목과 기본 정보만 */}
+      <div className="bg-stone-900">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6">
+          {/* 뒤로가기 */}
+          <button
+            onClick={() => navigate(-1)}
+            className="mb-4 text-stone-400 hover:text-white font-medium text-sm flex items-center gap-1 transition-colors"
+          >
+            <ChevronLeft size={18} />
+            프로젝트 목록
+          </button>
 
+          {/* 프로젝트 기본 정보 */}
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div className="flex-1">
+              {/* 배지들 */}
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <span className="px-3 py-1 bg-amber-500 text-white rounded-full text-sm font-medium">
+                  {categoryKo}
+                </span>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${statusInfo.badgeColor}`}>
+                  <CheckCircle size={14} />
+                  {statusInfo.badge}
+                </span>
+              </div>
+
+              {/* 제목 */}
+              <h1 className="text-2xl md:text-3xl font-medium text-white mb-2">
+                {project.title}
+              </h1>
+
+              {/* 기관명 */}
+              <div className="flex items-center gap-2 text-stone-400">
+                <Building2 size={16} />
+                <span>
+                  {typeof project.organization === 'string' ? project.organization : project.organization.name}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 메인 콘텐츠 */}
+      <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-          {/* 메인 컨텐츠 */}
-          <div className="lg:col-span-2 space-y-4 md:space-y-6">
-            {/* 프로젝트 이미지 슬라이드 */}
+          {/* 왼쪽: 이미지 + 탭 콘텐츠 */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* 프로젝트 이미지 */}
             {project.images && project.images.length > 0 ? (
-              <div className="relative bg-black rounded-xl md:rounded-2xl overflow-hidden group">
-                {/* 메인 이미지 */}
-                <div className="aspect-video bg-gray-900 flex items-center justify-center">
+              <div className="relative bg-white rounded-2xl border border-stone-200 overflow-hidden group">
+                <div className="aspect-video flex items-center justify-center bg-stone-100">
                   <img
                     src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.images[currentImageIndex].imageUrl}`}
                     alt={`${project.title} - 이미지 ${currentImageIndex + 1}`}
@@ -230,17 +270,17 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
                       onClick={() => setCurrentImageIndex((prev) =>
                         prev === 0 ? (project.images?.length ?? 1) - 1 : prev - 1
                       )}
-                      className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 md:p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-stone-700 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                     >
-                      <ChevronLeft size={24} />
+                      <ChevronLeft size={20} />
                     </button>
                     <button
                       onClick={() => setCurrentImageIndex((prev) =>
                         prev === (project.images?.length ?? 1) - 1 ? 0 : prev + 1
                       )}
-                      className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 md:p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-stone-700 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                     >
-                      <ChevronRight size={24} />
+                      <ChevronRight size={20} />
                     </button>
                   </>
                 )}
@@ -254,53 +294,26 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
                         onClick={() => setCurrentImageIndex(index)}
                         className={`w-2 h-2 rounded-full transition-all ${
                           index === currentImageIndex
-                            ? 'bg-white w-8'
-                            : 'bg-white/50 hover:bg-white/75'
+                            ? 'bg-green-500 w-6'
+                            : 'bg-stone-400/50 hover:bg-stone-400'
                         }`}
                       />
                     ))}
                   </div>
                 )}
-
-                {/* 이미지 카운터 */}
-                <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-                  {currentImageIndex + 1} / {project.images.length}
-                </div>
               </div>
             ) : (
-              // 이미지가 없을 때 기본 카테고리 아이콘 표시
-              <div className={`bg-gradient-to-br ${categoryInfo.bgColor} rounded-xl md:rounded-2xl p-8 md:p-12 lg:p-16 flex items-center justify-center`}>
-                <div className="text-gray-400">
+              <div className={`bg-gradient-to-br ${categoryInfo.bgColor} rounded-2xl p-12 flex items-center justify-center border border-stone-200`}>
+                <div className="text-stone-400">
                   {categoryInfo.icon}
                 </div>
               </div>
             )}
 
-            {/* 프로젝트 상세 카드 (제목 + 탭) */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              {/* 프로젝트 헤더 */}
-              <div className="p-4 md:p-6 lg:p-8 border-b border-gray-200">
-                <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  <span className="px-2 md:px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs md:text-sm font-semibold">
-                    {categoryKo}
-                  </span>
-                  <span className={`px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1 ${statusInfo.badgeColor}`}>
-                    <CheckCircle size={14} />
-                    {statusInfo.badge}
-                  </span>
-                </div>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 md:mb-3">{project.title}</h1>
-                    <p className="text-base md:text-lg lg:text-xl text-gray-600">
-                      {typeof project.organization === 'string' ? project.organization : project.organization.name}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
+            {/* 탭 영역 */}
+            <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
               {/* 탭 네비게이션 (결산 프로젝트 전용) */}
-              <div className="flex border-b border-gray-200 overflow-x-auto">
+              <div className="flex border-b border-stone-100 bg-stone-50">
                 {[
                   { id: 'intro', label: '프로젝트 소개' },
                   { id: 'settlement', label: '최종 결과 & 저금통' },
@@ -310,10 +323,10 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as TabType)}
-                    className={`flex-1 py-3 md:py-4 font-semibold transition-colors text-sm md:text-base whitespace-nowrap ${
+                    className={`flex-1 py-3.5 font-medium transition-all text-sm whitespace-nowrap ${
                       activeTab === tab.id
-                        ? 'bg-red-500 text-white'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        ? 'text-amber-600 bg-white border-b-2 border-amber-500 -mb-px'
+                        : 'text-stone-500 hover:text-stone-700 hover:bg-stone-100'
                     }`}
                   >
                     {tab.label}
@@ -322,93 +335,105 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
               </div>
 
               {/* 탭 컨텐츠 */}
-              <div className="p-4 md:p-6 lg:p-8">
+              <div className="p-6">
                 {renderTabContent()}
               </div>
             </div>
           </div>
 
-          {/* 사이드바 */}
-          <div className="space-y-4 md:space-y-6 lg:order-last order-first">
-            <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 lg:sticky lg:top-8">
-              {/* 진행률 표시 */}
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-4xl font-bold text-green-500">{progress}%</span>
-                  <span className="px-3 py-1 bg-green-50 text-green-500 font-bold rounded-full flex items-center gap-1">
-                    <CheckCircle size={16} />
-                    완료
-                  </span>
+          {/* 오른쪽: 사이드바 */}
+          <div className="lg:order-last order-first">
+            <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden lg:sticky lg:top-8">
+              {/* 모금 현황 */}
+              <div className="p-6 border-b border-stone-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircle size={16} className="text-green-500" />
+                  <p className="text-sm text-stone-500">최종 모금액</p>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
-                  <div
-                    className="bg-green-500 h-3 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(progress, 100)}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* 모금 정보 */}
-              <div className="space-y-4 mb-6 pb-6 border-b border-gray-200">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">최종 모금액</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {formatAmount(project.currentAmount)}원
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">목표 금액</p>
-                  <p className="text-lg font-semibold text-gray-600">
-                    {formatAmount(project.targetAmount)}원
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">참여 인원</p>
-                  <p className="text-lg font-semibold flex items-center gap-1">
-                    <Users size={18} />
-                    {project.donors}명
-                  </p>
-                </div>
-              </div>
-
-              {/* 프로젝트 상태 안내 */}
-              <div className={`mb-3 p-4 ${statusInfo.bgColor} border-2 ${statusInfo.badgeColor.split(' ').find(c => c.startsWith('border-')) || 'border-green-500'} rounded-lg text-center`}>
-                <CheckCircle className={`w-8 h-8 ${statusInfo.iconColor} mx-auto mb-2`} />
-                <p className={`font-bold mb-1 ${statusInfo.iconColor}`}>{statusInfo.title}</p>
-                <p className={`text-sm ${statusInfo.iconColor}`}>
-                  {statusInfo.message}
+                <p className="text-3xl font-medium text-stone-900 mb-1">
+                  {formatAmount(project.currentAmount)}원
                 </p>
+                <p className="text-sm text-stone-500">
+                  목표 {formatAmount(project.targetAmount)}원
+                </p>
+
+                {/* 프로그레스 바 */}
+                <div className="mt-4">
+                  <div className="w-full bg-stone-100 rounded-full h-2.5">
+                    <div
+                      className="bg-green-500 h-2.5 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(progress, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-right text-sm text-green-600 font-medium mt-1.5">{progress}% 달성</p>
+                </div>
               </div>
 
-              {/* 관심 프로젝트 버튼 */}
-              <button
-                onClick={handleFavoriteClick}
-                disabled={toggleFavoriteMutation.isPending}
-                className={`w-full py-3 rounded-lg font-bold text-lg transition-all mb-3 flex items-center justify-center gap-2 disabled:cursor-not-allowed ${
-                  isFavorite
-                    ? 'bg-red-50 text-red-500 border-2 border-red-500 hover:bg-red-100'
-                    : 'bg-gray-100 text-gray-700 border-2 border-gray-300 hover:bg-gray-200'
-                }`}
-              >
-                {toggleFavoriteMutation.isPending ? (
-                  <Loader2 className="animate-spin" size={20} />
-                ) : (
-                  <Heart
-                    size={20}
-                    fill={isFavorite ? 'currentColor' : 'none'}
-                  />
+              {/* 참여 정보 */}
+              <div className="p-6 space-y-4">
+                {/* 저금통 정보 */}
+                {settlement && (
+                  <div className="p-4 bg-green-50 border border-green-100 rounded-xl">
+                    <p className="text-sm text-green-700 font-medium mb-1 flex items-center gap-2">
+                      <Wallet size={16} />
+                      저금통 잔액
+                    </p>
+                    <p className="text-xl font-medium text-green-600">
+                      {formatAmount(settlement.remainingAmount)}원
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      사용액: {formatAmount(settlement.usedAmount)}원
+                    </p>
+                  </div>
                 )}
-                {isFavorite ? '관심 프로젝트 등록됨' : '관심 프로젝트 등록'}
-              </button>
 
-              {/* 링크 복사 버튼 */}
-              <button
-                onClick={() => copyToClipboard(window.location.href)}
-                className="w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2"
-              >
-                <Share2 size={20} />
-                링크 복사
-              </button>
+                {/* 상태 안내 */}
+                <div className={`p-4 bg-gradient-to-br ${statusInfo.bgColor} border ${statusInfo.borderColor} rounded-xl text-center`}>
+                  <CheckCircle className={`w-8 h-8 mx-auto mb-2 ${statusInfo.textColor}`} />
+                  <p className={`font-medium mb-1 ${statusInfo.textColor}`}>{statusInfo.title}</p>
+                  <p className={`text-sm ${statusInfo.textColor}`}>
+                    {statusInfo.message}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-stone-500 flex items-center gap-2">
+                    <Users size={18} className="text-stone-400" />
+                    참여 인원
+                  </span>
+                  <span className="font-medium text-stone-800">{project.donors}명</span>
+                </div>
+              </div>
+
+              {/* 액션 버튼들 */}
+              <div className="p-6 pt-0 space-y-3">
+                {/* 관심 프로젝트 */}
+                <button
+                  onClick={handleFavoriteClick}
+                  disabled={toggleFavoriteMutation.isPending}
+                  className={`w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
+                    isFavorite
+                      ? 'bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100'
+                      : 'bg-stone-50 text-stone-600 border border-stone-200 hover:bg-stone-100'
+                  }`}
+                >
+                  {toggleFavoriteMutation.isPending ? (
+                    <Loader2 className="animate-spin" size={20} />
+                  ) : (
+                    <Heart size={20} fill={isFavorite ? 'currentColor' : 'none'} />
+                  )}
+                  {isFavorite ? '관심 프로젝트' : '관심 프로젝트 등록'}
+                </button>
+
+                {/* 링크 복사 */}
+                <button
+                  onClick={() => copyToClipboard(window.location.href)}
+                  className="w-full py-3 border border-stone-200 rounded-xl hover:bg-stone-50 flex items-center justify-center gap-2 text-stone-600 transition-colors"
+                >
+                  <Share2 size={18} />
+                  링크 복사
+                </button>
+              </div>
             </div>
           </div>
         </div>

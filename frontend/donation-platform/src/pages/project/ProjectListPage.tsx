@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, Heart, FileText, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Loader2, AlertCircle } from 'lucide-react';
+import { Search, Heart, FileText, Baby, Dog, UserCircle, TreePine, GraduationCap, Loader2, AlertCircle, Users, Sparkles, TrendingUp, Clock, ArrowRight, ChevronDown, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useProjects, useSettlementProjects, useToggleFavoriteProject, useUserFavoriteProjects } from '../../hooks/useProjects';
+import { useProjects, useSettlementProjects, useToggleFavoriteProject, useUserFavoriteProjects, usePopularProjects } from '../../hooks/useProjects';
+import { useRecentDonations } from '../../hooks/useDonations';
 import type { Project } from '../../types';
 import { getCategoryLabel } from '../../types';
 import Pagination from '../../components/common/Pagination';
@@ -14,106 +15,90 @@ interface ProjectListPageProps {
   onNavigateToLogin: () => void;
 }
 
+// 카테고리 데이터
+const categories = [
+  { name: '전체', icon: Sparkles },
+  { name: '아동복지', icon: Baby },
+  { name: '노인복지', icon: UserCircle },
+  { name: '동물보호', icon: Dog },
+  { name: '환경보호', icon: TreePine },
+  { name: '의료지원', icon: Heart },
+  { name: '교육', icon: GraduationCap },
+];
+
 const ProjectListPage: React.FC<ProjectListPageProps> = ({
   isLoggedIn,
   favoriteProjectIds,
   onProjectSelect,
   onNavigateToLogin
 }) => {
-  // URL 파라미터 읽기
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const sortByParam = searchParams.get('sortBy');
 
   // State
   const [activeTab, setActiveTab] = useState<'active' | 'settlement'>('active');
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [sortOption, setSortOption] = useState<string>('latest');
-  const [searchKeyword, setSearchKeyword] = useState<string>(''); // 사용자 입력
-  const [debouncedSearchKeyword, setDebouncedSearchKeyword] = useState<string>(''); // API 호출용
+  const [searchKeyword, setSearchKeyword] = useState<string>('');
+  const [debouncedSearchKeyword, setDebouncedSearchKeyword] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const pageSize = 12; // 한 페이지에 표시할 프로젝트 수
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const pageSize = 12;
 
-  // URL 파라미터로부터 정렬 옵션 초기화 (컴포넌트 마운트 시 또는 URL 변경 시)
   useEffect(() => {
     const newSortOption = sortByParam || 'latest';
     setSortOption(newSortOption);
   }, [sortByParam]);
 
-  // Debounce: 사용자 입력 500ms 후 검색 실행
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchKeyword(searchKeyword);
-      setCurrentPage(1); // 검색 시 첫 페이지로 이동
+      setCurrentPage(1);
     }, 500);
-
     return () => clearTimeout(timer);
   }, [searchKeyword]);
 
-  // 필터 변경 시 첫 페이지로 이동
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedCategory, sortOption, activeTab]);
 
-  // API: 진행 중인 프로젝트 목록 조회 (ACTIVE)
+  // API 호출
+  const { data: popularProjects, isLoading: popularLoading } = usePopularProjects(4);
+  const { data: recentDonations } = useRecentDonations(5);
+
   const { data: activeProjects, isLoading: isActiveLoading, isError: isActiveError, error: activeError, refetch: refetchActive } = useProjects({
     status: 'approved',
     category: selectedCategory === '전체' ? undefined : selectedCategory,
     search: debouncedSearchKeyword.trim() || undefined,
     sortBy: sortOption,
-    page: currentPage - 1, // 백엔드는 0부터 시작
+    page: currentPage - 1,
     size: pageSize,
   });
 
-  // API: 결산 중/종료된 프로젝트 목록 조회 (COMPLETED, SETTLEMENT, CLOSED)
   const { data: settlementProjects, isLoading: isSettlementLoading, isError: isSettlementError, error: settlementError, refetch: refetchSettlement } = useSettlementProjects({
     category: selectedCategory === '전체' ? undefined : selectedCategory,
     search: debouncedSearchKeyword.trim() || undefined,
     sortBy: sortOption,
-    page: currentPage - 1, // 백엔드는 0부터 시작
+    page: currentPage - 1,
     size: pageSize,
   });
 
-  // 현재 탭에 따라 데이터 및 상태 선택
   const projects = activeTab === 'active' ? activeProjects : settlementProjects;
   const isLoading = activeTab === 'active' ? isActiveLoading : isSettlementLoading;
   const isError = activeTab === 'active' ? isActiveError : isSettlementError;
   const error = activeTab === 'active' ? activeError : settlementError;
   const refetch = activeTab === 'active' ? refetchActive : refetchSettlement;
 
-  // API: 관심 프로젝트 토글
   const toggleFavoriteMutation = useToggleFavoriteProject();
-
-  // API: 사용자의 관심 프로젝트 목록 조회 (로그인한 경우에만)
   const { data: userFavorites } = useUserFavoriteProjects(isLoggedIn);
-
-  // 실제 서버에서 가져온 관심 프로젝트 목록을 Set으로 변환
   const actualFavoriteIds = new Set(Array.isArray(userFavorites) ? userFavorites : []);
 
-  // Helper Functions
-  const formatAmount = (amount: number): string => {
-    return amount.toLocaleString('ko-KR');
-  };
+  // Helpers
+  const formatAmount = (amount: number): string => amount.toLocaleString('ko-KR');
+  const calculatePercentage = (current: number, target: number): number => Math.round((current / target) * 100);
 
-  const calculatePercentage = (current: number, target: number): number => {
-    return Math.round((current / target) * 100);
-  };
-
-  // 카테고리별 아이콘과 색상 매핑
-  const getCategoryIcon = (category: string) => {
-    const iconMap: Record<string, { icon: React.ReactNode, bgColor: string }> = {
-      '아동복지': { icon: <Baby size={80} />, bgColor: 'from-pink-100 to-rose-100' },
-      '동물보호': { icon: <Dog size={80} />, bgColor: 'from-cyan-100 to-teal-100' },
-      '노인복지': { icon: <UserCircle size={80} />, bgColor: 'from-emerald-100 to-green-100' },
-      '환경보호': { icon: <TreePine size={80} />, bgColor: 'from-red-100 to-orange-100' },
-      '교육': { icon: <GraduationCap size={80} />, bgColor: 'from-purple-100 to-indigo-100' },
-      '장애인복지': { icon: <Accessibility size={80} />, bgColor: 'from-rose-100 to-pink-100' }
-    };
-    return iconMap[category] || { icon: <Heart size={80} />, bgColor: 'from-gray-100 to-gray-200' };
-  };
-
-  // Handlers
   const handleFavoriteClick = async (e: React.MouseEvent, projectId: number) => {
-    e.preventDefault(); // Link 이동 방지
+    e.preventDefault();
     e.stopPropagation();
     if (!isLoggedIn) {
       toast.error('로그인이 필요한 서비스입니다.');
@@ -132,18 +117,20 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
     setSearchKeyword('');
   };
 
-  // 에러 상태만 전체 화면 처리
+  // 에러 상태
   if (isError) {
     return (
-      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+      <div className="bg-stone-50 min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-600 mb-4">
+          <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <p className="text-stone-600 mb-4">
             {(error as any)?.response?.data?.message || '프로젝트를 불러오는데 실패했습니다.'}
           </p>
           <button
             onClick={() => refetch()}
-            className="px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600"
+            className="bg-amber-500 text-stone-900 px-6 py-3 font-medium hover:bg-amber-400 transition-colors"
           >
             다시 시도
           </button>
@@ -155,248 +142,318 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
   const displayProjects = projects?.content || [];
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
-        {/* 정적 콘텐츠 - 즉시 렌더링 */}
-        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 md:mb-8 lg:mb-10">프로젝트 둘러보기</h1>
+    <div className="bg-stone-50">
+      {/* ========== Hero Section ========== */}
+      <section className="relative min-h-[400px] md:min-h-[480px] bg-stone-900 overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
+            backgroundSize: '32px 32px'
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-transparent to-stone-900" />
 
-        {/* 탭 메뉴 */}
-        <div className="flex gap-2 mb-6 md:mb-8 border-b border-gray-300">
-          <button
-            onClick={() => setActiveTab('active')}
-            className={`px-6 py-3 font-semibold transition-colors relative ${
-              activeTab === 'active'
-                ? 'text-red-500 border-b-2 border-red-500'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            진행 중인 프로젝트
-          </button>
-          <button
-            onClick={() => setActiveTab('settlement')}
-            className={`px-6 py-3 font-semibold transition-colors relative ${
-              activeTab === 'settlement'
-                ? 'text-red-500 border-b-2 border-red-500'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            결산 중 프로젝트
-          </button>
-        </div>
+        <div className="relative h-full min-h-[400px] md:min-h-[480px] flex flex-col items-center justify-center text-center px-4 py-16">
+          <p className="text-amber-400 uppercase tracking-[0.3em] text-xs md:text-sm mb-6">
+            Explore & Support
+          </p>
 
-        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 md:mb-8">
+          <h1 className="text-3xl md:text-5xl text-white font-light leading-tight mb-6 max-w-3xl">
+            마음을 움직이는<br />
+            <span className="text-amber-400 font-medium">프로젝트</span>를 만나보세요
+          </h1>
+
           {/* 검색창 */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="프로젝트 검색..."
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              className="w-full pl-10 md:pl-12 pr-12 py-3 md:py-4 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 text-sm md:text-base"
-            />
-            {/* 검색 중 로딩 표시 */}
-            {isLoading && searchKeyword !== debouncedSearchKeyword && (
-              <Loader2 className="absolute right-3 md:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 animate-spin" size={18} />
-            )}
+          <div className={`w-full max-w-xl transition-all duration-300 ${isSearchFocused ? 'scale-[1.02]' : ''}`}>
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
+              <input
+                type="text"
+                placeholder="검색"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                className="w-full pl-12 pr-12 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-stone-400 focus:outline-none focus:bg-white/20 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all text-base"
+              />
+              {searchKeyword && (
+                <button
+                  onClick={() => setSearchKeyword('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* 카테고리 필터 */}
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 md:px-6 py-3 md:py-4 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 cursor-pointer text-sm md:text-base"
-          >
-            <option>전체</option>
-            <option>아동복지</option>
-            <option>노인복지</option>
-            <option>동물보호</option>
-            <option>환경보호</option>
-            <option>의료지원</option>
-            <option>교육</option>
-          </select>
+          {/* 스크롤 인디케이터 */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 flex flex-col items-center gap-1 animate-bounce">
+            <span className="text-[10px] uppercase tracking-widest">Scroll</span>
+            <ChevronDown size={16} />
+          </div>
+        </div>
+      </section>
 
-          {/* 정렬 옵션 */}
+      {/* ========== 실시간 기부 스트립 ========== */}
+      {recentDonations && recentDonations.length > 0 && (
+        <section className="py-3 px-4 bg-stone-800">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-center gap-4 overflow-hidden">
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                <span className="text-stone-400 text-sm">실시간</span>
+              </div>
+              <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide text-sm">
+                {recentDonations.map((donation, idx) => (
+                  <span key={idx} className="text-stone-400 whitespace-nowrap">
+                    <span className="text-white">{donation.donorName}</span>님이{' '}
+                    <span className="text-amber-400">{formatAmount(donation.amount)}원</span> 기부
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ========== Category Filter ========== */}
+      <section className="py-8 px-4 bg-stone-50 border-b border-stone-200">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-center text-stone-500 text-sm mb-5">관심 분야를 선택해보세요</p>
+
+          <div className="flex flex-wrap justify-center gap-2 mb-6">
+            {categories.map((cat) => {
+              const Icon = cat.icon;
+              const isSelected = selectedCategory === cat.name;
+
+              return (
+                <button
+                  key={cat.name}
+                  onClick={() => setSelectedCategory(cat.name)}
+                  className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all text-sm ${
+                    isSelected
+                      ? 'bg-amber-500 text-stone-900 shadow-md'
+                      : 'bg-white text-stone-600 hover:bg-stone-50 border border-stone-200'
+                  }`}
+                >
+                  <Icon size={16} className={isSelected ? 'text-stone-900' : 'text-stone-400 group-hover:text-stone-600'} />
+                  <span className="font-medium">{cat.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ========== 탭 & 정렬 ========== */}
+      <section className="py-4 px-4 bg-white border-b border-stone-200">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* 탭 */}
+          <div className="flex bg-stone-100 rounded-xl overflow-hidden">
+            <button
+              onClick={() => setActiveTab('active')}
+              className={`flex items-center gap-2 px-6 py-2.5 text-sm font-medium transition-all ${
+                activeTab === 'active'
+                  ? 'bg-white text-amber-600 shadow-sm'
+                  : 'text-stone-500 hover:text-stone-700'
+              }`}
+            >
+              <TrendingUp size={16} />
+              진행 중
+            </button>
+            <button
+              onClick={() => setActiveTab('settlement')}
+              className={`flex items-center gap-2 px-6 py-2.5 text-sm font-medium transition-all ${
+                activeTab === 'settlement'
+                  ? 'bg-white text-amber-600 shadow-sm'
+                  : 'text-stone-500 hover:text-stone-700'
+              }`}
+            >
+              <Clock size={16} />
+              결산 중
+            </button>
+          </div>
+
+          {/* 정렬 */}
           <select
             value={sortOption}
             onChange={(e) => setSortOption(e.target.value)}
-            className="px-4 md:px-6 py-3 md:py-4 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 cursor-pointer text-sm md:text-base"
+            className="px-4 py-2.5 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 text-sm"
           >
             <option value="latest">최신순</option>
             <option value="deadline">마감임박순</option>
-            <option value="mostDonated">가장 많이 후원받은 순</option>
-            <option value="leastDonated">가장 적게 후원받은 순</option>
-            <option value="mostFavorited">가장 관심 많이 받은 순</option>
-            <option value="leastFavorited">가장 관심 적게 받은 순</option>
+            <option value="mostDonated">후원 많은 순</option>
+            <option value="leastDonated">후원 적은 순</option>
+            <option value="mostFavorited">관심 많은 순</option>
           </select>
         </div>
+      </section>
 
-        {/* 동적 콘텐츠 - 스켈레톤 UI */}
-        {isLoading ? (
-          <>
-            {/* 필터 결과 표시 스켈레톤 */}
-            {(selectedCategory !== '전체' || searchKeyword.trim()) && (
-              <div className="mb-6">
-                <div className="h-6 bg-gray-200 rounded animate-pulse w-64"></div>
-              </div>
-            )}
+      {/* ========== Project Grid ========== */}
+      <section className="py-10 md:py-14 px-4">
+        <div className="max-w-6xl mx-auto">
+          {/* 필터 결과 */}
+          {(selectedCategory !== '전체' || searchKeyword.trim()) && !isLoading && (
+            <div className="mb-8 flex items-center gap-3 flex-wrap">
+              <span className="text-stone-600">
+                {selectedCategory !== '전체' && (
+                  <span className="font-medium text-stone-800">{selectedCategory}</span>
+                )}
+                {searchKeyword.trim() && (
+                  <>
+                    {selectedCategory !== '전체' && ' · '}
+                    "<span className="font-medium text-stone-800">{searchKeyword}</span>"
+                  </>
+                )}
+                {' '}검색 결과
+              </span>
+              <span className="text-amber-600 font-medium">{projects?.totalElements || 0}개</span>
+              <button
+                onClick={handleCategoryReset}
+                className="ml-auto text-stone-400 hover:text-stone-600 text-sm flex items-center gap-1"
+              >
+                <X size={14} />
+                필터 초기화
+              </button>
+            </div>
+          )}
 
-            {/* 프로젝트 카드 스켈레톤 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-              {[...Array(8)].map((_, idx) => (
-                <div key={idx} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-                  <div className="h-40 md:h-48 bg-gray-200 animate-pulse"></div>
-                  <div className="p-4 md:p-5">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse mb-2 w-16"></div>
-                    <div className="h-6 bg-gray-200 rounded animate-pulse mb-3"></div>
-                    <div className="mb-4">
-                      <div className="flex justify-between mb-2">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2"></div>
-                    </div>
+          {/* 로딩 */}
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, idx) => (
+                <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
+                  <div className="h-48 bg-stone-200" />
+                  <div className="p-5">
+                    <div className="h-3 bg-stone-200 rounded w-16 mb-3" />
+                    <div className="h-5 bg-stone-200 rounded w-full mb-2" />
+                    <div className="h-5 bg-stone-200 rounded w-3/4 mb-4" />
+                    <div className="h-2 bg-stone-200 rounded w-full mb-4" />
                     <div className="flex justify-between">
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
+                      <div className="h-4 bg-stone-200 rounded w-24" />
+                      <div className="h-4 bg-stone-200 rounded w-16" />
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          </>
-        ) : (
-          <>
-            {/* 필터 결과 표시 */}
-            {(selectedCategory !== '전체' || searchKeyword.trim()) && (
-              <div className="mb-6">
-                <p className="text-gray-600">
-                  {selectedCategory !== '전체' && (
-                    <>
-                      <span className="font-bold text-gray-900">{selectedCategory}</span> 카테고리
-                    </>
-                  )}
-                  {searchKeyword.trim() && (
-                    <>
-                      {selectedCategory !== '전체' && ' / '}
-                      <span className="font-bold text-gray-900">"{searchKeyword}"</span> 검색 결과
-                    </>
-                  )}
-                  <span className="font-bold text-red-500 ml-2">{displayProjects.length}개</span>
-                </p>
+          ) : displayProjects.length === 0 ? (
+            /* 결과 없음 */
+            <div className="text-center py-20">
+              <div className="w-24 h-24 mx-auto mb-6 bg-stone-100 rounded-full flex items-center justify-center">
+                <FileText className="text-stone-300" size={48} />
               </div>
-            )}
+              <h3 className="text-xl font-medium text-stone-800 mb-2">
+                {searchKeyword.trim() ? '검색 결과가 없습니다' : '프로젝트가 없습니다'}
+              </h3>
+              <p className="text-stone-500 mb-8">
+                다른 카테고리나 검색어로 찾아보세요.
+              </p>
+              <button
+                onClick={handleCategoryReset}
+                className="bg-amber-500 text-stone-900 px-8 py-4 font-medium hover:bg-amber-400 transition-colors"
+              >
+                전체 프로젝트 보기
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* 프로젝트 그리드 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {displayProjects.map((project) => {
+                  const progress = calculatePercentage(project.currentAmount, project.targetAmount);
+                  const isFavorite = isLoggedIn ? actualFavoriteIds.has(project.id) : false;
+                  const categoryKo = getCategoryLabel(project.category);
 
-            {/* 필터 결과 없을 때 */}
-            {displayProjects.length === 0 ? (
-              <div className="text-center py-20">
-                <FileText className="mx-auto text-gray-300 mb-4" size={64} />
-                <p className="text-gray-500 text-lg mb-4">
-                  {searchKeyword.trim()
-                    ? '검색 결과가 없습니다.'
-                    : '해당 카테고리에 프로젝트가 없습니다.'
-                  }
-                </p>
-                <button
-                  onClick={handleCategoryReset}
-                  className="px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600"
-                >
-                  전체 프로젝트 보기
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                  {displayProjects.map(project => {
-                    const progress = calculatePercentage(project.currentAmount, project.targetAmount);
-                    // 서버에서 가져온 실제 관심 프로젝트 목록 사용 (로그인 시에만)
-                    const isFavorite = isLoggedIn ? actualFavoriteIds.has(project.id) : false;
-                    const categoryKo = getCategoryLabel(project.category); // 영어 -> 한글 변환
-                    const categoryInfo = getCategoryIcon(categoryKo);
-
-                    return (
-                      <div
-                        key={project.id}
-                        className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow bg-white relative"
+                  return (
+                    <div
+                      key={project.id}
+                      className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all group relative"
+                    >
+                      {/* 하트 버튼 */}
+                      <button
+                        onClick={(e) => handleFavoriteClick(e, project.id)}
+                        className="absolute top-4 right-4 z-10 p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow hover:scale-110 transition-transform"
                       >
-                        {/* 관심 프로젝트 하트 버튼 */}
-                        <button
-                          onClick={(e) => handleFavoriteClick(e, project.id)}
-                          className="absolute top-3 right-3 md:top-4 md:right-4 z-10 p-1.5 md:p-2 bg-white rounded-full shadow-lg hover:scale-110 transition-transform"
-                        >
-                          <Heart
-                            size={20}
-                            className={`md:w-6 md:h-6 ${isFavorite ? 'text-red-500' : 'text-gray-400'}`}
-                            fill={isFavorite ? 'currentColor' : 'none'}
-                          />
-                        </button>
+                        <Heart
+                          size={18}
+                          className={isFavorite ? 'text-amber-500' : 'text-stone-400'}
+                          fill={isFavorite ? 'currentColor' : 'none'}
+                        />
+                      </button>
 
-                        <Link
-                          to={`/projects/${project.id}`}
-                          className="block"
-                        >
+                      <Link to={`/projects/${project.id}`} className="block">
+                        {/* 이미지 */}
+                        <div className="h-48 bg-gradient-to-br from-amber-100 to-orange-100 overflow-hidden relative">
                           {project.image ? (
-                            <div className="h-40 md:h-48 bg-gray-900 overflow-hidden flex items-center justify-center">
-                              <img
-                                src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.image}`}
-                                alt={project.title}
-                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                onError={(e) => {
-                                  // 이미지 로드 실패 시 숨김
-                                  e.currentTarget.style.display = 'none';
-                                }}
+                            <img
+                              src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.image}`}
+                              alt={project.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            />
+                          ) : (
+                            <Heart size={56} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/50" />
+                          )}
+                        </div>
+
+                        {/* 내용 */}
+                        <div className="p-5">
+                          <span className="text-xs text-amber-600 font-medium">{categoryKo}</span>
+                          <h4 className="text-base font-medium text-stone-800 mt-1 mb-4 line-clamp-2 group-hover:text-amber-600 transition-colors leading-snug min-h-[2.5rem]">
+                            {project.title}
+                          </h4>
+
+                          {/* 프로그레스 */}
+                          <div className="mb-4">
+                            <div className="flex items-end gap-2 mb-2">
+                              <span className="text-2xl text-amber-600 font-light">{progress}%</span>
+                              <span className="text-stone-400 text-xs pb-0.5">달성</span>
+                            </div>
+                            <div className="w-full bg-stone-100 rounded-full h-1.5">
+                              <div
+                                className="bg-gradient-to-r from-amber-400 to-amber-500 h-1.5 rounded-full"
+                                style={{ width: `${Math.min(progress, 100)}%` }}
                               />
                             </div>
-                          ) : (
-                            <div className={`h-40 md:h-48 bg-gradient-to-br ${categoryInfo.bgColor} flex items-center justify-center text-gray-400`}>
-                              {categoryInfo.icon}
-                            </div>
-                          )}
-                          <div className="p-4 md:p-5">
-                            <div className="text-xs md:text-sm text-red-500 font-semibold mb-2">{categoryKo}</div>
-                            <h4 className="text-base md:text-lg font-bold mb-3 line-clamp-2">{project.title}</h4>
+                          </div>
 
-                            <div className="mb-4">
-                              <div className="flex justify-between text-xs md:text-sm mb-2">
-                                <span className="font-bold text-red-500">{progress}%</span>
-                                <span className="text-gray-600">D-{project.dday}</span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div
-                                  className="bg-red-500 h-2 rounded-full"
-                                  style={{ width: `${Math.min(progress, 100)}%` }}
-                                ></div>
-                              </div>
-                            </div>
-
-                            <div className="flex justify-between text-xs md:text-sm text-gray-600">
-                              <span>{formatAmount(project.currentAmount)}원</span>
-                              <span>{project.donors}명 참여</span>
+                          {/* 통계 */}
+                          <div className="flex items-center justify-between text-sm text-stone-500">
+                            <span className="font-medium text-stone-700">{formatAmount(project.currentAmount)}원</span>
+                            <div className="flex items-center gap-3">
+                              <span className="flex items-center gap-1">
+                                <Users size={14} />
+                                {project.donors}
+                              </span>
+                              <span className="text-amber-600 font-medium">D-{project.dday}</span>
                             </div>
                           </div>
-                        </Link>
-                      </div>
-                    );
-                  })}
-                </div>
+                        </div>
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
 
-                {/* 페이지네이션 */}
-                {projects && projects.totalPages > 1 && (
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={projects.totalPages}
-                    onPageChange={(page) => {
-                      setCurrentPage(page);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="mt-8"
-                  />
-                )}
-              </>
-            )}
-          </>
-        )}
-      </div>
+              {/* 페이지네이션 */}
+              {projects && projects.totalPages > 1 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={projects.totalPages}
+                  onPageChange={(page) => {
+                    setCurrentPage(page);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="mt-12"
+                />
+              )}
+            </>
+          )}
+        </div>
+      </section>
+
     </div>
   );
 };

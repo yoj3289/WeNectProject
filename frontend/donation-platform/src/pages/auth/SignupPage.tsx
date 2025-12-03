@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Loader2, AlertCircle, CheckCircle, X, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Upload, Loader2, AlertCircle, CheckCircle, X, ChevronRight, ArrowLeft, Heart } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
 import type { UserType } from '../../types';
@@ -500,33 +500,39 @@ const SignupPage: React.FC = () => {
   // 스텝 1: 약관 동의 화면
   const renderStep1 = () => (
     <>
-      <h1 className="text-4xl font-bold mb-2">회원가입</h1>
-      <p className="text-gray-600 mb-8">서비스 이용을 위해 약관에 동의해주세요</p>
+      <div className="text-center mb-6">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <Heart className="text-amber-500" size={28} fill="currentColor" />
+          <span className="text-lg font-bold text-stone-800">위넥트</span>
+        </div>
+        <h1 className="text-xl font-bold text-stone-800 mb-1">회원가입</h1>
+        <p className="text-sm text-stone-500">서비스 이용을 위해 약관에 동의해주세요</p>
+      </div>
 
       {/* 에러 메시지 */}
       {errorMessage && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-          <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
-          <p className="text-sm text-red-800">{errorMessage}</p>
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+          <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
+          <p className="text-sm text-red-700">{errorMessage}</p>
         </div>
       )}
 
       {/* 약관 동의 섹션 */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* 전체 동의 */}
-        <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-gray-200">
+        <label className="flex items-center gap-3 p-3 bg-stone-50 rounded-lg cursor-pointer hover:bg-stone-100 transition-colors border border-stone-200">
           <input
             type="checkbox"
             checked={agreeAll}
             onChange={(e) => handleAgreeAll(e.target.checked)}
-            className="w-5 h-5 text-red-500 border-gray-300 rounded focus:ring-red-500"
+            className="w-4 h-4 text-amber-500 border-stone-300 rounded focus:ring-amber-500"
           />
-          <span className="font-bold text-gray-900 text-lg">전체 동의</span>
+          <span className="font-bold text-stone-800">전체 동의</span>
         </label>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           {/* 이용약관 */}
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between p-3 border border-stone-200 rounded-lg">
             <label className="flex items-center gap-3 cursor-pointer flex-1">
               <input
                 type="checkbox"
@@ -535,23 +541,23 @@ const SignupPage: React.FC = () => {
                   setAgreeTerms(e.target.checked);
                   updateAgreeAll(e.target.checked, agreePrivacy, agreeMarketing);
                 }}
-                className="w-5 h-5 text-red-500 border-gray-300 rounded focus:ring-red-500"
+                className="w-4 h-4 text-amber-500 border-stone-300 rounded focus:ring-amber-500"
               />
-              <span className="text-gray-700">
-                <span className="text-red-500 font-bold">[필수]</span> 이용약관 동의
+              <span className="text-sm text-stone-700">
+                <span className="text-amber-600 font-bold">[필수]</span> 이용약관 동의
               </span>
             </label>
             <button
               type="button"
               onClick={() => setShowTermsModal(true)}
-              className="text-sm text-gray-500 hover:text-red-500 underline px-2"
+              className="text-xs text-stone-500 hover:text-amber-600 underline px-2"
             >
               보기
             </button>
           </div>
 
           {/* 개인정보 처리방침 */}
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between p-3 border border-stone-200 rounded-lg">
             <label className="flex items-center gap-3 cursor-pointer flex-1">
               <input
                 type="checkbox"
@@ -560,23 +566,23 @@ const SignupPage: React.FC = () => {
                   setAgreePrivacy(e.target.checked);
                   updateAgreeAll(agreeTerms, e.target.checked, agreeMarketing);
                 }}
-                className="w-5 h-5 text-red-500 border-gray-300 rounded focus:ring-red-500"
+                className="w-4 h-4 text-amber-500 border-stone-300 rounded focus:ring-amber-500"
               />
-              <span className="text-gray-700">
-                <span className="text-red-500 font-bold">[필수]</span> 개인정보 처리방침 동의
+              <span className="text-sm text-stone-700">
+                <span className="text-amber-600 font-bold">[필수]</span> 개인정보 처리방침 동의
               </span>
             </label>
             <button
               type="button"
               onClick={() => setShowPrivacyModal(true)}
-              className="text-sm text-gray-500 hover:text-red-500 underline px-2"
+              className="text-xs text-stone-500 hover:text-amber-600 underline px-2"
             >
               보기
             </button>
           </div>
 
           {/* 마케팅 정보 수신 */}
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between p-3 border border-stone-200 rounded-lg">
             <label className="flex items-center gap-3 cursor-pointer flex-1">
               <input
                 type="checkbox"
@@ -585,16 +591,16 @@ const SignupPage: React.FC = () => {
                   setAgreeMarketing(e.target.checked);
                   updateAgreeAll(agreeTerms, agreePrivacy, e.target.checked);
                 }}
-                className="w-5 h-5 text-red-500 border-gray-300 rounded focus:ring-red-500"
+                className="w-4 h-4 text-amber-500 border-stone-300 rounded focus:ring-amber-500"
               />
-              <span className="text-gray-700">
-                <span className="text-gray-400 font-bold">[선택]</span> 마케팅 정보 수신 동의
+              <span className="text-sm text-stone-700">
+                <span className="text-stone-400 font-bold">[선택]</span> 마케팅 정보 수신 동의
               </span>
             </label>
             <button
               type="button"
               onClick={() => setShowMarketingModal(true)}
-              className="text-sm text-gray-500 hover:text-red-500 underline px-2"
+              className="text-xs text-stone-500 hover:text-amber-600 underline px-2"
             >
               보기
             </button>
@@ -605,17 +611,17 @@ const SignupPage: React.FC = () => {
       {/* 다음 버튼 */}
       <button
         onClick={handleNextStep}
-        className="w-full mt-8 py-4 bg-red-500 text-white rounded-lg font-bold text-lg hover:bg-red-600 transition-all flex items-center justify-center gap-2"
+        className="w-full mt-6 py-3 bg-amber-500 text-stone-900 rounded-lg font-bold hover:bg-amber-400 transition-colors flex items-center justify-center gap-2"
       >
         <span>다음</span>
-        <ChevronRight size={20} />
+        <ChevronRight size={18} />
       </button>
 
-      <div className="text-center mt-6">
-        <span className="text-gray-600">이미 계정이 있으신가요? </span>
+      <div className="text-center mt-4">
+        <span className="text-sm text-stone-500">이미 계정이 있으신가요? </span>
         <button
           onClick={() => navigate('/login')}
-          className="text-red-500 font-semibold hover:underline"
+          className="text-sm text-amber-600 font-semibold hover:underline"
         >
           로그인
         </button>
@@ -630,34 +636,36 @@ const SignupPage: React.FC = () => {
       <button
         onClick={handlePrevStep}
         disabled={isSigningUp}
-        className="flex items-center gap-1 text-gray-600 hover:text-gray-900 font-semibold mb-6 disabled:text-gray-400"
+        className="flex items-center gap-1 text-stone-600 hover:text-stone-900 font-medium mb-4 disabled:text-stone-400"
       >
         <ArrowLeft size={18} />
         <span>이전</span>
       </button>
 
-      <h1 className="text-4xl font-bold mb-2">회원정보 입력</h1>
-      <p className="text-gray-600 mb-8">회원 정보를 입력해주세요</p>
+      <div className="text-center mb-6">
+        <h1 className="text-xl font-bold text-stone-800 mb-1">회원정보 입력</h1>
+        <p className="text-sm text-stone-500">회원 정보를 입력해주세요</p>
+      </div>
 
       {/* 에러 메시지 */}
       {errorMessage && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-          <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
-          <p className="text-sm text-red-800">{errorMessage}</p>
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+          <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
+          <p className="text-sm text-red-700">{errorMessage}</p>
         </div>
       )}
 
       {/* 회원 유형 선택 */}
-      <div className="flex gap-4 mb-8">
+      <div className="flex gap-3 mb-6">
         <button
           onClick={() => {
             setSignupType('individual');
             setUploadedFile(null);
           }}
           disabled={isSigningUp}
-          className={`flex-1 py-4 rounded-lg font-bold text-lg transition-all disabled:cursor-not-allowed ${signupType === 'individual'
-              ? 'bg-red-500 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          className={`flex-1 py-3 rounded-lg font-bold text-sm transition-colors disabled:cursor-not-allowed ${signupType === 'individual'
+              ? 'bg-amber-500 text-stone-900'
+              : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
             }`}
         >
           일반 회원
@@ -665,20 +673,20 @@ const SignupPage: React.FC = () => {
         <button
           onClick={() => setSignupType('organization')}
           disabled={isSigningUp}
-          className={`flex-1 py-4 rounded-lg font-bold text-lg transition-all disabled:cursor-not-allowed ${signupType === 'organization'
-              ? 'bg-red-500 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          className={`flex-1 py-3 rounded-lg font-bold text-sm transition-colors disabled:cursor-not-allowed ${signupType === 'organization'
+              ? 'bg-amber-500 text-stone-900'
+              : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
             }`}
         >
           기관 회원
         </button>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         {/* 이메일 입력 + 중복 확인 */}
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">
-            이메일 <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-stone-700 mb-1.5">
+            이메일 <span className="text-amber-600">*</span>
           </label>
           <div className="flex gap-2">
             <input
@@ -694,17 +702,17 @@ const SignupPage: React.FC = () => {
                 setVerificationCode('');
               }}
               disabled={isSigningUp || isCheckingEmail || isVerified}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="flex-1 px-3 py-2.5 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:bg-stone-100 disabled:cursor-not-allowed text-sm"
             />
             <button
               onClick={() => checkEmailDuplicate(signupEmail)}
               disabled={isSigningUp || isCheckingEmail || !signupEmail || isVerified}
-              className="px-6 py-3 bg-gray-800 text-white rounded-lg font-bold hover:bg-gray-900 transition-all whitespace-nowrap disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2.5 bg-stone-800 text-white rounded-lg font-medium text-sm hover:bg-stone-900 transition-colors whitespace-nowrap disabled:bg-stone-400 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isCheckingEmail ? (
                 <>
-                  <Loader2 className="animate-spin" size={16} />
-                  <span>확인 중...</span>
+                  <Loader2 className="animate-spin" size={14} />
+                  <span>확인 중</span>
                 </>
               ) : (
                 '중복 확인'
@@ -712,23 +720,23 @@ const SignupPage: React.FC = () => {
             </button>
           </div>
           {isEmailChecked && !isVerified && (
-            <div className={`flex items-center gap-2 text-sm mt-2 ${isEmailAvailable ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`flex items-center gap-2 text-xs mt-1.5 ${isEmailAvailable ? 'text-green-600' : 'text-red-600'}`}>
               {isEmailAvailable ? (
                 <>
-                  <CheckCircle size={16} />
+                  <CheckCircle size={14} />
                   <span>사용 가능한 이메일입니다.</span>
                 </>
               ) : (
                 <>
-                  <AlertCircle size={16} />
+                  <AlertCircle size={14} />
                   <span>이미 사용 중인 이메일입니다.</span>
                 </>
               )}
             </div>
           )}
           {isVerified && (
-            <div className="flex items-center gap-2 text-sm mt-2 text-green-600">
-              <CheckCircle size={16} />
+            <div className="flex items-center gap-2 text-xs mt-1.5 text-green-600">
+              <CheckCircle size={14} />
               <span>이메일 인증이 완료되었습니다.</span>
             </div>
           )}
@@ -740,11 +748,11 @@ const SignupPage: React.FC = () => {
             <button
               onClick={sendVerificationCode}
               disabled={isSendingCode || isSigningUp}
-              className="w-full py-3 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-2.5 bg-stone-700 text-white rounded-lg font-medium text-sm hover:bg-stone-800 transition-colors disabled:bg-stone-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSendingCode ? (
                 <>
-                  <Loader2 className="animate-spin" size={16} />
+                  <Loader2 className="animate-spin" size={14} />
                   <span>발송 중...</span>
                 </>
               ) : isVerificationSent ? (
@@ -759,10 +767,10 @@ const SignupPage: React.FC = () => {
         {/* 인증번호 입력 (인증번호 발송 후 표시) */}
         {isVerificationSent && !isVerified && (
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              인증번호 <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-stone-700 mb-1.5">
+              인증번호 <span className="text-amber-600">*</span>
               {remainingTime > 0 && (
-                <span className="ml-2 text-red-500 font-normal">
+                <span className="ml-2 text-amber-600 font-normal text-xs">
                   ({formatTime(remainingTime)})
                 </span>
               )}
@@ -780,17 +788,17 @@ const SignupPage: React.FC = () => {
                 }}
                 maxLength={6}
                 disabled={isVerifyingCode || isSigningUp || remainingTime === 0}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="flex-1 px-3 py-2.5 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:bg-stone-100 disabled:cursor-not-allowed text-sm"
               />
               <button
                 onClick={verifyCode}
                 disabled={isVerifyingCode || isSigningUp || !verificationCode || verificationCode.length !== 6 || remainingTime === 0}
-                className="px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 transition-all whitespace-nowrap disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2.5 bg-amber-500 text-stone-900 rounded-lg font-medium text-sm hover:bg-amber-400 transition-colors whitespace-nowrap disabled:bg-stone-400 disabled:text-stone-600 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isVerifyingCode ? (
                   <>
-                    <Loader2 className="animate-spin" size={16} />
-                    <span>확인 중...</span>
+                    <Loader2 className="animate-spin" size={14} />
+                    <span>확인 중</span>
                   </>
                 ) : (
                   '인증 확인'
@@ -807,8 +815,8 @@ const SignupPage: React.FC = () => {
 
         {/* 비밀번호 */}
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">
-            비밀번호 <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-stone-700 mb-1.5">
+            비밀번호 <span className="text-amber-600">*</span>
           </label>
           <input
             type="password"
@@ -816,17 +824,17 @@ const SignupPage: React.FC = () => {
             value={signupPassword}
             onChange={(e) => setSignupPassword(e.target.value)}
             disabled={isSigningUp}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="w-full px-3 py-2.5 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:bg-stone-100 disabled:cursor-not-allowed text-sm"
           />
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-stone-500 mt-1">
             * 8자 이상, 특수문자(!@#$%^&* 등) 포함
           </p>
         </div>
 
         {/* 비밀번호 확인 */}
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">
-            비밀번호 확인 <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-stone-700 mb-1.5">
+            비밀번호 확인 <span className="text-amber-600">*</span>
           </label>
           <input
             type="password"
@@ -834,10 +842,10 @@ const SignupPage: React.FC = () => {
             value={signupPasswordConfirm}
             onChange={(e) => setSignupPasswordConfirm(e.target.value)}
             disabled={isSigningUp}
-            className={`w-full px-4 py-3 border rounded-lg focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed ${
+            className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:bg-stone-100 disabled:cursor-not-allowed text-sm ${
               signupPasswordConfirm && signupPassword !== signupPasswordConfirm
                 ? 'border-red-500 focus:border-red-500'
-                : 'border-gray-300 focus:border-red-500'
+                : 'border-stone-300 focus:border-amber-500'
             }`}
           />
           {signupPasswordConfirm && signupPassword !== signupPasswordConfirm && (
@@ -850,8 +858,8 @@ const SignupPage: React.FC = () => {
 
         {/* 이름/기관명 */}
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">
-            {signupType === 'organization' ? '기관명' : '이름'} <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-stone-700 mb-1.5">
+            {signupType === 'organization' ? '기관명' : '이름'} <span className="text-amber-600">*</span>
           </label>
           <input
             type="text"
@@ -859,14 +867,14 @@ const SignupPage: React.FC = () => {
             value={signupName}
             onChange={(e) => setSignupName(e.target.value)}
             disabled={isSigningUp}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="w-full px-3 py-2.5 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:bg-stone-100 disabled:cursor-not-allowed text-sm"
           />
         </div>
 
         {/* 전화번호 */}
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">
-            전화번호 <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-stone-700 mb-1.5">
+            전화번호 <span className="text-amber-600">*</span>
           </label>
           <input
             type="tel"
@@ -886,7 +894,7 @@ const SignupPage: React.FC = () => {
             }}
             maxLength={13}
             disabled={isSigningUp}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="w-full px-3 py-2.5 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:bg-stone-100 disabled:cursor-not-allowed text-sm"
           />
         </div>
 
@@ -894,8 +902,8 @@ const SignupPage: React.FC = () => {
         {signupType === 'organization' && (
           <>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                사업자등록번호 <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+                사업자등록번호 <span className="text-amber-600">*</span>
               </label>
               <input
                 type="text"
@@ -903,13 +911,13 @@ const SignupPage: React.FC = () => {
                 value={signupBusinessNumber}
                 onChange={(e) => setSignupBusinessNumber(e.target.value)}
                 disabled={isSigningUp}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2.5 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:bg-stone-100 disabled:cursor-not-allowed text-sm"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                대표자명 <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+                대표자명 <span className="text-amber-600">*</span>
               </label>
               <input
                 type="text"
@@ -917,16 +925,16 @@ const SignupPage: React.FC = () => {
                 value={signupRepName}
                 onChange={(e) => setSignupRepName(e.target.value)}
                 disabled={isSigningUp}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2.5 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:bg-stone-100 disabled:cursor-not-allowed text-sm"
               />
             </div>
 
             {/* 기관 인증서류 첨부 */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                기관 인증서류 <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+                기관 인증서류 <span className="text-amber-600">*</span>
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-red-500 transition-all">
+              <div className="border-2 border-dashed border-stone-300 rounded-lg p-4 text-center hover:border-amber-500 transition-all">
                 <input
                   type="file"
                   id="file-upload"
@@ -937,31 +945,31 @@ const SignupPage: React.FC = () => {
                 />
                 <label
                   htmlFor="file-upload"
-                  className={`cursor-pointer flex flex-col items-center gap-3 ${isSigningUp ? 'cursor-not-allowed opacity-50' : ''}`}
+                  className={`cursor-pointer flex flex-col items-center gap-2 ${isSigningUp ? 'cursor-not-allowed opacity-50' : ''}`}
                 >
-                  <Upload className="text-gray-400" size={48} />
+                  <Upload className="text-stone-400" size={32} />
                   {uploadedFile ? (
                     <div className="text-center">
-                      <p className="text-sm font-bold text-gray-900">
+                      <p className="text-sm font-medium text-stone-800">
                         {uploadedFile.name}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-stone-500 mt-0.5">
                         {(uploadedFile.size / 1024).toFixed(2)} KB
                       </p>
                     </div>
                   ) : (
                     <>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-stone-600">
                         클릭하여 파일 업로드
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-stone-400">
                         PDF, JPG, PNG (최대 5MB)
                       </p>
                     </>
                   )}
                 </label>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-stone-500 mt-1">
                 * 사업자등록증, 고유번호증 등 기관을 증명할 수 있는 서류
               </p>
             </div>
@@ -973,11 +981,11 @@ const SignupPage: React.FC = () => {
       <button
         onClick={handleSignup}
         disabled={isSigningUp || !isVerified}
-        className="w-full mt-8 py-4 bg-red-500 text-white rounded-lg font-bold text-lg hover:bg-red-600 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full mt-6 py-3 bg-amber-500 text-stone-900 rounded-lg font-bold hover:bg-amber-400 transition-colors disabled:bg-stone-300 disabled:text-stone-500 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {isSigningUp ? (
           <>
-            <Loader2 className="animate-spin" size={20} />
+            <Loader2 className="animate-spin" size={18} />
             <span>가입 중...</span>
           </>
         ) : (
@@ -985,17 +993,17 @@ const SignupPage: React.FC = () => {
         )}
       </button>
       {!isVerified && (
-        <p className="text-sm text-gray-500 text-center mt-2">
+        <p className="text-xs text-stone-500 text-center mt-2">
           이메일 인증을 완료하면 가입하기 버튼이 활성화됩니다.
         </p>
       )}
 
-      <div className="text-center mt-6">
-        <span className="text-gray-600">이미 계정이 있으신가요? </span>
+      <div className="text-center mt-4">
+        <span className="text-sm text-stone-500">이미 계정이 있으신가요? </span>
         <button
           onClick={() => navigate('/login')}
           disabled={isSigningUp}
-          className="text-red-500 font-semibold hover:underline disabled:text-gray-400 disabled:no-underline"
+          className="text-sm text-amber-600 font-semibold hover:underline disabled:text-stone-400 disabled:no-underline"
         >
           로그인
         </button>
@@ -1004,69 +1012,67 @@ const SignupPage: React.FC = () => {
   );
 
   return (
-    <div className="w-full max-w-2xl">
-      <div className="w-full">
-        <button
-          onClick={() => navigate('/login')}
-          disabled={isSigningUp}
-          className="mb-6 text-gray-600 hover:text-gray-900 font-semibold disabled:text-gray-400 flex items-center gap-1"
-        >
-          <ArrowLeft size={18} />
-          <span>로그인으로</span>
-        </button>
+    <div className="w-full max-w-md">
+      <button
+        onClick={() => navigate('/login')}
+        disabled={isSigningUp}
+        className="mb-6 flex items-center gap-1 text-stone-600 hover:text-stone-900 font-medium disabled:text-stone-400"
+      >
+        <ArrowLeft size={18} />
+        <span>로그인으로</span>
+      </button>
 
-        {/* 진행 상태 표시 */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
-            currentStep >= 1 ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500'
-          }`}>
-            1
-          </div>
-          <div className={`w-16 h-1 rounded ${currentStep >= 2 ? 'bg-red-500' : 'bg-gray-200'}`} />
-          <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
-            currentStep >= 2 ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500'
-          }`}>
-            2
-          </div>
+      {/* 진행 상태 표시 */}
+      <div className="flex items-center justify-center gap-3 mb-6">
+        <div className={`flex items-center justify-center w-7 h-7 rounded-full font-bold text-xs ${
+          currentStep >= 1 ? 'bg-amber-500 text-stone-900' : 'bg-stone-200 text-stone-500'
+        }`}>
+          1
         </div>
+        <div className={`w-12 h-1 rounded ${currentStep >= 2 ? 'bg-amber-500' : 'bg-stone-200'}`} />
+        <div className={`flex items-center justify-center w-7 h-7 rounded-full font-bold text-xs ${
+          currentStep >= 2 ? 'bg-amber-500 text-stone-900' : 'bg-stone-200 text-stone-500'
+        }`}>
+          2
+        </div>
+      </div>
 
-        <div className="bg-white rounded-2xl p-10 border border-gray-200 shadow-lg">
-          {currentStep === 1 ? renderStep1() : renderStep2()}
-        </div>
+      <div className="bg-white rounded-xl p-6 border border-stone-200 shadow-sm">
+        {currentStep === 1 ? renderStep1() : renderStep2()}
       </div>
 
       {/* 이용약관 모달 */}
       {showTermsModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h2 className="text-xl font-bold">이용약관</h2>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-stone-200">
+              <h2 className="text-lg font-bold text-stone-800">이용약관</h2>
               <button
                 onClick={() => setShowTermsModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-stone-100 rounded-lg transition-colors"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto flex-1">
-              <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">
+            <div className="p-4 overflow-y-auto flex-1">
+              <pre className="whitespace-pre-wrap text-sm text-stone-700 font-sans leading-relaxed">
                 {TERMS_OF_SERVICE}
               </pre>
             </div>
-            <div className="p-4 border-t flex gap-3">
+            <div className="p-4 border-t border-stone-200 flex gap-2">
               <button
                 onClick={() => {
                   setAgreeTerms(true);
                   updateAgreeAll(true, agreePrivacy, agreeMarketing);
                   setShowTermsModal(false);
                 }}
-                className="flex-1 py-3 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors"
+                className="flex-1 py-2.5 bg-amber-500 text-stone-900 font-bold rounded-lg hover:bg-amber-400 transition-colors text-sm"
               >
                 동의
               </button>
               <button
                 onClick={() => setShowTermsModal(false)}
-                className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 transition-colors"
+                className="flex-1 py-2.5 bg-stone-200 text-stone-700 font-bold rounded-lg hover:bg-stone-300 transition-colors text-sm"
               >
                 닫기
               </button>
@@ -1078,35 +1084,35 @@ const SignupPage: React.FC = () => {
       {/* 개인정보 처리방침 모달 */}
       {showPrivacyModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h2 className="text-xl font-bold">개인정보 처리방침</h2>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-stone-200">
+              <h2 className="text-lg font-bold text-stone-800">개인정보 처리방침</h2>
               <button
                 onClick={() => setShowPrivacyModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-stone-100 rounded-lg transition-colors"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto flex-1">
-              <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">
+            <div className="p-4 overflow-y-auto flex-1">
+              <pre className="whitespace-pre-wrap text-sm text-stone-700 font-sans leading-relaxed">
                 {PRIVACY_POLICY}
               </pre>
             </div>
-            <div className="p-4 border-t flex gap-3">
+            <div className="p-4 border-t border-stone-200 flex gap-2">
               <button
                 onClick={() => {
                   setAgreePrivacy(true);
                   updateAgreeAll(agreeTerms, true, agreeMarketing);
                   setShowPrivacyModal(false);
                 }}
-                className="flex-1 py-3 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors"
+                className="flex-1 py-2.5 bg-amber-500 text-stone-900 font-bold rounded-lg hover:bg-amber-400 transition-colors text-sm"
               >
                 동의
               </button>
               <button
                 onClick={() => setShowPrivacyModal(false)}
-                className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 transition-colors"
+                className="flex-1 py-2.5 bg-stone-200 text-stone-700 font-bold rounded-lg hover:bg-stone-300 transition-colors text-sm"
               >
                 닫기
               </button>
@@ -1118,35 +1124,35 @@ const SignupPage: React.FC = () => {
       {/* 마케팅 정보 수신 동의 모달 */}
       {showMarketingModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h2 className="text-xl font-bold">마케팅 정보 수신 동의</h2>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-stone-200">
+              <h2 className="text-lg font-bold text-stone-800">마케팅 정보 수신 동의</h2>
               <button
                 onClick={() => setShowMarketingModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-stone-100 rounded-lg transition-colors"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto flex-1">
-              <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">
+            <div className="p-4 overflow-y-auto flex-1">
+              <pre className="whitespace-pre-wrap text-sm text-stone-700 font-sans leading-relaxed">
                 {MARKETING_POLICY}
               </pre>
             </div>
-            <div className="p-4 border-t flex gap-3">
+            <div className="p-4 border-t border-stone-200 flex gap-2">
               <button
                 onClick={() => {
                   setAgreeMarketing(true);
                   updateAgreeAll(agreeTerms, agreePrivacy, true);
                   setShowMarketingModal(false);
                 }}
-                className="flex-1 py-3 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors"
+                className="flex-1 py-2.5 bg-amber-500 text-stone-900 font-bold rounded-lg hover:bg-amber-400 transition-colors text-sm"
               >
                 동의
               </button>
               <button
                 onClick={() => setShowMarketingModal(false)}
-                className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 transition-colors"
+                className="flex-1 py-2.5 bg-stone-200 text-stone-700 font-bold rounded-lg hover:bg-stone-300 transition-colors text-sm"
               >
                 닫기
               </button>

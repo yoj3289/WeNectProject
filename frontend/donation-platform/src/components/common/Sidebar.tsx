@@ -8,7 +8,8 @@ import {
   DollarSign,
   BarChart3,
   Settings,
-  Building2
+  Building2,
+  Heart
 } from 'lucide-react';
 import type { UserType } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
@@ -65,6 +66,7 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
     { id: 'organizations', icon: Building2, label: '기관 승인', allowedUserTypes: ['admin'] },
     // { id: 'projects', icon: FolderCheck, label: '프로젝트 승인', allowedUserTypes: ['admin'] }, // 비활성화 (기능은 유지)
     { id: 'users', icon: Users, label: '사용자 관리', allowedUserTypes: ['admin'] },
+    { id: 'donations', icon: Heart, label: '기부 관리', allowedUserTypes: ['admin'] },
     { id: 'settlements', icon: DollarSign, label: '정산 관리' },
     { id: 'expenses', icon: DollarSign, label: '지출 승인' },
     { id: 'reports', icon: BarChart3, label: '통계 리포트', allowedUserTypes: ['admin'] },

@@ -21,6 +21,7 @@ public class ExpenseResponse {
 
     private Long expenseId;
     private Long projectId;
+    private String projectTitle;
     private LocalDate expenseDate;
     private String category;
     private String description;
@@ -36,9 +37,17 @@ public class ExpenseResponse {
      * Entity를 DTO로 변환
      */
     public static ExpenseResponse from(Expense expense) {
+        return from(expense, null);
+    }
+
+    /**
+     * Entity를 DTO로 변환 (프로젝트 제목 포함)
+     */
+    public static ExpenseResponse from(Expense expense, String projectTitle) {
         return ExpenseResponse.builder()
                 .expenseId(expense.getExpenseId())
                 .projectId(expense.getProjectId())
+                .projectTitle(projectTitle)
                 .expenseDate(expense.getExpenseDate())
                 .category(expense.getCategory())
                 .description(expense.getDescription())

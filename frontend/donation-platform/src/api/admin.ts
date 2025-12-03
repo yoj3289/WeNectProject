@@ -390,3 +390,74 @@ export const completeSettlement = async (settlementId: number): Promise<{ data: 
 export const getSystemMetrics = async (): Promise<{ data: import('../types/admin').SystemMetrics }> => {
   return apiClient.get<{ data: import('../types/admin').SystemMetrics }>('/admin/metrics/system');
 };
+
+// ==================== 차트 통계 타입 ====================
+export interface DonationTrend {
+  label: string;
+  amount: number;
+  count: number;
+}
+
+export interface UserTrend {
+  label: string;
+  individual: number;
+  organization: number;
+  total: number;
+}
+
+export interface ProjectStats {
+  ongoing: number;      // 진행 중
+  settlement: number;   // 결산 중
+  closed: number;       // 종료
+  rejected: number;     // 반려
+  total: number;        // 전체
+}
+
+export interface ProjectTrend {
+  label: string;
+  newProjects: number;
+  completedProjects: number;
+}
+
+export interface DonationTrendResponse {
+  period: string;
+  data: DonationTrend[];
+  totalAmount: number;
+  totalCount: number;
+}
+
+export interface UserTrendResponse {
+  period: string;
+  data: UserTrend[];
+  totalIndividual: number;
+  totalOrganization: number;
+}
+
+export interface ProjectStatsResponse {
+  stats: ProjectStats;
+  trend: ProjectTrend[];
+  period: string;
+}
+
+// ==================== 차트 API 함수 ====================
+
+/**
+ * 기부 추이 차트 데이터 조회
+ */
+export const getDonationTrend = async (period: 'weekly' | 'monthly' = 'weekly'): Promise<{ data: DonationTrendResponse }> => {
+  return apiClient.get<{ data: DonationTrendResponse }>(`/admin/charts/donation-trend?period=${period}`);
+};
+
+/**
+ * 사용자 가입 추이 차트 데이터 조회
+ */
+export const getUserTrend = async (period: 'weekly' | 'monthly' = 'weekly'): Promise<{ data: UserTrendResponse }> => {
+  return apiClient.get<{ data: UserTrendResponse }>(`/admin/charts/user-trend?period=${period}`);
+};
+
+/**
+ * 프로젝트 통계 및 추이 차트 데이터 조회
+ */
+export const getProjectStats = async (period: 'weekly' | 'monthly' = 'weekly'): Promise<{ data: ProjectStatsResponse }> => {
+  return apiClient.get<{ data: ProjectStatsResponse }>(`/admin/charts/project-stats?period=${period}`);
+};

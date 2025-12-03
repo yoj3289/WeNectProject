@@ -86,6 +86,10 @@ public class Donation {
     @Column(columnDefinition = "TEXT")
     private String message;  // 기부 메시지
 
+    @Column(name = "is_featured", nullable = false)
+    @Builder.Default
+    private Boolean isFeatured = false;  // 홈페이지 노출 여부 (관리자가 선택)
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

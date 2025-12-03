@@ -25,11 +25,11 @@ public class DashboardStatsResponse {
     // 지난주 대비 신규 회원 증감률 (%)
     private Double userChange;
 
-    // 승인 대기 (목업 데이터)
-    private Integer pendingApprovals;
+    // 기관 승인 대기
+    private Long pendingApprovals;
 
-    // 정산 승인 대기 (목업 데이터)
-    private Integer pendingSettlements;
+    // 정산 승인 대기
+    private Long pendingSettlements;
 
     // 지출 승인 대기
     private Long pendingExpenses;

@@ -207,4 +207,40 @@ public class AuthService {
         // 6. 응답 DTO 반환
         return LoginResponseDto.of(token, user, organizationName);
     }
+
+    // 토큰 갱신 (세션 연장)
+    @Transactional(readOnly = true)
+    public LoginResponseDto refreshToken(Long userId) {
+        // 1. 사용자 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+
+        // 2. 계정 상태 확인
+        if (user.getStatus() == User.UserStatus.SUSPENDED) {
+            throw new IllegalStateException("정지된 계정입니다");
+        }
+
+        if (user.getStatus() == User.UserStatus.INACTIVE) {
+            throw new IllegalStateException("비활성화된 계정입니다");
+        }
+
+        // 3. 기관명 조회 (기관 사용자인 경우)
+        String organizationName = null;
+        if (user.getUserType() == User.UserType.ORGANIZATION) {
+            Organization organization = organizationRepository.findByUser_UserId(user.getUserId())
+                    .orElse(null);
+            if (organization != null) {
+                organizationName = organization.getOrgName();
+            }
+        }
+
+        // 4. 새 JWT 토큰 생성
+        String newToken = jwtTokenProvider.createToken(
+                user.getUserId(),
+                user.getEmail(),
+                user.getUserType().name());
+
+        // 5. 응답 DTO 반환
+        return LoginResponseDto.of(newToken, user, organizationName);
+    }
 }

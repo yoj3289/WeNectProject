@@ -143,7 +143,7 @@ public class NotificationService {
         String title = "기부가 완료되었습니다";
         String message = String.format("%s 프로젝트에 %,d원 기부가 완료되었습니다. 감사합니다!",
                 projectName, amount);
-        String link = "/project/" + projectId;
+        String link = "/projects/" + projectId;
 
         Map<String, Object> metadata = Map.of(
                 "projectName", projectName,
@@ -161,7 +161,7 @@ public class NotificationService {
     public void createGoalAchievedNotification(Long userId, String projectName, Long projectId) {
         String title = "목표 금액 달성!";
         String message = String.format("%s 프로젝트가 목표 금액을 달성했습니다!", projectName);
-        String link = "/project/" + projectId;
+        String link = "/projects/" + projectId;
 
         Map<String, Object> metadata = Map.of(
                 "projectName", projectName,

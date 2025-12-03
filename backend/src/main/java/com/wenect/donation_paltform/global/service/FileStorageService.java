@@ -9,12 +9,33 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.UUID;
 
 @Service
 public class FileStorageService {
 
     @Value("${file.upload.dir:uploads}")
     private String baseUploadDir;
+
+    /**
+     * 파일명에서 확장자 추출
+     */
+    private String getFileExtension(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            return "";
+        }
+        return filename.substring(filename.lastIndexOf("."));
+    }
+
+    /**
+     * 안전한 파일명 생성 (한글 및 특수문자 제거)
+     * 타임스탬프 + UUID + 확장자 조합으로 고유한 파일명 생성
+     */
+    private String generateSafeFileName(String originalFilename) {
+        String extension = getFileExtension(originalFilename);
+        String uuid = UUID.randomUUID().toString().substring(0, 8);
+        return System.currentTimeMillis() + "_" + uuid + extension;
+    }
 
     /**
      * 절대 경로로 변환된 업로드 디렉토리 반환
@@ -50,9 +71,8 @@ public class FileStorageService {
     }
 
     public String saveFile(MultipartFile file) throws IOException {
-        // 파일명 중복 방지
-        String originalFilename = file.getOriginalFilename();
-        String fileName = System.currentTimeMillis() + "_" + originalFilename;
+        // 안전한 파일명 생성 (한글 제거)
+        String fileName = generateSafeFileName(file.getOriginalFilename());
 
         // 저장 경로 생성 (절대 경로)
         Path uploadPath = getAbsoluteUploadPath("documents");
@@ -71,8 +91,8 @@ public class FileStorageService {
      * 프로젝트 이미지 저장
      */
     public String saveProjectImage(MultipartFile file) throws IOException {
-        String originalFilename = file.getOriginalFilename();
-        String fileName = System.currentTimeMillis() + "_" + originalFilename;
+        // 안전한 파일명 생성 (한글 제거)
+        String fileName = generateSafeFileName(file.getOriginalFilename());
 
         // 절대 경로 사용
         Path uploadPath = getAbsoluteUploadPath("projects/images");
@@ -90,8 +110,8 @@ public class FileStorageService {
      * 프로젝트 문서 저장
      */
     public String saveProjectDocument(MultipartFile file) throws IOException {
-        String originalFilename = file.getOriginalFilename();
-        String fileName = System.currentTimeMillis() + "_" + originalFilename;
+        // 안전한 파일명 생성 (한글 제거)
+        String fileName = generateSafeFileName(file.getOriginalFilename());
 
         // 절대 경로 사용
         Path uploadPath = getAbsoluteUploadPath("projects/documents");
@@ -109,8 +129,8 @@ public class FileStorageService {
      * 영수증 이미지 저장
      */
     public String saveExpenseReceipt(MultipartFile file) throws IOException {
-        String originalFilename = file.getOriginalFilename();
-        String fileName = System.currentTimeMillis() + "_" + originalFilename;
+        // 안전한 파일명 생성 (한글 제거)
+        String fileName = generateSafeFileName(file.getOriginalFilename());
 
         // 절대 경로 사용
         Path uploadPath = getAbsoluteUploadPath("expenses/receipts");
@@ -128,8 +148,8 @@ public class FileStorageService {
      * 커뮤니티 게시글 이미지 저장
      */
     public String saveCommunityPostImage(MultipartFile file) throws IOException {
-        String originalFilename = file.getOriginalFilename();
-        String fileName = System.currentTimeMillis() + "_" + originalFilename;
+        // 안전한 파일명 생성 (한글 제거)
+        String fileName = generateSafeFileName(file.getOriginalFilename());
 
         // 절대 경로 사용
         Path uploadPath = getAbsoluteUploadPath("community/posts");

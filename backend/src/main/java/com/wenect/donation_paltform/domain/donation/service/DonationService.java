@@ -2,6 +2,7 @@ package com.wenect.donation_paltform.domain.donation.service;
 
 import com.wenect.donation_paltform.domain.donation.dto.DonationRequest;
 import com.wenect.donation_paltform.domain.donation.dto.DonationResponse;
+import com.wenect.donation_paltform.domain.donation.dto.FeaturedMessageResponse;
 import com.wenect.donation_paltform.domain.donation.entity.Donation;
 import com.wenect.donation_paltform.domain.donation.repository.DonationRepository;
 import com.wenect.donation_paltform.domain.notification.service.NotificationService;
@@ -28,6 +29,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class DonationService {
+
+    private static final int MAX_FEATURED_COUNT = 10;
 
     private final DonationRepository donationRepository;
 
@@ -274,7 +277,7 @@ public class DonationService {
                             "후원하신 프로젝트가 목표를 달성했습니다!",
                             String.format("회원님이 후원하신 '%s' 프로젝트가 목표 금액 100%%를 달성했습니다! 감사합니다.",
                                     project.getTitle()),
-                            "/project/" + project.getProjectId(),
+                            "/projects/" + project.getProjectId(),
                             java.util.Map.of(
                                     "projectId", project.getProjectId().toString(),
                                     "projectTitle", project.getTitle()
@@ -407,13 +410,14 @@ public class DonationService {
     }
 
     /**
-     * 최근 기부 내역 조회 (완료된 기부만)
+     * 최근 기부 내역 조회 (완료된 기부만, 일주일 이내)
      */
     @Transactional(readOnly = true)
     public List<DonationResponse> getRecentDonations(int limit) {
+        LocalDateTime oneWeekAgo = LocalDateTime.now().minusWeeks(1);
         Pageable pageable = PageRequest.of(0, limit);
-        List<Donation> donations = donationRepository.findByStatusOrderByCreatedAtDesc(
-                Donation.DonationStatus.COMPLETED, pageable);
+        List<Donation> donations = donationRepository.findByStatusAndDonatedAtAfterOrderByDonatedAtDesc(
+                Donation.DonationStatus.COMPLETED, oneWeekAgo, pageable);
         return donations.stream()
                 .map(DonationResponse::from)
                 .collect(Collectors.toList());
@@ -464,6 +468,162 @@ public class DonationService {
 
         log.info("프로젝트 통계 재계산 완료 - projectId: {}, currentAmount: {}, donorCount: {} (총 기부 횟수: {})",
                 projectId, totalAmount, donorCount, completedDonations.size());
+    }
+
+    // ==================== Featured Messages (홈페이지 노출용) ====================
+
+    /**
+     * 홈페이지에 노출할 Featured 응원 메시지 목록 조회
+     * 관리자가 선정한 메시지만 표시 (최대 10개)
+     *
+     * @param limit 최대 노출 개수
+     */
+    @Transactional(readOnly = true)
+    public List<FeaturedMessageResponse> getFeaturedMessages(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+
+        // 관리자가 선정한 Featured 메시지만 조회
+        List<Donation> featuredDonations = donationRepository.findFeaturedDonations(pageable);
+
+        // DTO로 변환 (프로젝트 제목 조회 포함)
+        return featuredDonations.stream()
+                .map(donation -> {
+                    String projectTitle = "프로젝트명 없음";
+                    if (donation.getProjectId() != null) {
+                        projectTitle = projectRepository.findById(donation.getProjectId())
+                                .map(Project::getTitle)
+                                .orElse("프로젝트명 없음");
+                    }
+                    return FeaturedMessageResponse.from(donation, projectTitle);
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 기부 메시지의 Featured 상태 토글 (관리자용)
+     *
+     * @param donationId 기부 ID
+     * @param isFeatured Featured 상태
+     */
+    @Transactional
+    public void toggleFeatured(Long donationId, boolean isFeatured) {
+        Donation donation = donationRepository.findById(donationId)
+                .orElseThrow(() -> new IllegalArgumentException("기부 내역을 찾을 수 없습니다."));
+
+        // 메시지가 없는 기부는 Featured로 설정 불가
+        if (isFeatured && (donation.getMessage() == null || donation.getMessage().isBlank())) {
+            throw new IllegalArgumentException("응원 메시지가 없는 기부는 홈에 노출할 수 없습니다.");
+        }
+
+        // Featured 추가 시 개수 제한 체크
+        if (isFeatured && !donation.getIsFeatured()) {
+            long currentCount = donationRepository.countFeaturedDonations();
+            if (currentCount >= MAX_FEATURED_COUNT) {
+                throw new IllegalArgumentException("홈페이지 노출은 최대 " + MAX_FEATURED_COUNT + "개까지만 가능합니다.");
+            }
+        }
+
+        donation.setIsFeatured(isFeatured);
+        donationRepository.save(donation);
+
+        log.info("기부 Featured 상태 변경 - donationId: {}, isFeatured: {}", donationId, isFeatured);
+    }
+
+    // ==================== 관리자용 전체 기부 조회 ====================
+
+    /**
+     * 관리자용 전체 기부 내역 조회 (필터 지원)
+     *
+     * @param status 상태 필터 (null이면 전체)
+     * @param hasMessage 메시지 유무 필터 (null이면 전체)
+     * @param isFeatured Featured 필터 (null이면 전체)
+     * @param period 기간 필터 (week, month, all)
+     * @param page 페이지 번호
+     * @param size 페이지 크기
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<DonationResponse> getAllDonationsForAdmin(
+            String status, Boolean hasMessage, Boolean isFeatured, String period, int page, int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Donation> donationPage;
+
+        // 상태 변환
+        Donation.DonationStatus donationStatus = null;
+        if (status != null && !status.isEmpty() && !status.equals("all")) {
+            try {
+                donationStatus = Donation.DonationStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid donation status: {}", status);
+            }
+        }
+
+        // 기간 계산
+        LocalDateTime startDate = null;
+        if (period != null) {
+            switch (period) {
+                case "week":
+                    startDate = LocalDateTime.now().minusWeeks(1);
+                    break;
+                case "month":
+                    startDate = LocalDateTime.now().minusMonths(1);
+                    break;
+                case "3months":
+                    startDate = LocalDateTime.now().minusMonths(3);
+                    break;
+                // "all"이거나 null이면 startDate = null (전체 조회)
+            }
+        }
+
+        // Featured 필터가 있는 경우
+        if (isFeatured != null) {
+            donationPage = donationRepository.findByIsFeatured(isFeatured, pageable);
+        }
+        // 메시지 필터가 있는 경우
+        else if (hasMessage != null && hasMessage) {
+            if (donationStatus != null) {
+                donationPage = donationRepository.findWithMessageAndStatus(donationStatus, pageable);
+            } else {
+                donationPage = donationRepository.findAllWithMessage(pageable);
+            }
+        }
+        // 기간 + 상태 필터
+        else if (startDate != null && donationStatus != null) {
+            donationPage = donationRepository.findByCreatedAtAfterAndStatus(startDate, donationStatus, pageable);
+        }
+        // 기간 필터만
+        else if (startDate != null) {
+            donationPage = donationRepository.findByCreatedAtAfter(startDate, pageable);
+        }
+        // 상태 필터만
+        else if (donationStatus != null) {
+            donationPage = donationRepository.findByStatus(donationStatus, pageable);
+        }
+        // 필터 없음 - 전체 조회
+        else {
+            donationPage = donationRepository.findAllByOrderByCreatedAtDesc(pageable);
+        }
+
+        List<DonationResponse> content = donationPage.getContent().stream()
+                .map(donation -> {
+                    String projectTitle = "프로젝트명 없음";
+                    if (donation.getProjectId() != null) {
+                        Project project = projectRepository.findById(donation.getProjectId()).orElse(null);
+                        if (project != null) {
+                            projectTitle = project.getTitle();
+                        }
+                    }
+                    return DonationResponse.from(donation, projectTitle, null);
+                })
+                .collect(Collectors.toList());
+
+        return PageResponse.<DonationResponse>builder()
+                .content(content)
+                .currentPage(donationPage.getNumber())
+                .totalPages(donationPage.getTotalPages())
+                .totalElements(donationPage.getTotalElements())
+                .size(donationPage.getSize())
+                .build();
     }
 
     /**

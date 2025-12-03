@@ -670,6 +670,9 @@ import type { UserType, Project, CommunityPost, UserProfile, AdminUser, Notifica
 
 // Page imports
 import HomePage from './pages/HomePage';
+import HomePageOptionA from './pages/HomePageOptionA';
+import HomePageOptionB from './pages/HomePageOptionB';
+import HomePageOptionC from './pages/HomePageOptionC';
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
 import ReapplyPage from './pages/auth/ReapplyPage';
@@ -689,6 +692,7 @@ import ProjectManagementPage from './pages/admin/ProjectManagementPage';
 import SettlementManagementPage from './pages/admin/SettlementManagementPage';
 import OrganizationApprovalPage from './pages/admin/OrganizationApprovalPage';
 import ExpenseApprovalPage from './pages/admin/ExpenseApprovalPage';
+import DonationManagementPage from './pages/admin/DonationManagementPage';
 import TestMailPage from './pages/admin/TestMailPage';
 import NotificationPageWithAPI from './pages/notification/NotificationPageWithAPI';
 import PaymentSuccessPage from './pages/payment/PaymentSuccessPage';
@@ -734,16 +738,20 @@ const AppRoutes: React.FC = () => {
   React.useEffect(() => {
     const handleAuthLogout = (event: Event) => {
       const customEvent = event as CustomEvent<{ reason: string; currentPath: string }>;
-      const { currentPath } = customEvent.detail;
+      const currentPath = customEvent.detail?.currentPath || window.location.pathname;
 
       // 로그아웃 처리 (이미 apiClient에서 처리되었지만 React Query 캐시 정리)
       logout();
 
       // 로그인 페이지로 리다이렉트 (현재 경로를 redirect 파라미터로 전달)
-      navigate(`/login?redirect=${encodeURIComponent(currentPath)}`);
+      // 로그인 후 원래 페이지로 돌아갈 수 있도록
+      navigate(`/login?redirect=${encodeURIComponent(currentPath)}`, { replace: true });
 
-      // 사용자에게 알림
-      toast.error('세션이 만료되었습니다. 다시 로그인해주세요.');
+      // 사용자에게 알림 (토스트 메시지)
+      toast('자동 로그아웃 되었습니다.', {
+        icon: '🔒',
+        duration: 4000,
+      });
     };
 
     window.addEventListener('auth:logout', handleAuthLogout);
@@ -752,6 +760,86 @@ const AppRoutes: React.FC = () => {
       window.removeEventListener('auth:logout', handleAuthLogout);
     };
   }, [logout, navigate]);
+
+  // 토큰 갱신 함수
+  const handleRefreshToken = React.useCallback(async (toastId: string) => {
+    try {
+      toast.dismiss(toastId);
+      const response = await apiClient.post<{
+        success: boolean;
+        data: { token: string };
+      }>('/auth/refresh');
+
+      if (response.success && response.data?.token) {
+        // 새 토큰으로 업데이트
+        const newToken = response.data.token;
+        useAuthStore.getState().updateToken(newToken);
+        apiClient.setToken(newToken);
+
+        toast.success('세션이 연장되었습니다.', { duration: 3000 });
+      }
+    } catch (error) {
+      console.error('토큰 갱신 실패:', error);
+      toast.error('세션 연장에 실패했습니다. 다시 로그인해주세요.');
+    }
+  }, []);
+
+  // JWT 토큰 만료 5분 전 경고 토스트
+  React.useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const token = useAuthStore.getState().token;
+    if (!token) return;
+
+    // JWT 토큰 디코딩하여 만료 시간 확인
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expTime = payload.exp * 1000; // 초 → 밀리초
+      const now = Date.now();
+      const timeUntilExpiry = expTime - now;
+      const warningTime = 5 * 60 * 1000; // 5분
+
+      // 경고 토스트 표시 함수
+      const showWarningToast = () => {
+        toast(
+          (t) => (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">⏰</span>
+                <span className="font-medium">세션이 5분 후 만료됩니다</span>
+              </div>
+              <div className="flex gap-2 mt-1">
+                <button
+                  onClick={() => handleRefreshToken(t.id)}
+                  className="flex-1 px-3 py-1.5 bg-amber-500 text-white text-sm font-medium rounded hover:bg-amber-600 transition-colors"
+                >
+                  연장하기
+                </button>
+                <button
+                  onClick={() => toast.dismiss(t.id)}
+                  className="flex-1 px-3 py-1.5 bg-stone-200 text-stone-700 text-sm font-medium rounded hover:bg-stone-300 transition-colors"
+                >
+                  무시
+                </button>
+              </div>
+            </div>
+          ),
+          { duration: 60000 } // 1분간 표시 (사용자가 선택할 때까지)
+        );
+      };
+
+      // 만료까지 5분 이상 남았으면 경고 타이머 설정
+      if (timeUntilExpiry > warningTime) {
+        const warningTimer = setTimeout(showWarningToast, timeUntilExpiry - warningTime);
+        return () => clearTimeout(warningTimer);
+      } else if (timeUntilExpiry > 0) {
+        // 이미 5분 미만 남았으면 즉시 경고
+        showWarningToast();
+      }
+    } catch {
+      // 토큰 파싱 실패 시 무시
+    }
+  }, [isLoggedIn, handleRefreshToken]);
 
   // UI states
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -1266,6 +1354,7 @@ const AppRoutes: React.FC = () => {
               } />
               <Route path="settlements" element={<SettlementManagementPage />} />
               <Route path="expenses" element={<ExpenseApprovalPage />} />
+              <Route path="donations" element={<DonationManagementPage />} />
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
             </Routes>
             </AdminLayout>
@@ -1299,6 +1388,25 @@ const AppRoutes: React.FC = () => {
             <Routes>
               <Route path="/" element={
                 <HomePage
+                  isLoggedIn={isLoggedIn}
+                  userType={userType}
+                />
+              } />
+              {/* 홈페이지 디자인 옵션 비교용 임시 라우트 */}
+              <Route path="/home-a" element={
+                <HomePageOptionA
+                  isLoggedIn={isLoggedIn}
+                  userType={userType}
+                />
+              } />
+              <Route path="/home-b" element={
+                <HomePageOptionB
+                  isLoggedIn={isLoggedIn}
+                  userType={userType}
+                />
+              } />
+              <Route path="/home-c" element={
+                <HomePageOptionC
                   isLoggedIn={isLoggedIn}
                   userType={userType}
                 />

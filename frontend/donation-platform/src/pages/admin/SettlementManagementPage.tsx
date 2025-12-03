@@ -551,6 +551,7 @@ const SettlementManagementPage: React.FC = () => {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">신청일</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트명</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">정산금액</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">상태</th>
@@ -560,6 +561,9 @@ const SettlementManagementPage: React.FC = () => {
                   <tbody className="divide-y divide-gray-200">
                     {paginatedSettlements.map((settlement) => (
                       <tr key={settlement.settlementId} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <span className="text-gray-600 text-sm whitespace-nowrap">{formatDate(settlement.requestedAt)}</span>
+                        </td>
                         <td className="px-4 py-3">
                           <span className="font-medium text-gray-800 line-clamp-1">{settlement.projectTitle || '-'}</span>
                         </td>

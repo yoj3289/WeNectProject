@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Heart, Loader2, AlertCircle } from 'lucide-react';
+import { Heart, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
 const LoginPage: React.FC = () => {
@@ -86,34 +86,38 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-5xl">
-      <div className="bg-white rounded-2xl p-12 w-full border border-gray-200 shadow-lg relative">
-        <button
-          onClick={() => navigate('/')}
-          className="absolute top-6 left-6 text-gray-600 hover:text-gray-900 font-semibold"
-          disabled={isLoggingIn}
-        >
-          ← 홈으로
-        </button>
+    <div className="w-full max-w-md">
+      {/* 뒤로가기 버튼 */}
+      <button
+        onClick={() => navigate('/')}
+        disabled={isLoggingIn}
+        className="mb-6 flex items-center gap-1 text-stone-600 hover:text-stone-900 font-medium disabled:text-stone-400"
+      >
+        <ArrowLeft size={18} />
+        <span>홈으로</span>
+      </button>
+
+      <div className="bg-white rounded-xl p-8 border border-stone-200 shadow-sm">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Heart className="text-red-500" size={40} fill="currentColor" />
+            <Heart className="text-amber-500" size={32} fill="currentColor" />
+            <span className="text-xl font-bold text-stone-800">위넥트</span>
           </div>
-          <h1 className="text-4xl font-bold mb-2">로그인</h1>
-          <p className="text-gray-600">따뜻한 나눔에 오신 것을 환영합니다</p>
+          <h1 className="text-2xl font-bold text-stone-800 mb-1">로그인</h1>
+          <p className="text-sm text-stone-500">따뜻한 나눔에 오신 것을 환영합니다</p>
         </div>
 
-        <div className="space-y-5">
+        <div className="space-y-4">
           {/* 에러 메시지 표시 */}
           {errorMessage && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
-              <p className="text-sm text-red-800 whitespace-pre-line">{errorMessage}</p>
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+              <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
+              <p className="text-sm text-red-700 whitespace-pre-line">{errorMessage}</p>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">이메일</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1.5">이메일</label>
             <input
               type="email"
               placeholder="example@email.com"
@@ -121,22 +125,22 @@ const LoginPage: React.FC = () => {
               onChange={(e) => setLoginEmail(e.target.value)}
               onKeyPress={handleKeyPress}
               disabled={isLoggingIn}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2.5 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:bg-stone-100 disabled:cursor-not-allowed text-sm"
             />
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-bold text-gray-700">비밀번호</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm font-medium text-stone-700">비밀번호</label>
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={showPassword}
                   onChange={(e) => setShowPassword(e.target.checked)}
                   disabled={isLoggingIn}
-                  className="w-3.5 h-3.5 text-red-500 border-gray-300 rounded focus:ring-red-500 disabled:cursor-not-allowed"
+                  className="w-3.5 h-3.5 text-amber-500 border-stone-300 rounded focus:ring-amber-500 disabled:cursor-not-allowed"
                 />
-                <span className="text-xs text-gray-500">비밀번호 표시</span>
+                <span className="text-xs text-stone-500">표시</span>
               </label>
             </div>
             <input
@@ -146,7 +150,7 @@ const LoginPage: React.FC = () => {
               onChange={(e) => setLoginPassword(e.target.value)}
               onKeyPress={handleKeyPress}
               disabled={isLoggingIn}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2.5 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:bg-stone-100 disabled:cursor-not-allowed text-sm"
             />
           </div>
 
@@ -157,12 +161,12 @@ const LoginPage: React.FC = () => {
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
                 disabled={isLoggingIn}
-                className="w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500 disabled:cursor-not-allowed"
+                className="w-4 h-4 text-amber-500 border-stone-300 rounded focus:ring-amber-500 disabled:cursor-not-allowed"
               />
-              <span className="text-sm text-gray-700">로그인 유지</span>
+              <span className="text-sm text-stone-600">로그인 유지</span>
             </label>
             <button
-              className="text-sm text-red-500 hover:underline disabled:text-gray-400 disabled:no-underline"
+              className="text-sm text-amber-600 hover:text-amber-700 hover:underline disabled:text-stone-400 disabled:no-underline"
               disabled={isLoggingIn}
             >
               비밀번호 찾기
@@ -172,11 +176,11 @@ const LoginPage: React.FC = () => {
           <button
             onClick={handleLogin}
             disabled={isLoggingIn}
-            className="w-full py-4 bg-red-500 text-white rounded-lg font-bold text-lg hover:bg-red-600 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3 bg-amber-500 text-stone-900 rounded-lg font-bold hover:bg-amber-400 transition-colors disabled:bg-stone-300 disabled:text-stone-500 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoggingIn ? (
               <>
-                <Loader2 className="animate-spin" size={20} />
+                <Loader2 className="animate-spin" size={18} />
                 <span>로그인 중...</span>
               </>
             ) : (
@@ -184,24 +188,15 @@ const LoginPage: React.FC = () => {
             )}
           </button>
 
-          <div className="text-center">
-            <span className="text-gray-600">계정이 없으신가요? </span>
+          <div className="text-center pt-2">
+            <span className="text-sm text-stone-500">계정이 없으신가요? </span>
             <button
               onClick={() => navigate('/signup')}
               disabled={isLoggingIn}
-              className="text-red-500 font-semibold hover:underline disabled:text-gray-400 disabled:no-underline"
+              className="text-sm text-amber-600 font-semibold hover:underline disabled:text-stone-400 disabled:no-underline"
             >
               회원가입
             </button>
-          </div>
-        </div>
-
-        {/* 백엔드 미구현 안내 (임시) */}
-        <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-          <p className="text-sm font-bold text-yellow-900 mb-2">⚠️ 개발 중</p>
-          <div className="text-xs text-yellow-800 space-y-1">
-            <p>• 백엔드 API가 구현되면 실제 로그인 기능이 작동합니다.</p>
-            <p>• 현재는 API 호출이 실패하며 에러 메시지가 표시됩니다.</p>
           </div>
         </div>
       </div>

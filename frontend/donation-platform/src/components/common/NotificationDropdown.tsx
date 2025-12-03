@@ -58,7 +58,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     const iconProps = { size: 18 };
     switch (type) {
       case 'donation':
-        return { icon: <Heart {...iconProps} />, color: 'bg-red-500' };
+        return { icon: <Heart {...iconProps} />, color: 'bg-amber-500' };
       case 'donation_received':
         return { icon: <DollarSign {...iconProps} />, color: 'bg-green-500' };
       case 'comment':
@@ -75,7 +75,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       case 'settlement':
         return { icon: <DollarSign {...iconProps} />, color: 'bg-emerald-500' };
       default:
-        return { icon: <AlertCircle {...iconProps} />, color: 'bg-gray-500' };
+        return { icon: <AlertCircle {...iconProps} />, color: 'bg-stone-500' };
     }
   };
 
@@ -117,15 +117,15 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       />
 
       {/* 드롭다운 */}
-      <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+      <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden z-50">
         {/* 헤더 */}
-        <div className="p-4 border-b border-gray-200 bg-red-500">
+        <div className="p-4 border-b border-stone-200 bg-stone-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-white">
               <Bell size={20} />
               <h3 className="font-bold text-lg">알림</h3>
               {unreadCount > 0 && (
-                <span className="bg-white/30 px-2 py-0.5 rounded-full text-xs font-bold">
+                <span className="bg-amber-500 px-2 py-0.5 rounded-full text-xs font-bold">
                   {unreadCount}
                 </span>
               )}
@@ -134,7 +134,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
               {unreadCount > 0 && (
                 <button
                   onClick={() => markAllAsReadMutation.mutate()}
-                  className="text-white/90 hover:text-white text-sm font-medium flex items-center gap-1"
+                  className="text-stone-300 hover:text-white text-sm font-medium flex items-center gap-1"
                 >
                   <CheckCheck size={16} />
                   모두 읽음
@@ -148,24 +148,24 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         <div className="max-h-96 overflow-y-auto">
           {isLoading ? (
             <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto mb-3"></div>
-              <p className="text-gray-500">알림을 불러오는 중...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500 mx-auto mb-3"></div>
+              <p className="text-stone-500">알림을 불러오는 중...</p>
             </div>
           ) : visibleNotifications.length === 0 ? (
             <div className="p-8 text-center">
-              <Bell className="mx-auto mb-3 text-gray-300" size={48} />
-              <p className="text-gray-500">알림이 없습니다</p>
+              <Bell className="mx-auto mb-3 text-stone-300" size={48} />
+              <p className="text-stone-500">알림이 없습니다</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-stone-100">
               {visibleNotifications.map(notification => {
                 const config = getNotificationIcon(notification.type);
                 const priority = notification.metadata?.priority || 'normal';
                 return (
                   <div
                     key={notification.id}
-                    className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer group ${
-                      !notification.isRead ? 'bg-red-50/50' : ''
+                    className={`p-4 hover:bg-stone-50 transition-colors cursor-pointer group ${
+                      !notification.isRead ? 'bg-amber-50/50' : ''
                     }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
@@ -179,32 +179,32 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between mb-1">
-                          <h4 className={`font-bold text-sm ${!notification.isRead ? 'text-gray-900' : 'text-gray-700'}`}>
+                          <h4 className={`font-bold text-sm ${!notification.isRead ? 'text-stone-900' : 'text-stone-700'}`}>
                             {notification.title}
                           </h4>
                           {!notification.isRead && (
-                            <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 ml-2"></div>
+                            <div className="w-2 h-2 bg-amber-500 rounded-full flex-shrink-0 ml-2"></div>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                        <p className="text-sm text-stone-600 mb-2 line-clamp-2">
                           {notification.message}
                         </p>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-stone-500">
                             {getTimeAgo(notification.timestamp)}
                           </span>
                           <div className="flex items-center gap-1">
                             {notification.link && (
-                              <ExternalLink size={12} className="text-gray-400" />
+                              <ExternalLink size={12} className="text-stone-400" />
                             )}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 deleteNotificationMutation.mutate(notification.id);
                               }}
-                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all"
+                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-stone-200 rounded transition-all"
                             >
-                              <Trash2 size={14} className="text-gray-500" />
+                              <Trash2 size={14} className="text-stone-500" />
                             </button>
                           </div>
                         </div>
@@ -219,13 +219,13 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
         {/* 푸터 - 모든 알림 보기 버튼 */}
         {visibleNotifications.length > 0 && (
-          <div className="p-3 border-t border-gray-200 bg-gray-50">
+          <div className="p-3 border-t border-stone-200 bg-stone-50">
             <button
               onClick={() => {
                 onClose();
                 onOpenFullPage();
               }}
-              className="w-full text-center text-sm text-red-600 font-medium hover:text-red-700 flex items-center justify-center gap-2"
+              className="w-full text-center text-sm text-amber-600 font-medium hover:text-amber-700 flex items-center justify-center gap-2"
             >
               모든 알림 보기
               <ChevronRight size={16} />

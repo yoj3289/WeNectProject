@@ -624,17 +624,26 @@ CREATE TABLE IF NOT EXISTS expenses (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='프로젝트 지출 내역';
 
-이메일 인증 관련 추가
-use mydb;
-CREATE TABLE email_verification (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(255) NOT NULL,
-    verification_code VARCHAR(6) NOT NULL,
-    created_at DATETIME NOT NULL,
-    expires_at DATETIME NOT NULL,
-    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
-    verified_at DATETIME,
-    INDEX idx_email (email),
-    INDEX idx_created_at (created_at),
-    INDEX idx_expires_at (expires_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ========================================
+-- 9. Featured Messages (홈페이지 응원 메시지 노출 기능)
+-- ========================================
+
+-- donations 테이블에 is_featured 컬럼 추가
+-- (관리자가 선정한 응원 메시지를 홈페이지에 노출)
+ALTER TABLE donations
+ADD COLUMN IF NOT EXISTS is_featured BOOLEAN NOT NULL DEFAULT FALSE COMMENT '홈페이지 노출 여부' AFTER message;
+
+-- IF NOT EXISTS 지원 안 하는 경우
+-- ALTER TABLE donations ADD COLUMN is_featured BOOLEAN NOT NULL DEFAULT FALSE COMMENT '홈페이지 노출 여부' AFTER message;
+
+-- Featured 조회용 인덱스 추가
+CREATE INDEX IF NOT EXISTS IDX_donations_featured ON donations (is_featured, status, message(100));
+
+-- ========================================
+-- 10. 알림 link 경로 수정 (라우트 일치)
+-- ========================================
+
+-- 기존 알림의 link 경로를 /project/ → /projects/ 로 수정
+UPDATE notifications
+SET link = REPLACE(link, '/project/', '/projects/')
+WHERE link LIKE '/project/%';

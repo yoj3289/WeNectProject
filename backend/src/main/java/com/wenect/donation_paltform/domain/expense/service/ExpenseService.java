@@ -84,14 +84,26 @@ public class ExpenseService {
     }
 
     /**
-     * 전체 지출 내역 상태별 조회 (관리자)
+     * 전체 지출 내역 상태별 조회 (관리자) - 프로젝트 제목 포함
      */
     @Transactional(readOnly = true)
     public List<ExpenseResponse> getAllExpensesByStatus(String status) {
         Expense.ExpenseStatus expenseStatus = Expense.ExpenseStatus.valueOf(status.toUpperCase());
-        return expenseRepository.findByStatusOrderByCreatedAtDesc(expenseStatus)
+        List<Expense> expenses = expenseRepository.findByStatusOrderByCreatedAtDesc(expenseStatus);
+
+        // 프로젝트 ID 목록 추출 및 일괄 조회
+        List<Long> projectIds = expenses.stream()
+                .map(Expense::getProjectId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 프로젝트 ID -> 제목 매핑
+        java.util.Map<Long, String> projectTitleMap = projectRepository.findAllById(projectIds)
                 .stream()
-                .map(ExpenseResponse::from)
+                .collect(Collectors.toMap(Project::getProjectId, Project::getTitle));
+
+        return expenses.stream()
+                .map(expense -> ExpenseResponse.from(expense, projectTitleMap.get(expense.getProjectId())))
                 .collect(Collectors.toList());
     }
 

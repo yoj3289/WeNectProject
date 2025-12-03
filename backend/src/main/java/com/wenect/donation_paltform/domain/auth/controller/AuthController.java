@@ -128,4 +128,21 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    // 토큰 갱신 API (세션 연장)
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<LoginResponseDto>> refreshToken(
+            org.springframework.security.core.Authentication authentication) {
+        if (authentication == null || authentication.getPrincipal() == null) {
+            return ResponseEntity.status(401).body(
+                    ApiResponse.error("인증 정보가 없습니다", "UNAUTHORIZED")
+            );
+        }
+
+        Long userId = (Long) authentication.getPrincipal();
+        LoginResponseDto responseDto = authService.refreshToken(userId);
+        ApiResponse<LoginResponseDto> response = ApiResponse.success(responseDto, "토큰이 갱신되었습니다");
+
+        return ResponseEntity.ok(response);
+    }
+
 }

@@ -35,7 +35,9 @@ public class DonationResponse {
     private String paymentMethodType;
     private Boolean isAnonymous;
     private String message;
-    private LocalDateTime approvedAt;
+    private Boolean isFeatured;  // 홈페이지 노출 여부
+    private LocalDateTime donatedAt;   // 기부일 (결제 시작 시간)
+    private LocalDateTime approvedAt;  // 결제 완료 시간
     private LocalDateTime createdAt;
 
     // 프론트엔드 호환성: timestamp로도 노출
@@ -63,6 +65,8 @@ public class DonationResponse {
                 .paymentMethodType(donation.getPaymentMethodType())
                 .isAnonymous(donation.getIsAnonymous())
                 .message(donation.getMessage())
+                .isFeatured(donation.getIsFeatured())
+                .donatedAt(donation.getDonatedAt())
                 .approvedAt(donation.getApprovedAt())
                 .createdAt(donation.getCreatedAt())
                 .build();
@@ -89,6 +93,8 @@ public class DonationResponse {
                 .paymentMethodType(donation.getPaymentMethodType())
                 .isAnonymous(donation.getIsAnonymous())
                 .message(donation.getMessage())
+                .isFeatured(donation.getIsFeatured())
+                .donatedAt(donation.getDonatedAt())
                 .approvedAt(donation.getApprovedAt())
                 .createdAt(donation.getCreatedAt())
                 .build();

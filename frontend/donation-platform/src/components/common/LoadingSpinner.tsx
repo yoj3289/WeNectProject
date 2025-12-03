@@ -38,12 +38,12 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       {/* 스피너 */}
       <div className="relative">
         <div
-          className={`${sizeClasses[size]} rounded-full border-gray-200 border-t-red-500 animate-spin`}
+          className={`${sizeClasses[size]} rounded-full border-stone-200 border-t-amber-500 animate-spin`}
         />
         {/* 내부 펄스 효과 */}
         {size !== 'sm' && (
           <div
-            className={`absolute inset-0 ${sizeClasses[size]} rounded-full border-transparent border-t-red-300 animate-ping opacity-20`}
+            className={`absolute inset-0 ${sizeClasses[size]} rounded-full border-transparent border-t-amber-300 animate-ping opacity-20`}
           />
         )}
       </div>
@@ -51,20 +51,20 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       {/* 메시지 */}
       {message && (
         <div className="text-center">
-          <p className={`${textSizeClasses[size]} font-medium text-gray-700 animate-pulse`}>
+          <p className={`${textSizeClasses[size]} font-medium text-stone-700 animate-pulse`}>
             {message}
           </p>
           {subMessage && (
-            <p className="text-sm text-gray-500 mt-1">{subMessage}</p>
+            <p className="text-sm text-stone-500 mt-1">{subMessage}</p>
           )}
         </div>
       )}
 
       {/* 로딩 도트 애니메이션 */}
       <div className="flex gap-1">
-        <span className="w-2 h-2 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-        <span className="w-2 h-2 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-        <span className="w-2 h-2 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+        <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+        <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+        <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
       </div>
     </div>
   );
