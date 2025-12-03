@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Heart,
   X,
@@ -63,8 +63,20 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   setSelectedProject,
 }) => {
   const navigate = useNavigate();
-  const { updateUser, isLoggedIn, logout, user } = useAuthStore();
-  const [selectedMenu, setSelectedMenu] = useState<'main' | 'profile-edit' | 'donation-history' | 'favorite-projects'>('main');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { updateUser, isLoggedIn, logout } = useAuthStore();  // user는 MyPageMain 안에서 가져옴
+
+  // URL 파라미터에서 초기 탭 설정
+  const getInitialTab = (): 'main' | 'profile-edit' | 'donation-history' | 'favorite-projects' => {
+    const tab = searchParams.get('tab');
+    if (tab === 'favorite-projects' || tab === 'favorites') return 'favorite-projects';
+    if (tab === 'donation-history' || tab === 'donations') return 'donation-history';
+    if (tab === 'profile-edit') return 'profile-edit';
+    return 'main';
+  };
+
+  const [selectedMenu, setSelectedMenu] = useState<'main' | 'profile-edit' | 'donation-history' | 'favorite-projects'>(getInitialTab());
+    
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{
@@ -75,7 +87,17 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     isDanger?: boolean;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
-  // API 호출
+  // URL 파라미터 변경 시 탭 동기화
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'favorite-projects' || tab === 'favorites') {
+      setSelectedMenu('favorite-projects');
+    } else if (tab === 'donation-history' || tab === 'donations') {
+      setSelectedMenu('donation-history');
+    }
+  }, [searchParams]);
+
+  // ✅ 실제 API로 기부 내역 조회
   const { data: donationHistoryData, isLoading: isDonationsLoading } = useMyDonations({});
   const donationHistory = React.useMemo(() => {
     if (!donationHistoryData?.content) return [];

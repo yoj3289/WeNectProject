@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { UserType } from '../types';
+import { apiClient } from '../lib/apiClient';
 
 interface User {
   userId: number;
@@ -76,6 +77,12 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         token: state.token,
       }),
+      // 🔥 localStorage에서 상태 복원 완료 후 토큰을 apiClient에 동기화
+      onRehydrateStorage: () => (state) => {
+        if (state?.token) {
+          apiClient.setToken(state.token);
+        }
+      },
     }
   )
 );

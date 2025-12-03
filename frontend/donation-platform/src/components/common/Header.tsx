@@ -85,6 +85,15 @@ const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-2 flex-shrink-0">
           {isLoggedIn ? (
             <>
+              {/* 관심 프로젝트 버튼 */}
+              <Link
+                to="/profile?tab=favorites"
+                className="p-1.5 md:p-2 hover:bg-gray-100 rounded-full transition-colors"
+                title="관심 프로젝트"
+              >
+                <Heart size={20} className="md:w-6 md:h-6 text-gray-600 hover:text-red-500" />
+              </Link>
+
               {/* 알림 버튼 */}
               <div className="relative">
                 <button
