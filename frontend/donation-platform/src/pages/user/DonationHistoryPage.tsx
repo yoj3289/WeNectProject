@@ -213,33 +213,33 @@ const DonationHistoryPage: React.FC<DonationHistoryPageProps> = ({ onBack }) => 
           <p className="text-stone-400 text-sm">나의 소중한 기부 활동 기록</p>
 
           {/* 통계 카드 - 홈페이지 Our Impact 스타일 */}
-          <div className="grid grid-cols-3 gap-4 mt-8">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/20">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="text-amber-400" size={18} />
-                <span className="text-sm text-white/80">총 기부 금액</span>
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-6 sm:mt-8">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-white/20">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                <TrendingUp className="text-amber-400 w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                <span className="text-[10px] sm:text-sm text-white/80 leading-tight">총 기부 금액</span>
               </div>
-              <p className="text-xl md:text-2xl font-light text-white">
+              <p className="text-sm sm:text-xl md:text-2xl font-light text-white break-all">
                 {stats ? Number(stats.totalAmount).toLocaleString() : '0'}원
               </p>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Award className="text-amber-400" size={18} />
-                <span className="text-sm text-white/80">참여 프로젝트</span>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-white/20">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                <Award className="text-amber-400 w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                <span className="text-[10px] sm:text-sm text-white/80 leading-tight">참여 프로젝트</span>
               </div>
-              <p className="text-xl md:text-2xl font-light text-white">
+              <p className="text-sm sm:text-xl md:text-2xl font-light text-white">
                 {stats?.totalCount || 0}개
               </p>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/20">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="text-amber-400" size={18} />
-                <span className="text-sm text-white/80">영수증 발급 가능</span>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-white/20">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                <FileText className="text-amber-400 w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                <span className="text-[10px] sm:text-sm text-white/80 leading-tight">영수증</span>
               </div>
-              <p className="text-xl md:text-2xl font-light text-white">
+              <p className="text-sm sm:text-xl md:text-2xl font-light text-white">
                 {stats?.completedCount || 0}건
               </p>
             </div>

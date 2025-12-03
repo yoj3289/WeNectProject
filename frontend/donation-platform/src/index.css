@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 가로 오버플로우 방지 */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
 /* Marquee Animation */
 @keyframes marquee {
   0% {
@@ -18,4 +24,13 @@
 
 .animate-marquee:hover {
   animation-play-state: paused;
+}
+
+/* 스크롤바 숨김 */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

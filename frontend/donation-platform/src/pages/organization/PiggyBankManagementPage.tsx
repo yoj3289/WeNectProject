@@ -175,42 +175,42 @@ const PiggyBankManagementPage: React.FC = () => {
     <div className="bg-stone-50 min-h-screen">
       {/* 다크 헤더 */}
       <div className="bg-stone-900 text-white">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <button
                 onClick={() => navigate('/organization/dashboard')}
                 className="p-2 hover:bg-stone-800 rounded-xl transition-colors"
               >
-                <ArrowLeft size={24} />
+                <ArrowLeft size={20} className="sm:w-6 sm:h-6" />
               </button>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-500/20 rounded-xl">
-                  <Wallet className="text-amber-400" size={24} />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 bg-amber-500/20 rounded-lg sm:rounded-xl">
+                  <Wallet className="text-amber-400 w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold">저금통 관리</h1>
-                  <div className="flex items-center gap-2 mt-1 text-stone-400 text-sm">
-                    <Building2 size={14} />
-                    <span>{piggyBank.projectTitle}</span>
+                  <h1 className="text-lg sm:text-2xl font-bold">저금통 관리</h1>
+                  <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1 text-stone-400 text-xs sm:text-sm">
+                    <Building2 size={12} className="sm:w-[14px] sm:h-[14px]" />
+                    <span className="truncate max-w-[180px] sm:max-w-none">{piggyBank.projectTitle}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 ml-auto sm:ml-0">
               {canWithdraw && (
                 <button
                   onClick={() => setIsWithdrawalModalOpen(true)}
-                  className="px-4 py-2 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors"
+                  className="px-3 sm:px-4 py-2 bg-amber-500 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium hover:bg-amber-600 transition-colors"
                 >
-                  지출 내역 등록
+                  지출 등록
                 </button>
               )}
               {canRequestSettlement && (
                 <button
                   onClick={() => setIsSettlementModalOpen(true)}
-                  className="px-4 py-2 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition-colors"
+                  className="px-3 sm:px-4 py-2 bg-green-500 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium hover:bg-green-600 transition-colors"
                 >
                   정산 요청
                 </button>
@@ -220,51 +220,51 @@ const PiggyBankManagementPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         {/* 저금통 요약 카드 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
           {/* 총 금액 */}
-          <div className="bg-white rounded-2xl p-6 border border-stone-200">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-2 bg-amber-50 rounded-xl">
-                <Wallet className="text-amber-500" size={20} />
+          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-stone-200">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2 sm:mb-3">
+              <div className="p-1.5 sm:p-2 bg-amber-50 rounded-lg sm:rounded-xl w-fit">
+                <Wallet className="text-amber-500 w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <p className="text-sm text-stone-600 font-medium">총 저금통 금액</p>
+              <p className="text-[10px] sm:text-sm text-stone-600 font-medium">총 금액</p>
             </div>
-            <p className="text-3xl font-bold text-amber-600 mb-1">
+            <p className="text-sm sm:text-2xl md:text-3xl font-bold text-amber-600 mb-0.5 sm:mb-1 break-all">
               {formatAmount(piggyBank.totalAmount)}원
             </p>
-            <p className="text-xs text-stone-500">정산 승인 금액</p>
+            <p className="text-[10px] sm:text-xs text-stone-500 hidden sm:block">정산 승인 금액</p>
           </div>
 
           {/* 인출 금액 */}
-          <div className="bg-white rounded-2xl p-6 border border-stone-200">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-2 bg-green-50 rounded-xl">
-                <TrendingDown className="text-green-500" size={20} />
+          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-stone-200">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2 sm:mb-3">
+              <div className="p-1.5 sm:p-2 bg-green-50 rounded-lg sm:rounded-xl w-fit">
+                <TrendingDown className="text-green-500 w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <p className="text-sm text-stone-600 font-medium">총 인출 금액</p>
+              <p className="text-[10px] sm:text-sm text-stone-600 font-medium">인출</p>
             </div>
-            <p className="text-3xl font-bold text-green-600 mb-1">
+            <p className="text-sm sm:text-2xl md:text-3xl font-bold text-green-600 mb-0.5 sm:mb-1 break-all">
               {formatAmount(piggyBank.withdrawnAmount)}원
             </p>
-            <p className="text-xs text-stone-500">
-              {piggyBank.withdrawalHistory.length}건 인출
+            <p className="text-[10px] sm:text-xs text-stone-500">
+              {piggyBank.withdrawalHistory.length}건
             </p>
           </div>
 
           {/* 잔액 */}
-          <div className="bg-white rounded-2xl p-6 border border-stone-200">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-2 bg-stone-100 rounded-xl">
-                <Wallet className="text-stone-600" size={20} />
+          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-stone-200">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2 sm:mb-3">
+              <div className="p-1.5 sm:p-2 bg-stone-100 rounded-lg sm:rounded-xl w-fit">
+                <Wallet className="text-stone-600 w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <p className="text-sm text-stone-600 font-medium">현재 잔액</p>
+              <p className="text-[10px] sm:text-sm text-stone-600 font-medium">잔액</p>
             </div>
-            <p className="text-3xl font-bold text-stone-800 mb-1">
+            <p className="text-sm sm:text-2xl md:text-3xl font-bold text-stone-800 mb-0.5 sm:mb-1 break-all">
               {formatAmount(piggyBank.balance)}원
             </p>
-            <p className="text-xs text-stone-500">
+            <p className="text-[10px] sm:text-xs text-stone-500 hidden sm:block">
               {piggyBank.balance === 0 ? '정산 요청 가능' : '인출 가능'}
             </p>
           </div>

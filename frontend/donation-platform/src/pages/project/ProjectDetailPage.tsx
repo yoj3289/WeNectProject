@@ -216,31 +216,31 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
         );
       case 'budget':
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* 기부금 사용계획 */}
-            <div className="bg-amber-50/50 rounded-2xl p-6 border border-amber-100">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                  <FileText size={20} className="text-amber-600" />
+            <div className="bg-amber-50/50 rounded-2xl p-4 sm:p-6 border border-amber-100">
+              <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                  <FileText size={18} className="text-amber-600" />
                 </div>
-                <h4 className="font-medium text-lg text-stone-800">기부금 사용계획</h4>
+                <h4 className="font-medium text-base sm:text-lg text-stone-800">기부금 사용계획</h4>
               </div>
-              <p className="text-stone-700 leading-relaxed whitespace-pre-wrap">
+              <p className="text-sm sm:text-base text-stone-700 leading-relaxed whitespace-pre-wrap">
                 {project.budgetPlan || '기부금 사용계획이 등록되지 않았습니다.'}
               </p>
             </div>
 
             {/* 상세 사용계획서 다운로드 */}
             {project.planDocumentUrl && project.isPlanPublic && (
-              <div className="bg-white rounded-2xl border border-stone-200 p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-stone-100 rounded-xl flex items-center justify-center">
-                      <FileText className="text-stone-600" size={24} />
+              <div className="bg-white rounded-2xl border border-stone-200 p-4 sm:p-6">
+                <div className="flex items-center justify-between gap-2 sm:gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-stone-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <FileText className="text-stone-600" size={20} />
                     </div>
-                    <div>
-                      <p className="font-medium text-stone-800">상세 사용계획서</p>
-                      <p className="text-sm text-stone-500">PDF 문서로 다운로드 가능합니다</p>
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm sm:text-base text-stone-800">상세 사용계획서</p>
+                      <p className="text-xs sm:text-sm text-stone-500 truncate">PDF 문서로 다운로드 가능합니다</p>
                     </div>
                   </div>
                   <a
@@ -248,10 +248,10 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     download
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors"
+                    className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-medium hover:bg-amber-600 transition-colors flex-shrink-0"
                   >
-                    <Download size={18} />
-                    다운로드
+                    <Download size={16} />
+                    <span className="hidden sm:inline">다운로드</span>
                   </a>
                 </div>
               </div>
@@ -305,23 +305,23 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
         // 모금 단계: 진행 현황 표시
         return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-amber-50/50 rounded-2xl p-5 border border-amber-100">
-                <p className="text-sm text-stone-500 mb-1">현재 모금액</p>
-                <p className="text-2xl font-medium text-amber-600">{formatAmount(project.currentAmount)}원</p>
+          <div className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
+              <div className="bg-amber-50/50 rounded-2xl p-3 sm:p-5 border border-amber-100">
+                <p className="text-xs sm:text-sm text-stone-500 mb-1">현재 모금액</p>
+                <p className="text-lg sm:text-2xl font-medium text-amber-600">{formatAmount(project.currentAmount)}원</p>
               </div>
-              <div className="bg-stone-50 rounded-2xl p-5 border border-stone-200">
-                <p className="text-sm text-stone-500 mb-1">목표 금액</p>
-                <p className="text-2xl font-medium text-stone-700">{formatAmount(project.targetAmount)}원</p>
+              <div className="bg-stone-50 rounded-2xl p-3 sm:p-5 border border-stone-200">
+                <p className="text-xs sm:text-sm text-stone-500 mb-1">목표 금액</p>
+                <p className="text-lg sm:text-2xl font-medium text-stone-700">{formatAmount(project.targetAmount)}원</p>
               </div>
-              <div className="bg-green-50/50 rounded-2xl p-5 border border-green-100">
-                <p className="text-sm text-stone-500 mb-1">달성률</p>
-                <p className="text-2xl font-medium text-green-600">{progress}%</p>
+              <div className="bg-green-50/50 rounded-2xl p-3 sm:p-5 border border-green-100">
+                <p className="text-xs sm:text-sm text-stone-500 mb-1">달성률</p>
+                <p className="text-lg sm:text-2xl font-medium text-green-600">{progress}%</p>
               </div>
-              <div className="bg-orange-50/50 rounded-2xl p-5 border border-orange-100">
-                <p className="text-sm text-stone-500 mb-1">남은 기간</p>
-                <p className="text-2xl font-medium text-orange-600">D-{project.dday}</p>
+              <div className="bg-orange-50/50 rounded-2xl p-3 sm:p-5 border border-orange-100">
+                <p className="text-xs sm:text-sm text-stone-500 mb-1">남은 기간</p>
+                <p className="text-lg sm:text-2xl font-medium text-orange-600">D-{project.dday}</p>
               </div>
             </div>
 
@@ -352,16 +352,16 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-amber-50/50 rounded-2xl p-5 border border-amber-100 text-center">
-                    <p className="text-2xl font-medium text-stone-800">{donors.length}명</p>
-                    <p className="text-sm text-stone-500">총 기부자</p>
+                <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6">
+                  <div className="bg-amber-50/50 rounded-2xl p-3 sm:p-5 border border-amber-100 text-center">
+                    <p className="text-xl sm:text-2xl font-medium text-stone-800">{donors.length}명</p>
+                    <p className="text-xs sm:text-sm text-stone-500">총 기부자</p>
                   </div>
-                  <div className="bg-green-50/50 rounded-2xl p-5 border border-green-100 text-center">
-                    <p className="text-2xl font-medium text-stone-800">
+                  <div className="bg-green-50/50 rounded-2xl p-3 sm:p-5 border border-green-100 text-center">
+                    <p className="text-xl sm:text-2xl font-medium text-stone-800">
                       {formatAmount(donors.reduce((sum, d) => sum + d.amount, 0))}원
                     </p>
-                    <p className="text-sm text-stone-500">총 기부금</p>
+                    <p className="text-xs sm:text-sm text-stone-500">총 기부금</p>
                   </div>
                 </div>
 
@@ -407,13 +407,14 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
       case 'messages':
         return (
           <div className="space-y-6">
-            <div className="bg-amber-50/50 rounded-2xl p-5 border border-amber-100 flex items-center gap-4">
-              <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center">
-                <Heart size={28} className="text-amber-500" fill="currentColor" />
+            <div className="bg-amber-50/50 rounded-2xl p-4 sm:p-5 border border-amber-100 flex items-center gap-3 sm:gap-4">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-100 rounded-full flex items-center justify-center">
+                <Heart size={24} className="sm:hidden text-amber-500" fill="currentColor" />
+                <Heart size={28} className="hidden sm:block text-amber-500" fill="currentColor" />
               </div>
               <div>
-                <p className="text-sm text-stone-500">응원 메시지</p>
-                <p className="text-3xl font-medium text-stone-800">{donorsWithMessages.length}개</p>
+                <p className="text-xs sm:text-sm text-stone-500">응원 메시지</p>
+                <p className="text-2xl sm:text-3xl font-medium text-stone-800">{donorsWithMessages.length}개</p>
               </div>
             </div>
 
@@ -433,25 +434,26 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
             ) : (
               <div className="space-y-4">
                 {donorsWithMessages.map((donor) => (
-                  <div key={donor.id} className="bg-white rounded-2xl border border-stone-200 p-6 hover:shadow-md transition-all">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Heart size={24} className="text-amber-500" fill="currentColor" />
+                  <div key={donor.id} className="bg-white rounded-2xl border border-stone-200 p-4 sm:p-6 hover:shadow-md transition-all">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-50 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Heart size={20} className="sm:hidden text-amber-500" fill="currentColor" />
+                        <Heart size={24} className="hidden sm:block text-amber-500" fill="currentColor" />
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <p className="font-medium text-stone-800">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm sm:text-base text-stone-800 truncate">
                               {donor.isAnonymous ? '익명의 기부자' : donor.name}
                             </p>
-                            <p className="text-sm text-stone-500">{donor.date}</p>
+                            <p className="text-xs sm:text-sm text-stone-500">{donor.date}</p>
                           </div>
-                          <p className="font-medium text-amber-600">
+                          <p className="font-medium text-sm sm:text-base text-amber-600 flex-shrink-0">
                             {formatAmount(donor.amount)}원
                           </p>
                         </div>
-                        <div className="p-4 bg-stone-50 rounded-xl">
-                          <p className="text-stone-700 leading-relaxed">"{donor.message}"</p>
+                        <div className="p-3 sm:p-4 bg-stone-50 rounded-xl">
+                          <p className="text-sm sm:text-base text-stone-700 leading-relaxed">"{donor.message}"</p>
                         </div>
                       </div>
                     </div>
@@ -572,11 +574,10 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                       <button
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
-                        className={`w-2 h-2 rounded-full transition-all ${
-                          index === currentImageIndex
+                        className={`w-2 h-2 rounded-full transition-all ${index === currentImageIndex
                             ? 'bg-amber-500 w-6'
                             : 'bg-stone-400/50 hover:bg-stone-400'
-                        }`}
+                          }`}
                       />
                     ))}
                   </div>
@@ -593,26 +594,29 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
             {/* 탭 영역 */}
             <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
               {/* 탭 네비게이션 */}
-              <div className="flex border-b border-stone-100 bg-stone-50">
-                {[
-                  { id: 'intro', label: '프로젝트 소개' },
-                  { id: 'budget', label: '기부금 사용계획' },
-                  { id: 'progress', label: '진행현황' },
-                  { id: 'donors', label: '기부자 목록' },
-                  { id: 'messages', label: '응원 메시지' }
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as TabType)}
-                    className={`flex-1 py-3.5 font-medium transition-all text-sm whitespace-nowrap ${
-                      activeTab === tab.id
-                        ? 'text-amber-600 bg-white border-b-2 border-amber-500 -mb-px'
-                        : 'text-stone-500 hover:text-stone-700 hover:bg-stone-100'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
+              <div className="relative">
+                <div className="flex border-b border-stone-100 bg-stone-50 overflow-x-auto scrollbar-hide">
+                  {[
+                    { id: 'intro', label: '프로젝트 소개' },
+                    { id: 'budget', label: '기부금 사용계획' },
+                    { id: 'progress', label: '진행현황' },
+                    { id: 'donors', label: '기부자 목록' },
+                    { id: 'messages', label: '응원 메시지' }
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as TabType)}
+                      className={`flex-shrink-0 px-4 py-3.5 font-medium transition-all text-sm whitespace-nowrap ${activeTab === tab.id
+                          ? 'text-amber-600 bg-white border-b-2 border-amber-500 -mb-px'
+                          : 'text-stone-500 hover:text-stone-700 hover:bg-stone-100'
+                        }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+                {/* 스크롤 힌트 - 오른쪽 그라데이션 */}
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-stone-50 to-transparent pointer-events-none md:hidden" />
               </div>
 
               {/* 탭 컨텐츠 */}
@@ -686,11 +690,10 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                 <button
                   onClick={handleFavoriteClick}
                   disabled={toggleFavoriteMutation.isPending}
-                  className={`w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
-                    isFavorite
+                  className={`w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${isFavorite
                       ? 'bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100'
                       : 'bg-stone-50 text-stone-600 border border-stone-200 hover:bg-stone-100'
-                  }`}
+                    }`}
                 >
                   {toggleFavoriteMutation.isPending ? (
                     <Loader2 className="animate-spin" size={20} />

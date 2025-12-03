@@ -88,7 +88,7 @@ const Pagination: React.FC<PaginationProps> = ({
             onClick={() => onPageChange(pageNumber)}
             className={`flex items-center justify-center w-10 h-10 rounded-lg border font-semibold transition-colors ${
               isActive
-                ? 'bg-red-500 text-white border-red-500'
+                ? 'bg-amber-500 text-stone-900 border-amber-500'
                 : 'border-gray-300 text-gray-700 hover:bg-gray-50'
             }`}
             aria-label={`${pageNumber}페이지`}

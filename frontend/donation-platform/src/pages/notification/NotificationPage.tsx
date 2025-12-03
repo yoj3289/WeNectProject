@@ -206,79 +206,78 @@ const NotificationPage: React.FC<NotificationPageProps> = ({
   return (
     <div className="min-h-screen bg-stone-50">
       {/* 헤더 */}
-      <div className="bg-stone-800 text-white py-8 px-6">
+      <div className="bg-stone-800 text-white py-6 sm:py-8 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
+            <div className="flex items-center gap-3 sm:gap-4">
               <button
                 onClick={() => navigate(-1)}
                 className="p-2 hover:bg-stone-700 rounded-xl transition-colors"
               >
-                <ArrowLeft size={28} />
+                <ArrowLeft size={24} />
               </button>
-              <div className="p-3 bg-amber-500 rounded-2xl">
-                <Bell size={32} />
+              <div className="p-2 sm:p-3 bg-amber-500 rounded-xl sm:rounded-2xl">
+                <Bell size={24} className="sm:w-8 sm:h-8" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold mb-1">알림 센터</h1>
-                <p className="text-stone-400">
+                <h1 className="text-xl sm:text-3xl font-bold mb-0.5 sm:mb-1">알림 센터</h1>
+                <p className="text-stone-400 text-sm sm:text-base">
                   {unreadCount > 0 ? `${unreadCount}개의 읽지 않은 알림` : '모든 알림을 확인했습니다'}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 ml-auto sm:ml-0">
               <button
                 onClick={onShowHistoryModal}
-                className="px-4 py-2 bg-stone-700 hover:bg-stone-600 rounded-xl transition-colors text-sm font-medium"
+                className="px-3 sm:px-4 py-2 bg-stone-700 hover:bg-stone-600 rounded-xl transition-colors text-xs sm:text-sm font-medium"
               >
                 발송 내역
               </button>
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="p-3 hover:bg-stone-700 rounded-xl transition-colors"
+                className="p-2 sm:p-3 hover:bg-stone-700 rounded-xl transition-colors"
               >
-                <Settings size={28} />
+                <Settings size={24} className="sm:w-7 sm:h-7" />
               </button>
             </div>
           </div>
 
           {/* 검색바 */}
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-stone-400" size={20} />
+            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-stone-400" size={18} />
             <input
               type="text"
               placeholder="알림 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-stone-700 border border-stone-600 rounded-xl text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+              className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 bg-stone-700 border border-stone-600 rounded-xl text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all text-sm sm:text-base"
             />
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-12 gap-6">
-          {/* 왼쪽 사이드바 */}
-          <div className="col-span-3 space-y-4">
-            {/* 탭 */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-4">
-              <h3 className="font-bold text-sm text-stone-500 mb-3 uppercase tracking-wider">필터</h3>
-              <div className="space-y-1">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-4 sm:gap-6">
+          {/* 왼쪽 사이드바 - 모바일에서는 가로 스크롤 필터 */}
+          <div className="lg:col-span-3 order-1 lg:order-none">
+            {/* 모바일: 가로 스크롤 필터 */}
+            <div className="lg:hidden overflow-x-auto scrollbar-hide -mx-4 px-4 mb-4">
+              <div className="flex gap-2" style={{ width: 'max-content' }}>
                 {[
-                  { id: 'all', label: '전체 알림', count: notifications.filter(n => !n.isArchived).length },
+                  { id: 'all', label: '전체', count: notifications.filter(n => !n.isArchived).length },
                   { id: 'unread', label: '읽지 않음', count: unreadCount },
                   { id: 'archived', label: '보관함', count: notifications.filter(n => n.isArchived).length }
                 ].map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setSelectedTab(tab.id)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-medium transition-all ${selectedTab === tab.id
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${selectedTab === tab.id
                       ? 'bg-amber-500 text-white'
-                      : 'text-stone-700 hover:bg-stone-50'
+                      : 'bg-white text-stone-700 border border-stone-200'
                       }`}
                   >
                     <span>{tab.label}</span>
-                    <span className={`text-sm ${selectedTab === tab.id ? 'text-white/90' : 'text-stone-500'}`}>
+                    <span className={`text-xs ${selectedTab === tab.id ? 'text-white/80' : 'text-stone-400'}`}>
                       {tab.count}
                     </span>
                   </button>
@@ -286,66 +285,95 @@ const NotificationPage: React.FC<NotificationPageProps> = ({
               </div>
             </div>
 
-            {/* 날짜 필터 */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-4">
-              <h3 className="font-bold text-sm text-stone-500 mb-3 uppercase tracking-wider">기간</h3>
-              <div className="space-y-1">
-                {[
-                  { id: 'all', label: '전체' },
-                  { id: 'today', label: '오늘' },
-                  { id: 'week', label: '최근 1주일' },
-                  { id: 'month', label: '최근 1개월' }
-                ].map(filter => (
-                  <button
-                    key={filter.id}
-                    onClick={() => setDateFilter(filter.id)}
-                    className={`w-full flex items-center px-4 py-2.5 rounded-xl font-medium transition-all ${dateFilter === filter.id
-                      ? 'bg-amber-50 text-amber-600'
-                      : 'text-stone-700 hover:bg-stone-50'
-                      }`}
-                  >
-                    <span>{filter.label}</span>
-                  </button>
-                ))}
+            {/* 데스크톱: 세로 사이드바 */}
+            <div className="hidden lg:block space-y-4">
+              {/* 탭 */}
+              <div className="bg-white rounded-2xl border border-stone-200 p-4">
+                <h3 className="font-bold text-sm text-stone-500 mb-3 uppercase tracking-wider">필터</h3>
+                <div className="space-y-1">
+                  {[
+                    { id: 'all', label: '전체 알림', count: notifications.filter(n => !n.isArchived).length },
+                    { id: 'unread', label: '읽지 않음', count: unreadCount },
+                    { id: 'archived', label: '보관함', count: notifications.filter(n => n.isArchived).length }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setSelectedTab(tab.id)}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-medium transition-all ${selectedTab === tab.id
+                        ? 'bg-amber-500 text-white'
+                        : 'text-stone-700 hover:bg-stone-50'
+                        }`}
+                    >
+                      <span>{tab.label}</span>
+                      <span className={`text-sm ${selectedTab === tab.id ? 'text-white/90' : 'text-stone-500'}`}>
+                        {tab.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* 카테고리 */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-4">
-              <h3 className="font-bold text-sm text-stone-500 mb-3 uppercase tracking-wider">카테고리</h3>
-              <div className="space-y-1">
-                {categories.map(cat => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all ${selectedCategory === cat.id
-                      ? 'bg-amber-50 text-amber-600'
-                      : 'text-stone-700 hover:bg-stone-50'
-                      }`}
-                  >
-                    {cat.icon}
-                    <span>{cat.label}</span>
-                  </button>
-                ))}
+              {/* 날짜 필터 */}
+              <div className="bg-white rounded-2xl border border-stone-200 p-4">
+                <h3 className="font-bold text-sm text-stone-500 mb-3 uppercase tracking-wider">기간</h3>
+                <div className="space-y-1">
+                  {[
+                    { id: 'all', label: '전체' },
+                    { id: 'today', label: '오늘' },
+                    { id: 'week', label: '최근 1주일' },
+                    { id: 'month', label: '최근 1개월' }
+                  ].map(filter => (
+                    <button
+                      key={filter.id}
+                      onClick={() => setDateFilter(filter.id)}
+                      className={`w-full flex items-center px-4 py-2.5 rounded-xl font-medium transition-all ${dateFilter === filter.id
+                        ? 'bg-amber-50 text-amber-600'
+                        : 'text-stone-700 hover:bg-stone-50'
+                        }`}
+                    >
+                      <span>{filter.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* 그룹화 옵션 */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-4">
-              <label className="flex items-center justify-between cursor-pointer">
-                <span className="text-sm font-medium text-stone-700">프로젝트별 그룹화</span>
-                <input
-                  type="checkbox"
-                  checked={groupByProject}
-                  onChange={() => setGroupByProject(!groupByProject)}
-                  className="w-4 h-4 text-amber-500 rounded focus:ring-2 focus:ring-amber-500"
-                />
-              </label>
+              {/* 카테고리 */}
+              <div className="bg-white rounded-2xl border border-stone-200 p-4">
+                <h3 className="font-bold text-sm text-stone-500 mb-3 uppercase tracking-wider">카테고리</h3>
+                <div className="space-y-1">
+                  {categories.map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all ${selectedCategory === cat.id
+                        ? 'bg-amber-50 text-amber-600'
+                        : 'text-stone-700 hover:bg-stone-50'
+                        }`}
+                    >
+                      {cat.icon}
+                      <span>{cat.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 그룹화 옵션 */}
+              <div className="bg-white rounded-2xl border border-stone-200 p-4">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <span className="text-sm font-medium text-stone-700">프로젝트별 그룹화</span>
+                  <input
+                    type="checkbox"
+                    checked={groupByProject}
+                    onChange={() => setGroupByProject(!groupByProject)}
+                    className="w-4 h-4 text-amber-500 rounded focus:ring-2 focus:ring-amber-500"
+                  />
+                </label>
+              </div>
             </div>
           </div>
 
           {/* 메인 콘텐츠 */}
-          <div className="col-span-9">
+          <div className="lg:col-span-9 order-2 lg:order-none">
             {/* 액션 바 */}
             <div className="bg-white rounded-2xl border border-stone-200 p-4 mb-6">
               <div className="flex items-center justify-between">
@@ -492,84 +520,84 @@ const NotificationPage: React.FC<NotificationPageProps> = ({
                         return (
                           <div
                             key={notification.id}
-                            className={`bg-white rounded-2xl border-2 hover:shadow-md transition-all ${!notification.isRead ? 'border-amber-200' : 'border-stone-200'
+                            className={`bg-white rounded-xl sm:rounded-2xl border-2 hover:shadow-md transition-all ${!notification.isRead ? 'border-amber-200' : 'border-stone-200'
                               } ${isSelected ? 'ring-2 ring-amber-500' : ''}`}
                           >
-                            <div className="p-6">
-                              <div className="flex gap-4">
+                            <div className="p-4 sm:p-6">
+                              <div className="flex gap-3 sm:gap-4">
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={() => toggleSelectNotification(notification.id)}
-                                  className="w-5 h-5 text-amber-500 rounded focus:ring-2 focus:ring-amber-500 cursor-pointer mt-1"
+                                  className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 rounded focus:ring-2 focus:ring-amber-500 cursor-pointer mt-1 flex-shrink-0"
                                 />
 
-                                <div className={`bg-gradient-to-br ${config.gradient} w-14 h-14 rounded-2xl flex items-center justify-center text-white flex-shrink-0 shadow-lg relative`}>
-                                  {config.icon}
+                                <div className={`bg-gradient-to-br ${config.gradient} w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center text-white flex-shrink-0 shadow-lg relative`}>
+                                  <span className="scale-75 sm:scale-100">{config.icon}</span>
                                   {priority === 'high' && (
-                                    <Star size={16} className="absolute -top-1 -right-1 text-yellow-400 fill-yellow-400" />
+                                    <Star size={12} className="absolute -top-1 -right-1 text-yellow-400 fill-yellow-400 sm:w-4 sm:h-4" />
                                   )}
                                 </div>
 
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between mb-2">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <h4 className={`font-bold text-lg ${!notification.isRead ? 'text-stone-900' : 'text-stone-700'}`}>
+                                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2 mb-2">
+                                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                      <h4 className={`font-bold text-sm sm:text-lg ${!notification.isRead ? 'text-stone-900' : 'text-stone-700'}`}>
                                         {notification.title}
                                       </h4>
                                       {!notification.isRead && (
-                                        <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">
+                                        <span className="px-1.5 sm:px-2 py-0.5 bg-amber-500 text-white text-[10px] sm:text-xs font-bold rounded-full">
                                           NEW
                                         </span>
                                       )}
-                                      <span className={`px-2 py-0.5 ${config.bgColor} ${config.textColor} text-xs font-bold rounded-lg`}>
+                                      <span className={`px-1.5 sm:px-2 py-0.5 ${config.bgColor} ${config.textColor} text-[10px] sm:text-xs font-bold rounded-lg`}>
                                         {config.label}
                                       </span>
                                       {priority === 'high' && (
-                                        <span className="px-2 py-0.5 bg-yellow-100 text-yellow-600 text-xs font-bold rounded-lg">
+                                        <span className="hidden sm:inline px-2 py-0.5 bg-yellow-100 text-yellow-600 text-xs font-bold rounded-lg">
                                           중요
                                         </span>
                                       )}
                                     </div>
                                   </div>
 
-                                  <p className="text-stone-600 mb-4 leading-relaxed">
+                                  <p className="text-stone-600 mb-3 sm:mb-4 leading-relaxed text-sm sm:text-base line-clamp-2 sm:line-clamp-none">
                                     {notification.message}
                                   </p>
 
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-sm text-stone-500 font-medium">
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                    <span className="text-xs sm:text-sm text-stone-500 font-medium">
                                       {getTimeAgo(notification.timestamp)}
                                     </span>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-1.5 sm:gap-2 flex-wrap">
                                       {notification.link && (
                                         <button
                                           onClick={() => handleNotificationClick(notification)}
-                                          className="px-3 py-1.5 text-xs bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors font-medium flex items-center gap-1"
+                                          className="px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors font-medium flex items-center gap-1"
                                         >
                                           <ExternalLink size={12} />
-                                          바로가기
+                                          <span className="hidden sm:inline">바로가기</span>
                                         </button>
                                       )}
                                       {!notification.isRead && (
                                         <button
                                           onClick={() => onMarkAsRead(notification.id)}
-                                          className="px-3 py-1.5 text-xs bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors font-medium"
+                                          className="px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors font-medium"
                                         >
-                                          읽음 표시
+                                          읽음
                                         </button>
                                       )}
                                       <button
                                         onClick={() => onArchive(notification.id)}
                                         className="p-1.5 hover:bg-stone-100 rounded-lg transition-colors"
                                       >
-                                        <Archive size={16} className="text-stone-500" />
+                                        <Archive size={14} className="text-stone-500 sm:w-4 sm:h-4" />
                                       </button>
                                       <button
                                         onClick={() => onDelete(notification.id)}
                                         className="p-1.5 hover:bg-stone-100 rounded-lg transition-colors"
                                       >
-                                        <Trash2 size={16} className="text-stone-500" />
+                                        <Trash2 size={14} className="text-stone-500 sm:w-4 sm:h-4" />
                                       </button>
                                     </div>
                                   </div>

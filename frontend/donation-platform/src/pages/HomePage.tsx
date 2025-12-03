@@ -94,7 +94,7 @@ const HomePage: React.FC<HomePageProps> = ({
             Together We Can Make a Difference
           </p>
 
-          <h1 className="text-3xl md:text-5xl lg:text-6xl text-white font-light leading-tight mb-6 max-w-3xl">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl text-white font-light leading-tight mb-6 max-w-3xl">
             당신의 <span className="text-amber-400 font-medium">작은 나눔</span>이<br />
             누군가의 <span className="text-amber-400 font-medium">전부</span>가 됩니다
           </h1>
@@ -120,9 +120,11 @@ const HomePage: React.FC<HomePageProps> = ({
         </div>
 
         {/* 스크롤 다운 인디케이터 */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 flex flex-col items-center gap-2 animate-bounce">
-          <span className="text-xs uppercase tracking-widest">Scroll</span>
-          <ChevronDown size={20} />
+        <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+          <div className="text-white/50 flex flex-col items-center gap-2 animate-bounce">
+            <span className="text-xs uppercase tracking-widest">Scroll</span>
+            <ChevronDown size={20} />
+          </div>
         </div>
       </section>
 

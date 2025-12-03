@@ -117,7 +117,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       />
 
       {/* 드롭다운 */}
-      <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden z-50">
+      <div className="fixed sm:absolute inset-x-2 sm:inset-x-auto sm:right-0 top-16 sm:top-full sm:mt-2 w-auto sm:w-96 bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden z-50">
         {/* 헤더 */}
         <div className="p-4 border-b border-stone-200 bg-stone-800">
           <div className="flex items-center justify-between">

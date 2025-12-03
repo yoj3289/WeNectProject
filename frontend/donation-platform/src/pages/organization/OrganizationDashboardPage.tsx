@@ -120,60 +120,60 @@ const OrganizationDashboardPage: React.FC = () => {
 
           {/* 통계 카드 */}
           {isLoadingStats ? (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 mt-6 sm:mt-8">
               {[...Array(5)].map((_, idx) => (
-                <div key={idx} className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/20 animate-pulse">
-                  <div className="h-4 bg-white/20 rounded w-20 mb-3"></div>
-                  <div className="h-8 bg-white/20 rounded w-16"></div>
+                <div key={idx} className="bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-white/20 animate-pulse">
+                  <div className="h-3 sm:h-4 bg-white/20 rounded w-16 sm:w-20 mb-2 sm:mb-3"></div>
+                  <div className="h-6 sm:h-8 bg-white/20 rounded w-12 sm:w-16"></div>
                 </div>
               ))}
             </div>
           ) : isErrorStats ? (
-            <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 mt-8">
-              <p className="text-red-200">통계를 불러오는데 실패했습니다.</p>
+            <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 mt-6 sm:mt-8">
+              <p className="text-red-200 text-sm">통계를 불러오는데 실패했습니다.</p>
             </div>
           ) : stats && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-8">
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <BarChart3 className="text-amber-400" size={18} />
-                  <span className="text-sm text-white/80">전체 프로젝트</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 mt-6 sm:mt-8">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-white/20">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                  <BarChart3 className="text-amber-400 w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                  <span className="text-[10px] sm:text-sm text-white/80">전체</span>
                 </div>
-                <p className="text-2xl font-light text-white">{stats.totalProjects}개</p>
+                <p className="text-lg sm:text-2xl font-light text-white">{stats.totalProjects}개</p>
               </div>
 
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="text-blue-400" size={18} />
-                  <span className="text-sm text-white/80">진행 중</span>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-white/20">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                  <Clock className="text-blue-400 w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                  <span className="text-[10px] sm:text-sm text-white/80">진행 중</span>
                 </div>
-                <p className="text-2xl font-light text-white">{stats.activeProjects}개</p>
-                <p className="text-xs text-white/60 mt-1">{formatAmount(stats.activeFunding)}원 모금 중</p>
+                <p className="text-lg sm:text-2xl font-light text-white">{stats.activeProjects}개</p>
+                <p className="text-[10px] sm:text-xs text-white/60 mt-1 hidden sm:block">{formatAmount(stats.activeFunding)}원 모금 중</p>
               </div>
 
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <Wallet className="text-orange-400" size={18} />
-                  <span className="text-sm text-white/80">결산 중</span>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-white/20">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                  <Wallet className="text-orange-400 w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                  <span className="text-[10px] sm:text-sm text-white/80">결산 중</span>
                 </div>
-                <p className="text-2xl font-light text-white">{stats.settlementProjects}개</p>
-                <p className="text-xs text-white/60 mt-1">저금통 {formatAmount(stats.totalWalletBalance)}원</p>
+                <p className="text-lg sm:text-2xl font-light text-white">{stats.settlementProjects}개</p>
+                <p className="text-[10px] sm:text-xs text-white/60 mt-1 hidden sm:block">저금통 {formatAmount(stats.totalWalletBalance)}원</p>
               </div>
 
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="text-green-400" size={18} />
-                  <span className="text-sm text-white/80">종료됨</span>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-white/20">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                  <CheckCircle className="text-green-400 w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                  <span className="text-[10px] sm:text-sm text-white/80">종료</span>
                 </div>
-                <p className="text-2xl font-light text-white">{stats.closedProjects}개</p>
+                <p className="text-lg sm:text-2xl font-light text-white">{stats.closedProjects}개</p>
               </div>
 
-              <div className="bg-amber-500/20 backdrop-blur-sm rounded-2xl p-5 border border-amber-500/30 col-span-2 md:col-span-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="text-amber-400" size={18} />
-                  <span className="text-sm text-white/80">누적 모금액</span>
+              <div className="bg-amber-500/20 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-amber-500/30 col-span-2 sm:col-span-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                  <TrendingUp className="text-amber-400 w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                  <span className="text-[10px] sm:text-sm text-white/80">누적 모금</span>
                 </div>
-                <p className="text-2xl font-light text-white">{formatAmount(stats.totalFunding)}원</p>
+                <p className="text-lg sm:text-2xl font-light text-white break-all">{formatAmount(stats.totalFunding)}원</p>
               </div>
             </div>
           )}
@@ -425,8 +425,8 @@ const OrganizationDashboardPage: React.FC = () => {
         ) : (
           /* 리스트 뷰 (Table) */
           <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-            {/* 테이블 헤더 */}
-            <div className="hidden md:grid md:grid-cols-12 gap-4 px-6 py-4 bg-stone-50 border-b border-stone-200 text-sm font-medium text-stone-600">
+            {/* 테이블 헤더 - 데스크톱만 표시 */}
+            <div className="hidden lg:grid lg:grid-cols-12 gap-4 px-6 py-4 bg-stone-50 border-b border-stone-200 text-sm font-medium text-stone-600">
               <div className="col-span-4">프로젝트</div>
               <div className="col-span-2 text-center">상태</div>
               <div className="col-span-2 text-right">모금현황</div>
@@ -445,11 +445,11 @@ const OrganizationDashboardPage: React.FC = () => {
                 return (
                   <div
                     key={project.id}
-                    className="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-4 hover:bg-stone-50 transition-colors items-center"
+                    className="flex flex-col lg:grid lg:grid-cols-12 gap-3 lg:gap-4 px-4 sm:px-6 py-4 hover:bg-stone-50 transition-colors lg:items-center"
                   >
                     {/* 프로젝트 정보 */}
-                    <div className="col-span-1 md:col-span-4 flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-200 to-orange-200 flex-shrink-0 overflow-hidden">
+                    <div className="lg:col-span-4 flex items-center gap-3">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br from-amber-200 to-orange-200 flex-shrink-0 overflow-hidden">
                         {project.image ? (
                           <img
                             src={`${import.meta.env.VITE_IMAGE_BASE_URL}${project.image}`}
@@ -459,32 +459,52 @@ const OrganizationDashboardPage: React.FC = () => {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <Target size={20} className="text-white/60" />
+                            <Target size={16} className="text-white/60 sm:w-5 sm:h-5" />
                           </div>
                         )}
                       </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1 flex-wrap">
+                          <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] sm:text-xs font-medium">
                             {categoryKo}
                           </span>
+                          {/* 모바일에서만 상태 표시 */}
+                          <span className={`lg:hidden px-1.5 py-0.5 rounded-full text-[10px] font-medium flex items-center gap-0.5 ${statusInfo.color}`}>
+                            {statusInfo.label}
+                          </span>
                         </div>
-                        <h3 className="text-sm font-medium text-stone-800 truncate">
+                        <h3 className="text-xs sm:text-sm font-medium text-stone-800 truncate">
                           {project.title}
                         </h3>
                       </div>
                     </div>
 
-                    {/* 상태 */}
-                    <div className="col-span-1 md:col-span-2 flex md:justify-center">
+                    {/* 상태 - 데스크톱에서만 */}
+                    <div className="hidden lg:flex lg:col-span-2 justify-center">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${statusInfo.color}`}>
                         {statusInfo.icon}
                         {statusInfo.label}
                       </span>
                     </div>
 
-                    {/* 모금현황 */}
-                    <div className="col-span-1 md:col-span-2 text-right">
+                    {/* 모금현황 + D-Day + 참여자 - 모바일에서 한 줄로 */}
+                    <div className="lg:hidden flex items-center justify-between text-xs sm:text-sm">
+                      <div>
+                        <span className="font-medium text-stone-800">{formatAmount(project.currentAmount)}원</span>
+                        <span className="text-amber-600 ml-1 text-[10px] sm:text-xs">({progress}%)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-stone-500">D-{project.dday}</span>
+                        <span className="text-stone-400">|</span>
+                        <span className="text-stone-600 flex items-center gap-0.5">
+                          <Users size={12} className="text-stone-400" />
+                          {project.donors}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 모금현황 - 데스크톱 */}
+                    <div className="hidden lg:block lg:col-span-2 text-right">
                       <div className="text-sm font-medium text-stone-800">{formatAmount(project.currentAmount)}원</div>
                       <div className="flex items-center justify-end gap-2 mt-1">
                         <div className="w-16 bg-stone-100 rounded-full h-1.5">
@@ -497,21 +517,21 @@ const OrganizationDashboardPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* D-Day */}
-                    <div className="col-span-1 md:col-span-1 text-center">
+                    {/* D-Day - 데스크톱 */}
+                    <div className="hidden lg:block lg:col-span-1 text-center">
                       <span className="text-sm text-stone-500">D-{project.dday}</span>
                     </div>
 
-                    {/* 참여자 */}
-                    <div className="col-span-1 md:col-span-1 text-center">
-                      <span className="text-sm text-stone-600 flex items-center justify-center gap-1">
+                    {/* 참여자 - 데스크톱 */}
+                    <div className="hidden lg:flex lg:col-span-1 items-center justify-center">
+                      <span className="text-sm text-stone-600 flex items-center gap-1">
                         <Users size={14} className="text-stone-400" />
                         {project.donors}
                       </span>
                     </div>
 
                     {/* 관리 버튼 */}
-                    <div className="col-span-1 md:col-span-2 flex items-center justify-center gap-1">
+                    <div className="lg:col-span-2 flex items-center justify-end lg:justify-center gap-1">
                       {canEditProject(project.status) && (
                         <button
                           onClick={() => {
