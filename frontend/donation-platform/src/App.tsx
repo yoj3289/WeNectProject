@@ -706,15 +706,8 @@ import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
 import AdminLayout from './layouts/AdminLayout';
 
-// API Client & Auth Store imports (토큰 동기화용)
-import { apiClient } from './lib/apiClient';
+// Auth Store import (토큰 동기화는 authStore의 onRehydrateStorage에서 자동 처리)
 import { useAuthStore } from './stores/authStore';
-
-// 🔥 앱 로드 시점에 즉시 토큰 동기화 (useEffect보다 먼저 실행)
-const initToken = useAuthStore.getState().token;
-if (initToken) {
-  apiClient.setToken(initToken);
-}
 
 // React Query 클라이언트 생성
 const queryClient = new QueryClient({
