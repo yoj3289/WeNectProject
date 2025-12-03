@@ -661,6 +661,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
+import { apiClient } from './lib/apiClient';
 
 // ✅ useAuth import 추가!
 import { useAuth } from './hooks/useAuth';
@@ -670,9 +671,6 @@ import type { UserType, Project, CommunityPost, UserProfile, AdminUser, Notifica
 
 // Page imports
 import HomePage from './pages/HomePage';
-import HomePageOptionA from './pages/HomePageOptionA';
-import HomePageOptionB from './pages/HomePageOptionB';
-import HomePageOptionC from './pages/HomePageOptionC';
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
 import ReapplyPage from './pages/auth/ReapplyPage';
@@ -1388,25 +1386,6 @@ const AppRoutes: React.FC = () => {
             <Routes>
               <Route path="/" element={
                 <HomePage
-                  isLoggedIn={isLoggedIn}
-                  userType={userType}
-                />
-              } />
-              {/* 홈페이지 디자인 옵션 비교용 임시 라우트 */}
-              <Route path="/home-a" element={
-                <HomePageOptionA
-                  isLoggedIn={isLoggedIn}
-                  userType={userType}
-                />
-              } />
-              <Route path="/home-b" element={
-                <HomePageOptionB
-                  isLoggedIn={isLoggedIn}
-                  userType={userType}
-                />
-              } />
-              <Route path="/home-c" element={
-                <HomePageOptionC
                   isLoggedIn={isLoggedIn}
                   userType={userType}
                 />
