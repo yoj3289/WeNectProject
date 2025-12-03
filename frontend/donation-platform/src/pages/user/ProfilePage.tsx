@@ -418,6 +418,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
   // 마이페이지 메인
   const MyPageMain = () => {
+    const { user } = useAuthStore();
     const totalDonation = donationHistory.reduce((sum: number, d: any) => sum + d.amount, 0);
     const projectCount = new Set(donationHistory.map((d: any) => d.projectTitle)).size;
 
