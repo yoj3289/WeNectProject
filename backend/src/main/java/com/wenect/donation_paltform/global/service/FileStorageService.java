@@ -164,7 +164,7 @@ public class FileStorageService {
     }
 
     /**
-     * 파일 삭제
+     * 파일 삭제 시
      * @param filePath 삭제할 파일의 경로 (예: "/uploads/projects/images/123456_image.jpg")
      */
     public void deleteFile(String filePath) {
