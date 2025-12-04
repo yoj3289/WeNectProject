@@ -42,6 +42,8 @@ export const useAuthStore = create<AuthState>()(
 
       // 로그인
       login: (token, user) => {
+        // 🔥 apiClient에 토큰 즉시 동기화 (페이지 새로고침 없이도 API 호출 가능하도록)
+        apiClient.setToken(token);
         set({
           isLoggedIn: true,
           user,
@@ -51,6 +53,8 @@ export const useAuthStore = create<AuthState>()(
 
       // 로그아웃
       logout: () => {
+        // 🔥 apiClient 토큰 제거
+        apiClient.clearToken();
         set({
           isLoggedIn: false,
           user: null,
@@ -67,6 +71,8 @@ export const useAuthStore = create<AuthState>()(
 
       // 토큰만 업데이트 (세션 연장용)
       updateToken: (token) => {
+        // 🔥 apiClient에도 토큰 동기화
+        apiClient.setToken(token);
         set({ token });
       },
     }),
