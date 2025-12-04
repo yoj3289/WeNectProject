@@ -3,14 +3,17 @@ package com.wenect.donation_paltform.domain.expense.service;
 import com.wenect.donation_paltform.domain.expense.entity.Expense;
 import com.wenect.donation_paltform.domain.organization.entity.Organization;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import jakarta.mail.internet.MimeMessage;
 
 import java.text.NumberFormat;
 import java.util.Locale;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ExpenseEmailService {
@@ -18,8 +21,9 @@ public class ExpenseEmailService {
     private final JavaMailSender mailSender;
 
     /**
-     * 출금 요청 접수 알림 메일 발송
+     * 출금 요청 접수 알림 메일 발송 (비동기)
      */
+    @Async("emailTaskExecutor")
     public void sendWithdrawalRequestEmail(Expense expense, Organization organization) {
         try {
             String userEmail = organization.getUser().getEmail();
@@ -36,14 +40,17 @@ public class ExpenseEmailService {
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
+            log.info("출금 요청 접수 알림 메일 발송 성공: orgName={}, to={}, amount={}", orgName, userEmail, expense.getAmount());
         } catch (Exception e) {
-            throw new RuntimeException("출금 요청 접수 메일 발송에 실패했습니다: " + e.getMessage(), e);
+            log.error("출금 요청 접수 알림 메일 발송 실패: orgName={}, error={}", organization.getOrgName(), e.getMessage(), e);
+            // 이메일 전송 실패 시에도 메인 로직은 정상 처리
         }
     }
 
     /**
-     * 출금 승인 완료 알림 메일 발송
+     * 출금 승인 완료 알림 메일 발송 (비동기)
      */
+    @Async("emailTaskExecutor")
     public void sendWithdrawalApprovalEmail(Expense expense, Organization organization) {
         try {
             String userEmail = organization.getUser().getEmail();
@@ -60,14 +67,17 @@ public class ExpenseEmailService {
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
+            log.info("출금 승인 완료 알림 메일 발송 성공: orgName={}, to={}, amount={}", orgName, userEmail, expense.getAmount());
         } catch (Exception e) {
-            throw new RuntimeException("출금 승인 완료 메일 발송에 실패했습니다: " + e.getMessage(), e);
+            log.error("출금 승인 완료 알림 메일 발송 실패: orgName={}, error={}", organization.getOrgName(), e.getMessage(), e);
+            // 이메일 전송 실패 시에도 메인 로직은 정상 처리
         }
     }
 
     /**
-     * 출금 반려 알림 메일 발송
+     * 출금 반려 알림 메일 발송 (비동기)
      */
+    @Async("emailTaskExecutor")
     public void sendWithdrawalRejectionEmail(Expense expense, Organization organization) {
         try {
             String userEmail = organization.getUser().getEmail();
@@ -85,8 +95,10 @@ public class ExpenseEmailService {
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
+            log.info("출금 반려 알림 메일 발송 성공: orgName={}, to={}, amount={}", orgName, userEmail, expense.getAmount());
         } catch (Exception e) {
-            throw new RuntimeException("출금 반려 메일 발송에 실패했습니다: " + e.getMessage(), e);
+            log.error("출금 반려 알림 메일 발송 실패: orgName={}, error={}", organization.getOrgName(), e.getMessage(), e);
+            // 이메일 전송 실패 시에도 메인 로직은 정상 처리
         }
     }
 

@@ -3,14 +3,17 @@ package com.wenect.donation_paltform.domain.settlement.service;
 import com.wenect.donation_paltform.domain.organization.entity.Organization;
 import com.wenect.donation_paltform.domain.settlement.entity.Settlement;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import jakarta.mail.internet.MimeMessage;
 
 import java.text.NumberFormat;
 import java.util.Locale;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SettlementEmailService {
@@ -18,8 +21,9 @@ public class SettlementEmailService {
     private final JavaMailSender mailSender;
 
     /**
-     * 정산 요청 접수 알림 메일 발송
+     * 정산 요청 접수 알림 메일 발송 (비동기)
      */
+    @Async("emailTaskExecutor")
     public void sendSettlementRequestEmail(Settlement settlement, Organization organization, String projectTitle) {
         try {
             String userEmail = organization.getUser().getEmail();
@@ -36,14 +40,19 @@ public class SettlementEmailService {
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
+            log.info("정산 요청 접수 알림 메일 발송 성공: orgName={}, projectTitle={}, to={}, amount={}",
+                    orgName, projectTitle, userEmail, settlement.getSettlementAmount());
         } catch (Exception e) {
-            throw new RuntimeException("정산 요청 접수 메일 발송에 실패했습니다: " + e.getMessage(), e);
+            log.error("정산 요청 접수 알림 메일 발송 실패: orgName={}, projectTitle={}, error={}",
+                    organization.getOrgName(), projectTitle, e.getMessage(), e);
+            // 이메일 전송 실패 시에도 메인 로직은 정상 처리
         }
     }
 
     /**
-     * 정산 승인 완료 알림 메일 발송
+     * 정산 승인 완료 알림 메일 발송 (비동기)
      */
+    @Async("emailTaskExecutor")
     public void sendSettlementApprovalEmail(Settlement settlement, Organization organization, String projectTitle) {
         try {
             String userEmail = organization.getUser().getEmail();
@@ -60,14 +69,19 @@ public class SettlementEmailService {
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
+            log.info("정산 승인 완료 알림 메일 발송 성공: orgName={}, projectTitle={}, to={}, amount={}",
+                    orgName, projectTitle, userEmail, settlement.getSettlementAmount());
         } catch (Exception e) {
-            throw new RuntimeException("정산 승인 완료 메일 발송에 실패했습니다: " + e.getMessage(), e);
+            log.error("정산 승인 완료 알림 메일 발송 실패: orgName={}, projectTitle={}, error={}",
+                    organization.getOrgName(), projectTitle, e.getMessage(), e);
+            // 이메일 전송 실패 시에도 메인 로직은 정상 처리
         }
     }
 
     /**
-     * 정산 반려 알림 메일 발송
+     * 정산 반려 알림 메일 발송 (비동기)
      */
+    @Async("emailTaskExecutor")
     public void sendSettlementRejectionEmail(Settlement settlement, Organization organization, String projectTitle) {
         try {
             String userEmail = organization.getUser().getEmail();
@@ -85,8 +99,12 @@ public class SettlementEmailService {
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
+            log.info("정산 반려 알림 메일 발송 성공: orgName={}, projectTitle={}, to={}, amount={}",
+                    orgName, projectTitle, userEmail, settlement.getSettlementAmount());
         } catch (Exception e) {
-            throw new RuntimeException("정산 반려 메일 발송에 실패했습니다: " + e.getMessage(), e);
+            log.error("정산 반려 알림 메일 발송 실패: orgName={}, projectTitle={}, error={}",
+                    organization.getOrgName(), projectTitle, e.getMessage(), e);
+            // 이메일 전송 실패 시에도 메인 로직은 정상 처리
         }
     }
 

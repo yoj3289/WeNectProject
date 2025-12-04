@@ -3,14 +3,17 @@ package com.wenect.donation_paltform.domain.auth.service;
 import com.wenect.donation_paltform.domain.auth.entity.EmailVerification;
 import com.wenect.donation_paltform.domain.auth.repository.EmailVerificationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Random;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailVerificationService {
@@ -105,8 +108,9 @@ public class EmailVerificationService {
     }
 
     /**
-     * 이메일 발송
+     * 이메일 발송 (비동기)
      */
+    @Async("emailTaskExecutor")
     private void sendEmail(String to, String code) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -124,8 +128,10 @@ public class EmailVerificationService {
             );
 
             mailSender.send(message);
+            log.info("이메일 인증번호 발송 성공: to={}", to);
         } catch (Exception e) {
-            throw new RuntimeException("이메일 발송에 실패했습니다: " + e.getMessage(), e);
+            log.error("이메일 인증번호 발송 실패: to={}, error={}", to, e.getMessage(), e);
+            // 이메일 전송 실패 시에도 메인 로직은 정상 처리
         }
     }
 

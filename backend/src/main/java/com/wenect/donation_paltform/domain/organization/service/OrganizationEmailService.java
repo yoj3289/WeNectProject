@@ -2,11 +2,14 @@ package com.wenect.donation_paltform.domain.organization.service;
 
 import com.wenect.donation_paltform.domain.organization.entity.Organization;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import jakarta.mail.internet.MimeMessage;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrganizationEmailService {
@@ -14,8 +17,9 @@ public class OrganizationEmailService {
     private final JavaMailSender mailSender;
 
     /**
-     * 기관 승인 알림 메일 발송
+     * 기관 승인 알림 메일 발송 (비동기)
      */
+    @Async("emailTaskExecutor")
     public void sendApprovalEmail(Organization organization) {
         try {
             String userEmail = organization.getUser().getEmail();
@@ -32,14 +36,17 @@ public class OrganizationEmailService {
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
+            log.info("기관 승인 알림 메일 발송 성공: orgName={}, to={}", orgName, userEmail);
         } catch (Exception e) {
-            throw new RuntimeException("승인 메일 발송에 실패했습니다: " + e.getMessage(), e);
+            log.error("기관 승인 알림 메일 발송 실패: orgName={}, error={}", organization.getOrgName(), e.getMessage(), e);
+            // 이메일 전송 실패 시에도 메인 로직은 정상 처리
         }
     }
 
     /**
-     * 기관 반려 알림 메일 발송
+     * 기관 반려 알림 메일 발송 (비동기)
      */
+    @Async("emailTaskExecutor")
     public void sendRejectionEmail(Organization organization) {
         try {
             String userEmail = organization.getUser().getEmail();
@@ -57,8 +64,10 @@ public class OrganizationEmailService {
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
+            log.info("기관 반려 알림 메일 발송 성공: orgName={}, to={}", orgName, userEmail);
         } catch (Exception e) {
-            throw new RuntimeException("반려 메일 발송에 실패했습니다: " + e.getMessage(), e);
+            log.error("기관 반려 알림 메일 발송 실패: orgName={}, error={}", organization.getOrgName(), e.getMessage(), e);
+            // 이메일 전송 실패 시에도 메인 로직은 정상 처리
         }
     }
 
