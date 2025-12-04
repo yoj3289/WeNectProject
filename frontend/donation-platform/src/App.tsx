@@ -682,6 +682,7 @@ import BoardPage from './pages/community/BoardPage';
 import PostDetailPage from './pages/community/PostDetailPage';
 import EditPostPage from './pages/community/EditPostPage';
 import ProfilePage from './pages/user/ProfilePage';
+import IntroductionPage from './pages/IntroductionPage';
 import OrganizationDashboardPage from './pages/organization/OrganizationDashboardPage';
 import PiggyBankManagementPage from './pages/organization/PiggyBankManagementPage';
 import DashboardPage from './pages/admin/DashboardPage';
@@ -1390,6 +1391,7 @@ const AppRoutes: React.FC = () => {
                   userType={userType}
                 />
               } />
+              <Route path="/introduction" element={<IntroductionPage />} />
               <Route path="/projects" element={
                 <ProjectListPage
                   isLoggedIn={isLoggedIn}

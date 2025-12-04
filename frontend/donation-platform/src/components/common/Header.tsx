@@ -72,6 +72,16 @@ const Header: React.FC<HeaderProps> = ({
           >
             커뮤니티
           </Link>
+          <Link
+            to="/introduction"
+            className={`text-sm font-medium transition-colors ${
+              isActive('/introduction')
+                ? 'text-amber-600'
+                : 'text-stone-600 hover:text-amber-600'
+            }`}
+          >
+            소개
+          </Link>
           {isLoggedIn && userType === 'admin' && (
             <Link
               to="/admin"
@@ -211,6 +221,17 @@ const Header: React.FC<HeaderProps> = ({
               }`}
             >
               커뮤니티
+            </Link>
+            <Link
+              to="/introduction"
+              onClick={closeMobileMenu}
+              className={`px-4 py-3 text-sm font-medium transition-colors ${
+                isActive('/introduction')
+                  ? 'text-amber-600 bg-amber-50'
+                  : 'text-stone-600 hover:bg-stone-50'
+              }`}
+            >
+              소개
             </Link>
             {isLoggedIn && userType === 'admin' && (
               <Link
