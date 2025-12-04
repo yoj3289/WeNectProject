@@ -15,6 +15,7 @@ COPY . .
 # Set environment variables for production build
 ENV VITE_API_BASE_URL=/api
 ENV VITE_IMAGE_BASE_URL=
+ENV NODE_OPTIONS=--max-old-space-size=4096
 
 # Build application
 RUN npm run build
