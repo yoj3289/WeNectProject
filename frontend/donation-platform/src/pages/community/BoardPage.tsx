@@ -116,7 +116,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
         likeCount: reply.likeCount || 0,
         isLiked: reply.isLiked || false,
         replyToCommentId: reply.replyToCommentId,
-        replyToAuthor: reply.replyToAuthor
+        replyToAuthor: reply.replyToAuthor?.userName || reply.replyToAuthor
       }))
     })) || [];
 
