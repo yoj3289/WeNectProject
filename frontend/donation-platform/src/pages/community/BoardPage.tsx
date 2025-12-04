@@ -116,7 +116,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
         likeCount: reply.likeCount || 0,
         isLiked: reply.isLiked || false,
         replyToCommentId: reply.replyToCommentId,
-        replyToAuthor: reply.replyToAuthor?.userName || reply.replyToAuthor
+        replyToAuthor: typeof reply.replyToAuthor === 'object' ? reply.replyToAuthor?.userName : reply.replyToAuthor
       }))
     })) || [];
 
@@ -143,7 +143,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
     likes: post.likeCount,
     isLiked: post.isLiked || false,
     isPinned: post.isPinned || false,
-    images: post.imageUrls || [],
+    images: (post.images || []).map((img: any) => typeof img === 'string' ? img : img.imageUrl),
     commentCount: post.commentCount || 0
   })) || [];
 
@@ -186,9 +186,11 @@ const BoardPage: React.FC<BoardPageProps> = ({
     try {
       await createCommentMutation.mutateAsync({
         postId: selectedPost.id,
-        content: commentText,
-        parentId: replyTo?.id,
-        replyToCommentId: replyToCommentId
+        data: {
+          content: commentText,
+          parentCommentId: replyTo?.id,
+          replyToCommentId: replyToCommentId
+        }
       });
       setCommentText('');
       setReplyTo(null);
