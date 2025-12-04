@@ -28,7 +28,7 @@ const IntroductionPage: React.FC = () => {
 
   // API 데이터 연동
   const { data: statistics, isLoading: statsLoading } = useStatisticsSummary();
-  const { data: settlementProjects, isLoading: projectsLoading } = useSettlementProjects({ limit: 3 });
+  const { data: settlementProjects, isLoading: projectsLoading } = useSettlementProjects({ size: 3 });
 
   const coreValues = [
     {
@@ -372,8 +372,8 @@ const IntroductionPage: React.FC = () => {
                       <ProjectCardSkeleton />
                       <ProjectCardSkeleton />
                     </>
-                  ) : settlementProjects && settlementProjects.length > 0 ? (
-                    settlementProjects.slice(0, 3).map((project) => {
+                  ) : settlementProjects && settlementProjects.content?.length > 0 ? (
+                    settlementProjects.content.slice(0, 3).map((project: any) => {
                       const progress = calculatePercentage(project.currentAmount, project.targetAmount);
                       return (
                         <Link
@@ -428,7 +428,7 @@ const IntroductionPage: React.FC = () => {
                   )}
                 </div>
 
-                {settlementProjects && settlementProjects.length > 0 && (
+                {settlementProjects && settlementProjects.content?.length > 0 && (
                   <Link
                     to="/projects?status=settlement"
                     className="block mt-4 pt-4 border-t border-stone-100 text-center text-sm text-amber-600 font-medium hover:text-amber-700 transition-colors"
