@@ -171,7 +171,7 @@ const OrganizationProjectsPage: React.FC<OrganizationProjectsPageProps> = ({
                   </div>
                   <div className="flex items-center gap-2">
                     <TrendingUp size={18} className="text-amber-400" />
-                    <span className="text-sm">총 모금액 <strong>{formatAmount(currentOrganization.totalFunded)}</strong>원</span>
+                    <span className="text-sm">결산 중 <strong>{currentOrganization.settlementProjects}</strong>개</span>
                   </div>
                 </div>
               </div>

@@ -138,7 +138,7 @@ const OrganizationListPage: React.FC = () => {
             >
               <option value="latest">최신순</option>
               <option value="mostProjects">프로젝트 많은 순</option>
-              <option value="mostFunded">총 모금액 많은 순</option>
+              <option value="mostSettlement">결산 많은 순</option>
             </select>
           </div>
         </div>
@@ -221,12 +221,10 @@ const OrganizationListPage: React.FC = () => {
                       <div className="text-center">
                         <div className="flex items-center justify-center gap-1 mb-1">
                           <TrendingUp size={14} className="text-amber-600" />
-                          <p className="text-xs text-stone-500">총 모금액</p>
+                          <p className="text-xs text-stone-500">결산 중</p>
                         </div>
-                        <p className="text-sm font-semibold text-stone-900">
-                          {org.totalFunded >= 100000000
-                            ? `${(org.totalFunded / 100000000).toFixed(1)}억`
-                            : `${(org.totalFunded / 10000).toFixed(0)}만`}
+                        <p className="text-lg font-semibold text-stone-900">
+                          {org.settlementProjects}
                         </p>
                       </div>
                     </div>

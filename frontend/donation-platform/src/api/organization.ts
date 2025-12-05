@@ -23,7 +23,7 @@ export interface OrganizationListResponse {
   logoUrl: string;
   totalProjects: number;
   activeProjects: number;
-  totalFunded: number;
+  settlementProjects: number;
   createdAt: string;
 }
 

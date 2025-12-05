@@ -3,7 +3,6 @@ package com.wenect.donation_paltform.domain.organization.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -30,7 +29,7 @@ public class OrganizationListResponse {
 
     private Integer activeProjects; // 진행 중인 프로젝트 수
 
-    private BigDecimal totalFunded; // 총 모금액
+    private Integer settlementProjects; // 결산 중인 프로젝트 수
 
     private LocalDateTime createdAt;
 }

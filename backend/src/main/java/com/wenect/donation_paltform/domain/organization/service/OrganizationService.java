@@ -186,7 +186,7 @@ public class OrganizationService {
      * - 검색, 정렬 지원
      *
      * @param search 검색 키워드 (기관명)
-     * @param sortBy 정렬 기준 (latest, mostProjects, mostFunded)
+     * @param sortBy 정렬 기준 (latest, mostProjects, mostSettlement)
      * @param page 페이지 번호
      * @param size 페이지 크기
      * @return 기관 목록
@@ -231,9 +231,10 @@ public class OrganizationService {
                             .filter(p -> p.getStatus() == Project.ProjectStatus.ACTIVE)
                             .count();
 
-                    BigDecimal totalFunded = projects.stream()
-                            .map(Project::getCurrentAmount)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    int settlementProjects = (int) projects.stream()
+                            .filter(p -> p.getStatus() == Project.ProjectStatus.COMPLETED ||
+                                       p.getStatus() == Project.ProjectStatus.SETTLEMENT)
+                            .count();
 
                     return OrganizationListResponse.builder()
                             .orgId(org.getOrgId())
@@ -243,7 +244,7 @@ public class OrganizationService {
                             .logoUrl(null) // User 엔티티에 profileImage 필드 없음
                             .totalProjects(totalProjects)
                             .activeProjects(activeProjects)
-                            .totalFunded(totalFunded)
+                            .settlementProjects(settlementProjects)
                             .createdAt(org.getUser().getCreatedAt())
                             .build();
                 })
@@ -255,8 +256,8 @@ public class OrganizationService {
             case "mostProjects":
                 comparator = Comparator.comparing(OrganizationListResponse::getTotalProjects).reversed();
                 break;
-            case "mostFunded":
-                comparator = Comparator.comparing(OrganizationListResponse::getTotalFunded).reversed();
+            case "mostSettlement":
+                comparator = Comparator.comparing(OrganizationListResponse::getSettlementProjects).reversed();
                 break;
             case "latest":
             default:
