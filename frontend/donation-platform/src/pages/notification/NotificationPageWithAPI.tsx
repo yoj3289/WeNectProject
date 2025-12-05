@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Search, CheckCheck, Archive, Trash2, Heart, MessageCircle, TrendingUp, Calendar, DollarSign, AlertCircle, X as XIcon, Settings, ArrowLeft, Star, ExternalLink, Loader2 } from 'lucide-react';
+import { Bell, Search, CheckCheck, Archive, Trash2, Heart, MessageCircle, TrendingUp, Calendar, DollarSign, AlertCircle, X as XIcon, Settings, ArrowLeft, Star, ExternalLink, Loader2, Mail, Smartphone, Monitor } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useMyNotifications, useMarkAsRead, useMarkAllAsRead, useDeleteNotification } from '../../hooks/useNotifications';
 import { useNotificationSettings, useUpdateNotificationSettings } from '../../hooks/useUsers';
 import type { NotificationResponse } from '../../api/notifications';
+import type { NotificationSettingsResponse, UpdateNotificationSettingsRequest } from '../../api/users';
 
 const NotificationPageWithAPI: React.FC = () => {
   const navigate = useNavigate();
@@ -517,6 +519,214 @@ const NotificationPageWithAPI: React.FC = () => {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* 알림 설정 모달 */}
+      {showSettings && (
+        <NotificationSettingsModal
+          settingsData={settingsData}
+          onClose={() => setShowSettings(false)}
+          onUpdate={updateSettingsMutation.mutate}
+          isUpdating={updateSettingsMutation.isPending}
+        />
+      )}
+    </div>
+  );
+};
+
+// 알림 설정 모달 컴포넌트
+interface NotificationSettingsModalProps {
+  settingsData?: NotificationSettingsResponse;
+  onClose: () => void;
+  onUpdate: (data: UpdateNotificationSettingsRequest) => void;
+  isUpdating: boolean;
+}
+
+const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
+  settingsData,
+  onClose,
+  onUpdate,
+  isUpdating
+}) => {
+  // 초기값 설정
+  const defaultSettings = {
+    donation: { enabled: true, email: true, sms: false, push: true },
+    comment: { enabled: true, email: true, sms: false, push: true },
+    project: { enabled: true, email: true, sms: false, push: true },
+    settlement: { enabled: true, email: true, sms: false, push: true },
+    deadline: { enabled: true, email: true, sms: false, push: true },
+  };
+
+  const [settings, setSettings] = useState<NotificationSettingsResponse>(
+    settingsData || defaultSettings
+  );
+
+  const settingsConfig = [
+    { key: 'donation' as const, label: '기부 알림', desc: '기부 완료, 영수증 발급 등', icon: Heart },
+    { key: 'comment' as const, label: '댓글 알림', desc: '새 댓글, 답글 알림', icon: MessageCircle },
+    { key: 'project' as const, label: '프로젝트 알림', desc: '관심 프로젝트 업데이트', icon: TrendingUp },
+    { key: 'settlement' as const, label: '정산 알림', desc: '정산 관련 알림', icon: DollarSign },
+    { key: 'deadline' as const, label: '마감 알림', desc: '프로젝트 마감 임박 알림', icon: Calendar },
+  ];
+
+  const handleToggleEnabled = (key: keyof NotificationSettingsResponse) => {
+    setSettings(prev => ({
+      ...prev,
+      [key]: { ...prev[key], enabled: !prev[key].enabled }
+    }));
+  };
+
+  const handleToggleChannel = (
+    key: keyof NotificationSettingsResponse,
+    channel: 'email' | 'sms' | 'push'
+  ) => {
+    setSettings(prev => ({
+      ...prev,
+      [key]: { ...prev[key], [channel]: !prev[key][channel] }
+    }));
+  };
+
+  const handleSave = () => {
+    onUpdate(settings);
+    toast.success('알림 설정이 저장되었습니다.');
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="max-w-lg w-full bg-white rounded-2xl overflow-hidden shadow-xl max-h-[90vh] flex flex-col">
+        {/* 헤더 */}
+        <div className="bg-stone-800 px-6 py-5 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-500/20 rounded-full flex items-center justify-center">
+                <Settings className="text-amber-400" size={20} />
+              </div>
+              <div>
+                <h2 className="text-xl font-medium text-white">알림 설정</h2>
+                <p className="text-stone-400 text-sm">알림 수신 방식을 설정하세요</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-stone-400 hover:text-white transition-colors"
+            >
+              <XIcon size={24} />
+            </button>
+          </div>
+        </div>
+
+        {/* 본문 */}
+        <div className="p-6 overflow-y-auto flex-1">
+          <div className="space-y-4">
+            {settingsConfig.map((config) => {
+              const setting = settings[config.key];
+              const Icon = config.icon;
+              return (
+                <div
+                  key={config.key}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    setting.enabled
+                      ? 'bg-white border-amber-200'
+                      : 'bg-stone-50 border-stone-200'
+                  }`}
+                >
+                  {/* 알림 유형 헤더 */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        setting.enabled ? 'bg-amber-100' : 'bg-stone-200'
+                      }`}>
+                        <Icon size={18} className={setting.enabled ? 'text-amber-600' : 'text-stone-400'} />
+                      </div>
+                      <div>
+                        <h4 className={`font-medium ${setting.enabled ? 'text-stone-900' : 'text-stone-500'}`}>
+                          {config.label}
+                        </h4>
+                        <p className="text-xs text-stone-500">{config.desc}</p>
+                      </div>
+                    </div>
+                    {/* 전체 활성화 토글 */}
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={setting.enabled}
+                        onChange={() => handleToggleEnabled(config.key)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                    </label>
+                  </div>
+
+                  {/* 수신 채널 선택 (활성화된 경우에만 표시) */}
+                  {setting.enabled && (
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-stone-100">
+                      <button
+                        onClick={() => handleToggleChannel(config.key, 'email')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                          setting.email
+                            ? 'bg-amber-500 text-white'
+                            : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+                        }`}
+                      >
+                        <Mail size={14} />
+                        이메일
+                      </button>
+                      <button
+                        onClick={() => handleToggleChannel(config.key, 'sms')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                          setting.sms
+                            ? 'bg-amber-500 text-white'
+                            : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+                        }`}
+                      >
+                        <Smartphone size={14} />
+                        SMS
+                      </button>
+                      <button
+                        onClick={() => handleToggleChannel(config.key, 'push')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                          setting.push
+                            ? 'bg-amber-500 text-white'
+                            : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+                        }`}
+                      >
+                        <Monitor size={14} />
+                        푸시
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 푸터 */}
+        <div className="p-6 border-t border-stone-200 bg-stone-50 flex-shrink-0">
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 border border-stone-300 hover:bg-stone-100 rounded-xl font-medium text-stone-700 transition-colors"
+            >
+              취소
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isUpdating}
+              className="flex-1 py-3 bg-amber-500 text-stone-900 rounded-xl font-medium hover:bg-amber-400 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isUpdating ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  저장 중...
+                </>
+              ) : (
+                '저장하기'
+              )}
+            </button>
           </div>
         </div>
       </div>

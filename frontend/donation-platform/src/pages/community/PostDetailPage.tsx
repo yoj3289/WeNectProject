@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Eye, Edit, Trash2, Reply, Send, X, Loader2, Heart, Link, Megaphone, HelpCircle, MessageSquare, ArrowLeft } from 'lucide-react';
+import { Eye, Edit, Trash2, Reply, Send, X, Loader2, Heart, Link, Megaphone, HelpCircle, MessageSquare, ArrowLeft, Flag } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { CommunityPost, Comment, PostType } from '../../types';
 import { usePost, useComments, useCreateComment, useDeleteComment, useUpdateComment, useLikePost, useLikeComment } from '../../hooks/useCommunity';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import Pagination from '../../components/common/Pagination';
+import ReportModal from '../../components/common/ReportModal';
+import type { ReportType } from '../../api/reports';
 
 interface PostDetailPageProps {
   selectedPost: CommunityPost | null;
@@ -111,6 +113,14 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
     isDanger?: boolean;
     isLoading?: boolean;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
+  // 신고 모달 상태
+  const [reportModal, setReportModal] = useState<{
+    isOpen: boolean;
+    itemId: number;
+    itemType: ReportType;
+    itemTitle?: string;
+  }>({ isOpen: false, itemId: 0, itemType: 'COMMENT' });
 
   // API 응답을 CommunityPost 형식으로 변환
   const post: CommunityPost | null = postData ? {
@@ -446,29 +456,41 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
                 </span>
               </div>
 
-              {/* 수정/삭제 버튼 */}
-              {(canEditPost() || canDeletePost()) && (
-                <div className="flex gap-2">
-                  {canEditPost() && (
-                    <button
-                      onClick={() => onNavigateToEdit(post)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-sm border border-stone-300 hover:bg-stone-50 transition-colors"
-                    >
-                      <Edit size={14} />
-                      수정
-                    </button>
-                  )}
-                  {canDeletePost() && (
-                    <button
-                      onClick={handleDeletePost}
-                      className="flex items-center gap-1 px-3 py-1.5 text-sm border border-red-300 text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <Trash2 size={14} />
-                      삭제
-                    </button>
-                  )}
-                </div>
-              )}
+              {/* 수정/삭제/신고 버튼 */}
+              <div className="flex gap-2">
+                {canEditPost() && (
+                  <button
+                    onClick={() => onNavigateToEdit(post)}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-stone-300 hover:bg-stone-50 transition-colors"
+                  >
+                    <Edit size={14} />
+                    수정
+                  </button>
+                )}
+                {canDeletePost() && (
+                  <button
+                    onClick={handleDeletePost}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-red-300 text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                    삭제
+                  </button>
+                )}
+                {isLoggedIn && !canEditPost() && (
+                  <button
+                    onClick={() => setReportModal({
+                      isOpen: true,
+                      itemId: post.id,
+                      itemType: 'POST',
+                      itemTitle: post.title
+                    })}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-red-300 text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <Flag size={14} />
+                    신고
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* 게시글 내용 */}
@@ -672,6 +694,20 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
                               </button>
                             </>
                           )}
+                          {isLoggedIn && !canEditComment(comment) && (
+                            <button
+                              onClick={() => setReportModal({
+                                isOpen: true,
+                                itemId: comment.id,
+                                itemType: 'COMMENT',
+                                itemTitle: comment.content.length > 50 ? comment.content.substring(0, 50) + '...' : comment.content
+                              })}
+                              className="text-stone-500 hover:text-red-600 flex items-center gap-1 transition-colors"
+                            >
+                              <Flag size={12} />
+                              신고
+                            </button>
+                          )}
                         </div>
                       </>
                     )}
@@ -808,6 +844,15 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
         onCancel={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
         isDanger={confirmModal.isDanger}
         isLoading={confirmModal.isLoading}
+      />
+
+      {/* 신고 모달 */}
+      <ReportModal
+        isOpen={reportModal.isOpen}
+        onClose={() => setReportModal({ isOpen: false, itemId: 0, itemType: 'COMMENT' })}
+        itemId={reportModal.itemId}
+        itemType={reportModal.itemType}
+        itemTitle={reportModal.itemTitle}
       />
     </div>
   );

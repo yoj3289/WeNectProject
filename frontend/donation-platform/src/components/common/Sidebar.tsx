@@ -9,7 +9,8 @@ import {
   BarChart3,
   Settings,
   Building2,
-  Heart
+  Heart,
+  Flag
 } from 'lucide-react';
 import type { UserType } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
@@ -69,7 +70,7 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
     { id: 'donations', icon: Heart, label: '기부 관리', allowedUserTypes: ['admin'] },
     { id: 'settlements', icon: DollarSign, label: '정산 관리' },
     { id: 'expenses', icon: DollarSign, label: '지출 승인' },
-    { id: 'reports', icon: BarChart3, label: '통계 리포트', allowedUserTypes: ['admin'] },
+    { id: 'reports', icon: Flag, label: '신고 관리', allowedUserTypes: ['admin'] },
     { id: 'settings', icon: Settings, label: '설정', allowedUserTypes: ['admin'] },
   ];
 

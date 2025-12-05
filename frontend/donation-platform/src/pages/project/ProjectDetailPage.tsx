@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight, Trash2, FileText, Download, Calendar, Building2, Clock } from 'lucide-react';
+import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight, Trash2, FileText, Download, Calendar, Building2, Clock, Flag } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { useProjectDetail, useToggleFavoriteProject, useUserFavoriteProjects, useDeleteProject } from '../../hooks/useProjects';
@@ -15,6 +15,8 @@ import ReceiptViewer from '../../components/project/ReceiptViewer';
 import ProjectTimeline from '../../components/project/ProjectTimeline';
 import { useAuthStore } from '../../stores/authStore';
 import { sanitizeHTML } from '../../utils/sanitize';
+import ReportModal from '../../components/common/ReportModal';
+import type { ReportType } from '../../api/reports';
 import { getProjectStatusLabel, getProjectStatusBadgeStyle, getProjectStatusBoxStyle } from '../../utils/projectStatus';
 import '../../components/editor/editor.css';
 
@@ -46,6 +48,12 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
+  const [reportModal, setReportModal] = useState<{
+    isOpen: boolean;
+    itemId: number;
+    itemType: ReportType;
+    itemTitle?: string;
+  }>({ isOpen: false, itemId: 0, itemType: 'PROJECT' });
 
   // API: 프로젝트 상세 정보 조회
   const { data: project, isLoading: isLoadingProject, isError: isErrorProject, error: projectError } = useProjectDetail(projectId);
@@ -515,16 +523,32 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               </div>
             </div>
 
-            {/* 삭제 버튼 (작성자만) */}
-            {isAuthor && (
-              <button
-                onClick={handleDeleteClick}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl hover:bg-red-500/30 transition-colors text-sm"
-              >
-                <Trash2 size={16} />
-                삭제
-              </button>
-            )}
+            {/* 삭제/신고 버튼 */}
+            <div className="flex gap-2">
+              {isAuthor && (
+                <button
+                  onClick={handleDeleteClick}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl hover:bg-red-500/30 transition-colors text-sm"
+                >
+                  <Trash2 size={16} />
+                  삭제
+                </button>
+              )}
+              {isLoggedIn && !isAuthor && (
+                <button
+                  onClick={() => setReportModal({
+                    isOpen: true,
+                    itemId: project.id,
+                    itemType: 'PROJECT',
+                    itemTitle: project.title
+                  })}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl hover:bg-red-500/30 transition-colors text-sm"
+                >
+                  <Flag size={16} />
+                  신고
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -788,6 +812,15 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
           </div>
         </div>
       )}
+
+      {/* 신고 모달 */}
+      <ReportModal
+        isOpen={reportModal.isOpen}
+        onClose={() => setReportModal({ ...reportModal, isOpen: false })}
+        itemId={reportModal.itemId}
+        itemType={reportModal.itemType}
+        itemTitle={reportModal.itemTitle}
+      />
     </div>
   );
 };

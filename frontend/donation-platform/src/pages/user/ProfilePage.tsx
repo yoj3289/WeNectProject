@@ -29,7 +29,9 @@ import StatisticsPage from './StatisticsPage';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserFavoriteProjects, useProjects, useSettlementProjects, useToggleFavoriteProject } from '../../hooks/useProjects';
 import { useMyDonations } from '../../hooks/useDonations';
+import { useNotificationSettings, useUpdateNotificationSettings } from '../../hooks/useUsers';
 import { deleteAccount } from '../../api/users';
+import type { NotificationSettingsResponse } from '../../api/users';
 import type {
   UserType,
   UserProfile,
@@ -425,6 +427,38 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     const totalDonation = donationHistory.reduce((sum: number, d: any) => sum + d.amount, 0);
     const projectCount = new Set(donationHistory.map((d: any) => d.projectTitle)).size;
 
+    // 알림 설정 API 연동
+    const { data: notificationSettingsData, isLoading: isSettingsLoading } = useNotificationSettings();
+    const updateSettingsMutation = useUpdateNotificationSettings();
+
+    // API에서 가져온 설정을 간단한 형태로 변환
+    const getSettingEnabled = (key: keyof NotificationSettingsResponse): boolean => {
+      if (!notificationSettingsData) return true;
+      return notificationSettingsData[key]?.enabled ?? true;
+    };
+
+    // 설정 토글 핸들러
+    const handleToggleSetting = (key: keyof NotificationSettingsResponse) => {
+      if (!notificationSettingsData) return;
+
+      const currentValue = notificationSettingsData[key]?.enabled ?? true;
+      const updatedSettings = {
+        [key]: {
+          ...notificationSettingsData[key],
+          enabled: !currentValue
+        }
+      };
+
+      updateSettingsMutation.mutate(updatedSettings, {
+        onSuccess: () => {
+          toast.success('알림 설정이 변경되었습니다.');
+        },
+        onError: () => {
+          toast.error('알림 설정 변경에 실패했습니다.');
+        }
+      });
+    };
+
     const getDaysSinceJoined = () => {
       if (!user?.createdAt) return 0;
       const joinDate = new Date(user.createdAt);
@@ -747,42 +781,53 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
               {/* 알림 설정 */}
               <div className="bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-shadow">
-                <div className="mb-5">
-                  <p className="text-amber-600 uppercase tracking-[0.15em] text-xs mb-1">Notification Settings</p>
-                  <h2 className="text-lg font-light text-stone-800">
-                    알림 <span className="font-medium">설정</span>
-                  </h2>
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <p className="text-amber-600 uppercase tracking-[0.15em] text-xs mb-1">Notification Settings</p>
+                    <h2 className="text-lg font-light text-stone-800">
+                      알림 <span className="font-medium">설정</span>
+                    </h2>
+                  </div>
+                  <button
+                    onClick={() => navigate('/notifications')}
+                    className="text-amber-600 text-sm font-medium hover:text-amber-700 transition-colors flex items-center gap-1"
+                  >
+                    상세 설정 <ChevronRight size={16} />
+                  </button>
                 </div>
-                <div className="space-y-3">
-                  {[
-                    { key: 'donation', label: '기부 관련 알림', icon: Heart },
-                    { key: 'project', label: '프로젝트 관련 알림', icon: FileText },
-                    { key: 'comment', label: '댓글 알림', icon: Bell },
-                    { key: 'newsletter', label: '뉴스레터 수신', icon: Gift },
-                  ].map((item) => (
-                    <div key={item.key} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                          <item.icon size={14} className="text-amber-600" />
+                {isSettingsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {[
+                      { key: 'donation' as const, label: '기부 관련 알림', icon: Heart },
+                      { key: 'project' as const, label: '프로젝트 관련 알림', icon: FileText },
+                      { key: 'comment' as const, label: '댓글 알림', icon: Bell },
+                      { key: 'deadline' as const, label: '마감 임박 알림', icon: Gift },
+                    ].map((item) => (
+                      <div key={item.key} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                            <item.icon size={14} className="text-amber-600" />
+                          </div>
+                          <span className="text-sm text-stone-700">{item.label}</span>
                         </div>
-                        <span className="text-sm text-stone-700">{item.label}</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={getSettingEnabled(item.key)}
+                            onChange={() => handleToggleSetting(item.key)}
+                            disabled={updateSettingsMutation.isPending}
+                            className="sr-only peer"
+                          />
+                          <div className="w-10 h-5 bg-stone-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500 peer-disabled:opacity-50"></div>
+                        </label>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={userProfile.notificationSettings[item.key as keyof typeof userProfile.notificationSettings]}
-                          onChange={(e) => {
-                            const updated = { ...userProfile };
-                            updated.notificationSettings[item.key as keyof typeof userProfile.notificationSettings] = e.target.checked;
-                            setUserProfile(updated);
-                          }}
-                          className="sr-only peer"
-                        />
-                        <div className="w-10 h-5 bg-stone-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
-                      </label>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -796,11 +841,32 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     const [name, setName] = useState(userProfile.name);
     const [email, setEmail] = useState(userProfile.email);
     const [phone, setPhone] = useState(userProfile.phone);
-    const [donation, setDonation] = useState(userProfile.notificationSettings.donation);
-    const [project, setProject] = useState(userProfile.notificationSettings.project);
-    const [comment, setComment] = useState(userProfile.notificationSettings.comment);
-    const [newsletter, setNewsletter] = useState(userProfile.notificationSettings.newsletter);
     const [isLoading, setIsLoading] = useState(false);
+
+    // 알림 설정 API 연동
+    const { data: notificationSettingsData, isLoading: isSettingsLoading } = useNotificationSettings();
+    const updateSettingsMutation = useUpdateNotificationSettings();
+
+    // API에서 가져온 설정을 간단한 형태로 변환
+    const getSettingEnabled = (key: keyof NotificationSettingsResponse): boolean => {
+      if (!notificationSettingsData) return true;
+      return notificationSettingsData[key]?.enabled ?? true;
+    };
+
+    // 설정 토글 핸들러
+    const handleToggleSetting = (key: keyof NotificationSettingsResponse) => {
+      if (!notificationSettingsData) return;
+
+      const currentValue = notificationSettingsData[key]?.enabled ?? true;
+      const updatedSettings = {
+        [key]: {
+          ...notificationSettingsData[key],
+          enabled: !currentValue
+        }
+      };
+
+      updateSettingsMutation.mutate(updatedSettings);
+    };
 
     const handleSave = async () => {
       setIsLoading(true);
@@ -809,7 +875,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
           name,
           email,
           phone,
-          notificationSettings: { donation, project, comment, newsletter },
+          notificationSettings: userProfile.notificationSettings,
         };
         setUserProfile(updatedProfile);
         updateUser({ userName: name, email: email, phone: phone });
@@ -911,40 +977,55 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
             {/* 알림 설정 섹션 */}
             <div className="p-6 md:p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                  <Bell size={18} className="text-amber-600" />
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                    <Bell size={18} className="text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-amber-600 uppercase tracking-[0.15em] text-xs">Notifications</p>
+                    <h3 className="text-base font-medium text-stone-800">알림 설정</h3>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-amber-600 uppercase tracking-[0.15em] text-xs">Notifications</p>
-                  <h3 className="text-base font-medium text-stone-800">알림 설정</h3>
-                </div>
+                <button
+                  onClick={() => navigate('/notifications')}
+                  className="text-amber-600 text-sm font-medium hover:text-amber-700 transition-colors flex items-center gap-1"
+                >
+                  상세 설정 <ChevronRight size={16} />
+                </button>
               </div>
 
-              <div className="space-y-3">
-                {[
-                  { key: 'donation', label: '기부 관련 알림', desc: '기부 완료, 영수증 발급 등', value: donation, setter: setDonation },
-                  { key: 'project', label: '프로젝트 관련 알림', desc: '관심 프로젝트 업데이트', value: project, setter: setProject },
-                  { key: 'comment', label: '댓글 알림', desc: '새 댓글, 답글 알림', value: comment, setter: setComment },
-                  { key: 'newsletter', label: '뉴스레터 수신', desc: '주간 뉴스레터, 이벤트 소식', value: newsletter, setter: setNewsletter },
-                ].map((item) => (
-                  <div key={item.key} className="flex items-center justify-between p-4 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors">
-                    <div>
-                      <span className="text-sm font-medium text-stone-700">{item.label}</span>
-                      <p className="text-xs text-stone-500 mt-0.5">{item.desc}</p>
+              {isSettingsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {[
+                    { key: 'donation' as const, label: '기부 관련 알림', desc: '기부 완료, 영수증 발급 등' },
+                    { key: 'project' as const, label: '프로젝트 관련 알림', desc: '관심 프로젝트 업데이트' },
+                    { key: 'comment' as const, label: '댓글 알림', desc: '새 댓글, 답글 알림' },
+                    { key: 'deadline' as const, label: '마감 임박 알림', desc: '프로젝트 마감 관련 알림' },
+                  ].map((item) => (
+                    <div key={item.key} className="flex items-center justify-between p-4 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors">
+                      <div>
+                        <span className="text-sm font-medium text-stone-700">{item.label}</span>
+                        <p className="text-xs text-stone-500 mt-0.5">{item.desc}</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={getSettingEnabled(item.key)}
+                          onChange={() => handleToggleSetting(item.key)}
+                          disabled={updateSettingsMutation.isPending}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500 peer-disabled:opacity-50"></div>
+                      </label>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={item.value}
-                        onChange={(e) => item.setter(e.target.checked)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
-                    </label>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
               <div className="flex gap-3 pt-6 mt-6 border-t border-stone-100">
                 <button

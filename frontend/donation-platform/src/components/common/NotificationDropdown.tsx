@@ -217,21 +217,19 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
           )}
         </div>
 
-        {/* 푸터 - 모든 알림 보기 버튼 */}
-        {visibleNotifications.length > 0 && (
-          <div className="p-3 border-t border-stone-200 bg-stone-50">
-            <button
-              onClick={() => {
-                onClose();
-                onOpenFullPage();
-              }}
-              className="w-full text-center text-sm text-amber-600 font-medium hover:text-amber-700 flex items-center justify-center gap-2"
-            >
-              모든 알림 보기
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        )}
+        {/* 푸터 - 모든 알림 보기 버튼 (알림 유무와 관계없이 항상 표시) */}
+        <div className="p-3 border-t border-stone-200 bg-stone-50">
+          <button
+            onClick={() => {
+              onClose();
+              onOpenFullPage();
+            }}
+            className="w-full text-center text-sm text-amber-600 font-medium hover:text-amber-700 flex items-center justify-center gap-2"
+          >
+            모든 알림 보기
+            <ChevronRight size={16} />
+          </button>
+        </div>
       </div>
     </>
   );

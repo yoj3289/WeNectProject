@@ -694,6 +694,7 @@ import SettlementManagementPage from './pages/admin/SettlementManagementPage';
 import OrganizationApprovalPage from './pages/admin/OrganizationApprovalPage';
 import ExpenseApprovalPage from './pages/admin/ExpenseApprovalPage';
 import DonationManagementPage from './pages/admin/DonationManagementPage';
+import ReportManagementPage from './pages/admin/ReportManagementPage';
 import TestMailPage from './pages/admin/TestMailPage';
 import NotificationPageWithAPI from './pages/notification/NotificationPageWithAPI';
 import PaymentSuccessPage from './pages/payment/PaymentSuccessPage';
@@ -1356,6 +1357,7 @@ const AppRoutes: React.FC = () => {
               <Route path="settlements" element={<SettlementManagementPage />} />
               <Route path="expenses" element={<ExpenseApprovalPage />} />
               <Route path="donations" element={<DonationManagementPage />} />
+              <Route path="reports" element={<ReportManagementPage />} />
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
             </Routes>
             </AdminLayout>
