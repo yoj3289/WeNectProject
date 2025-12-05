@@ -138,6 +138,7 @@ const LoginPage: React.FC = () => {
                   checked={showPassword}
                   onChange={(e) => setShowPassword(e.target.checked)}
                   disabled={isLoggingIn}
+                  tabIndex={-1}
                   className="w-3.5 h-3.5 text-amber-500 border-stone-300 rounded focus:ring-amber-500 disabled:cursor-not-allowed"
                 />
                 <span className="text-xs text-stone-500">표시</span>
@@ -161,6 +162,7 @@ const LoginPage: React.FC = () => {
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
                 disabled={isLoggingIn}
+                tabIndex={-1}
                 className="w-4 h-4 text-amber-500 border-stone-300 rounded focus:ring-amber-500 disabled:cursor-not-allowed"
               />
               <span className="text-sm text-stone-600">로그인 유지</span>
@@ -168,6 +170,7 @@ const LoginPage: React.FC = () => {
             <button
               className="text-sm text-amber-600 hover:text-amber-700 hover:underline disabled:text-stone-400 disabled:no-underline"
               disabled={isLoggingIn}
+              tabIndex={-1}
             >
               비밀번호 찾기
             </button>
