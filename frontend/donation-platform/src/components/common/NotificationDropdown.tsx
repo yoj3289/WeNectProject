@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, X, CheckCheck, Heart, MessageCircle, TrendingUp, Calendar, DollarSign, AlertCircle, Settings, Trash2, ChevronRight, Star, ExternalLink, Mail, Smartphone, Monitor } from 'lucide-react';
+import { Bell, X, CheckCheck, Heart, MessageCircle, TrendingUp, Calendar, DollarSign, AlertCircle, Settings, Trash2, ChevronRight, Star, ExternalLink, Mail, Smartphone, Monitor, Building, FileCheck, FileX, Receipt, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Notification } from '../../types';
 import { useMyNotifications, useMarkAsRead, useMarkAllAsRead, useDeleteNotification } from '../../hooks/useNotifications';
@@ -57,13 +57,22 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   const getNotificationIcon = (type: string) => {
     const iconProps = { size: 18 };
     switch (type) {
+      // 기부 관련
       case 'donation':
         return { icon: <Heart {...iconProps} />, color: 'bg-amber-500' };
       case 'donation_received':
         return { icon: <DollarSign {...iconProps} />, color: 'bg-green-500' };
+      case 'donation_cancelled':
+        return { icon: <XCircle {...iconProps} />, color: 'bg-orange-500' };
+      case 'donation_failed':
+        return { icon: <XCircle {...iconProps} />, color: 'bg-red-500' };
+
+      // 댓글 관련
       case 'comment':
       case 'reply':
         return { icon: <MessageCircle {...iconProps} />, color: 'bg-blue-500' };
+
+      // 프로젝트 관련
       case 'project_approval':
         return { icon: <CheckCheck {...iconProps} />, color: 'bg-green-500' };
       case 'project_rejection':
@@ -72,8 +81,32 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         return { icon: <TrendingUp {...iconProps} />, color: 'bg-purple-500' };
       case 'deadline_soon':
         return { icon: <Calendar {...iconProps} />, color: 'bg-orange-500' };
+
+      // 기관 승인/거절
+      case 'organization_approved':
+        return { icon: <Building {...iconProps} />, color: 'bg-green-500' };
+      case 'organization_rejected':
+        return { icon: <Building {...iconProps} />, color: 'bg-red-500' };
+
+      // 정산 관련
       case 'settlement':
-        return { icon: <DollarSign {...iconProps} />, color: 'bg-emerald-500' };
+      case 'settlement_requested':
+        return { icon: <Receipt {...iconProps} />, color: 'bg-blue-500' };
+      case 'settlement_approved':
+        return { icon: <FileCheck {...iconProps} />, color: 'bg-emerald-500' };
+      case 'settlement_rejected':
+        return { icon: <FileX {...iconProps} />, color: 'bg-red-500' };
+      case 'settlement_completed':
+        return { icon: <FileCheck {...iconProps} />, color: 'bg-purple-500' };
+
+      // 지출 관련
+      case 'expense_requested':
+        return { icon: <Receipt {...iconProps} />, color: 'bg-blue-500' };
+      case 'expense_approved':
+        return { icon: <FileCheck {...iconProps} />, color: 'bg-emerald-500' };
+      case 'expense_rejected':
+        return { icon: <FileX {...iconProps} />, color: 'bg-red-500' };
+
       default:
         return { icon: <AlertCircle {...iconProps} />, color: 'bg-stone-500' };
     }

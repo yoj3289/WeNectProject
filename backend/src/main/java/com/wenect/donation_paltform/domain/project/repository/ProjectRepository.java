@@ -132,4 +132,12 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     @Query("SELECT p FROM Project p WHERE p.status IN ('COMPLETED', 'SETTLEMENT', 'CLOSED') AND p.categoryId = :categoryId AND LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<Project> findSettlementProjectsByCategoryIdAndTitleContaining(
             @Param("categoryId") Integer categoryId, @Param("keyword") String keyword, Pageable pageable);
+
+    // ==================== 마감 임박 알림용 쿼리 ====================
+
+    /**
+     * 특정 날짜에 마감되는 ACTIVE 프로젝트 조회 (알림 스케줄러용)
+     */
+    @Query("SELECT p FROM Project p WHERE p.status = 'ACTIVE' AND p.endDate = :targetDate")
+    List<Project> findActiveProjectsByEndDate(@Param("targetDate") java.time.LocalDate targetDate);
 }

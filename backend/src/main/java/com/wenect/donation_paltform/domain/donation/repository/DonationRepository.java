@@ -145,4 +145,13 @@ public interface DonationRepository extends JpaRepository<Donation, Long> {
     @Query("DELETE FROM Donation d WHERE d.status = 'PENDING' AND d.createdAt < :cutoffDate")
     int deleteOldPendingDonations(@Param("cutoffDate") LocalDateTime cutoffDate);
 
+    // ==================== 알림용 (프로젝트별 기부자 조회) ====================
+
+    /**
+     * 프로젝트에 기부한 사용자 ID 목록 조회 (중복 제거)
+     * - COMPLETED 상태인 기부만 대상
+     */
+    @Query("SELECT DISTINCT d.userId FROM Donation d WHERE d.projectId = :projectId AND d.status = 'COMPLETED' AND d.userId IS NOT NULL")
+    List<Long> findDistinctUserIdsByProjectId(@Param("projectId") Long projectId);
+
 }

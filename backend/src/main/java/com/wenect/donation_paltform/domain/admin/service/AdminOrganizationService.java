@@ -1,12 +1,14 @@
 package com.wenect.donation_paltform.domain.admin.service;
 
 import com.wenect.donation_paltform.domain.admin.dto.OrganizationApprovalResponse;
+import com.wenect.donation_paltform.domain.notification.service.NotificationService;
 import com.wenect.donation_paltform.domain.organization.entity.Organization;
 import com.wenect.donation_paltform.domain.organization.entity.OrganizationDocument;
 import com.wenect.donation_paltform.domain.organization.repository.OrganizationDocumentRepository;
 import com.wenect.donation_paltform.domain.organization.repository.OrganizationRepository;
 import com.wenect.donation_paltform.domain.organization.service.OrganizationEmailService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,11 +18,13 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class AdminOrganizationService {
 
     private final OrganizationRepository organizationRepository;
     private final OrganizationDocumentRepository documentRepository;
     private final OrganizationEmailService emailService;
+    private final NotificationService notificationService;
 
     /**
      * 모든 기관 목록 조회 (승인 상태별)
@@ -69,6 +73,14 @@ public class AdminOrganizationService {
 
         // 승인 알림 메일 발송
         emailService.sendApprovalEmail(org);
+
+        // 기관 승인 알림 생성
+        try {
+            notificationService.createOrganizationApprovalNotification(userId, org.getOrgName());
+            log.info("기관 승인 알림 생성 완료 - userId: {}, orgName: {}", userId, org.getOrgName());
+        } catch (Exception e) {
+            log.error("기관 승인 알림 생성 실패 - userId: {}", userId, e);
+        }
     }
 
     /**
@@ -87,5 +99,13 @@ public class AdminOrganizationService {
 
         // 반려 알림 메일 발송
         emailService.sendRejectionEmail(org);
+
+        // 기관 거절 알림 생성
+        try {
+            notificationService.createOrganizationRejectionNotification(userId, org.getOrgName(), rejectionReason);
+            log.info("기관 거절 알림 생성 완료 - userId: {}, orgName: {}", userId, org.getOrgName());
+        } catch (Exception e) {
+            log.error("기관 거절 알림 생성 실패 - userId: {}", userId, e);
+        }
     }
 }

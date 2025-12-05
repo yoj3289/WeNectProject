@@ -4,6 +4,7 @@ import com.wenect.donation_paltform.domain.expense.dto.ExpenseRequest;
 import com.wenect.donation_paltform.domain.expense.dto.ExpenseResponse;
 import com.wenect.donation_paltform.domain.expense.entity.Expense;
 import com.wenect.donation_paltform.domain.expense.repository.ExpenseRepository;
+import com.wenect.donation_paltform.domain.notification.service.NotificationService;
 import com.wenect.donation_paltform.domain.piggybank.entity.PiggyBank;
 import com.wenect.donation_paltform.domain.piggybank.repository.PiggyBankRepository;
 import com.wenect.donation_paltform.domain.project.entity.Project;
@@ -26,6 +27,7 @@ public class ExpenseService {
     private final PiggyBankRepository piggyBankRepository;
     private final ExpenseEmailService expenseEmailService;
     private final com.wenect.donation_paltform.domain.organization.repository.OrganizationRepository organizationRepository;
+    private final NotificationService notificationService;
 
     /**
      * 지출 내역 등록
@@ -56,6 +58,15 @@ public class ExpenseService {
                 organizationRepository.findById(project.getOrgId())
                         .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
         expenseEmailService.sendWithdrawalRequestEmail(savedExpense, organization);
+
+        // 지출 요청 접수 알림 생성
+        try {
+            Long userId = organization.getUser().getUserId();
+            notificationService.createExpenseRequestNotification(userId, request.getDescription(), savedExpense.getExpenseId());
+            log.info("지출 요청 접수 알림 생성 완료 - userId: {}, expenseId: {}", userId, savedExpense.getExpenseId());
+        } catch (Exception e) {
+            log.error("지출 요청 접수 알림 생성 실패 - expenseId: {}", savedExpense.getExpenseId(), e);
+        }
 
         return ExpenseResponse.from(savedExpense);
     }
@@ -216,6 +227,15 @@ public class ExpenseService {
                         .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
         expenseEmailService.sendWithdrawalApprovalEmail(approvedExpense, organization);
 
+        // 10. 지출 승인 알림 생성
+        try {
+            Long userId = organization.getUser().getUserId();
+            notificationService.createExpenseApprovalNotification(userId, expense.getDescription(), expense.getExpenseId());
+            log.info("지출 승인 알림 생성 완료 - userId: {}, expenseId: {}", userId, expense.getExpenseId());
+        } catch (Exception e) {
+            log.error("지출 승인 알림 생성 실패 - expenseId: {}", expense.getExpenseId(), e);
+        }
+
         return ExpenseResponse.from(approvedExpense);
     }
 
@@ -251,6 +271,15 @@ public class ExpenseService {
                 organizationRepository.findById(project.getOrgId())
                         .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
         expenseEmailService.sendWithdrawalRejectionEmail(rejectedExpense, organization);
+
+        // 6. 지출 반려 알림 생성
+        try {
+            Long userId = organization.getUser().getUserId();
+            notificationService.createExpenseRejectionNotification(userId, expense.getDescription(), expense.getExpenseId(), rejectionReason);
+            log.info("지출 반려 알림 생성 완료 - userId: {}, expenseId: {}", userId, expense.getExpenseId());
+        } catch (Exception e) {
+            log.error("지출 반려 알림 생성 실패 - expenseId: {}", expense.getExpenseId(), e);
+        }
 
         return ExpenseResponse.from(rejectedExpense);
     }

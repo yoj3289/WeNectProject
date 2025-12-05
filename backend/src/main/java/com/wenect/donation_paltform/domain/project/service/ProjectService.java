@@ -46,6 +46,8 @@ public class ProjectService {
     private final com.wenect.donation_paltform.domain.favorite.service.FavoriteProjectService favoriteProjectService;
     private final DonationOptionService donationOptionService;
     private final com.wenect.donation_paltform.domain.settlement.repository.SettlementRepository settlementRepository;
+    private final com.wenect.donation_paltform.domain.notification.service.NotificationService notificationService;
+    private final com.wenect.donation_paltform.domain.donation.repository.DonationRepository donationRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -737,6 +739,21 @@ public class ProjectService {
                 .executeUpdate();
 
         log.info("프로젝트 결산 완료 - projectId: {}", projectId);
+
+        // 6. 기부자들에게 정산 완료 알림 발송
+        try {
+            List<Long> donorUserIds = donationRepository.findDistinctUserIdsByProjectId(projectId);
+            for (Long donorUserId : donorUserIds) {
+                try {
+                    notificationService.createSettlementCompletedNotification(donorUserId, project.getTitle(), projectId);
+                } catch (Exception e) {
+                    log.error("정산 완료 알림 생성 실패 - userId: {}, projectId: {}", donorUserId, projectId, e);
+                }
+            }
+            log.info("정산 완료 알림 발송 완료 - projectId: {}, 기부자 수: {}", projectId, donorUserIds.size());
+        } catch (Exception e) {
+            log.error("정산 완료 알림 발송 중 오류 - projectId: {}", projectId, e);
+        }
     }
 
     /**

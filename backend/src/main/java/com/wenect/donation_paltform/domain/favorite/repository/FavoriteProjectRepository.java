@@ -51,4 +51,10 @@ public interface FavoriteProjectRepository extends JpaRepository<FavoriteProject
             "HAVING COUNT(f) > 0 " +
             "ORDER BY COUNT(f) DESC, MIN(f.project.createdAt) ASC")
     List<Long> findTopProjectIdsByFavoriteCount();
+
+    /**
+     * 프로젝트의 관심 등록 사용자 ID 목록 조회 (알림용)
+     */
+    @Query("SELECT f.user.userId FROM FavoriteProject f WHERE f.project.projectId = :projectId")
+    List<Long> findUserIdsByProjectId(@Param("projectId") Long projectId);
 }

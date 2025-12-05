@@ -145,6 +145,25 @@ public class DonationService {
         donationRepository.save(donation);
 
         log.info("기부 취소 처리 완료 - orderId: {}", orderId);
+
+        // 기부 취소 알림 생성
+        if (donation.getUserId() != null) {
+            try {
+                Project project = projectRepository.findById(donation.getProjectId())
+                        .orElse(null);
+                String projectName = project != null ? project.getTitle() : "프로젝트";
+
+                notificationService.createDonationCancelledNotification(
+                        donation.getUserId(),
+                        projectName,
+                        donation.getProjectId(),
+                        donation.getAmount().longValue()
+                );
+                log.info("기부 취소 알림 생성 완료 - userId: {}, orderId: {}", donation.getUserId(), orderId);
+            } catch (Exception e) {
+                log.error("기부 취소 알림 생성 실패 - orderId: {}", orderId, e);
+            }
+        }
     }
 
     /**
@@ -159,6 +178,25 @@ public class DonationService {
         donationRepository.save(donation);
 
         log.info("기부 실패 처리 완료 - orderId: {}", orderId);
+
+        // 기부 실패 알림 생성
+        if (donation.getUserId() != null) {
+            try {
+                Project project = projectRepository.findById(donation.getProjectId())
+                        .orElse(null);
+                String projectName = project != null ? project.getTitle() : "프로젝트";
+
+                notificationService.createDonationFailedNotification(
+                        donation.getUserId(),
+                        projectName,
+                        donation.getProjectId(),
+                        donation.getAmount().longValue()
+                );
+                log.info("기부 실패 알림 생성 완료 - userId: {}, orderId: {}", donation.getUserId(), orderId);
+            } catch (Exception e) {
+                log.error("기부 실패 알림 생성 실패 - orderId: {}", orderId, e);
+            }
+        }
     }
 
     /**

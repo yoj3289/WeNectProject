@@ -1,5 +1,6 @@
 package com.wenect.donation_paltform.domain.settlement.service;
 
+import com.wenect.donation_paltform.domain.notification.service.NotificationService;
 import com.wenect.donation_paltform.domain.piggybank.entity.PiggyBank;
 import com.wenect.donation_paltform.domain.piggybank.repository.PiggyBankRepository;
 import com.wenect.donation_paltform.domain.project.entity.Project;
@@ -41,6 +42,7 @@ public class SettlementManagementService {
     private final RemoteFileStorageService fileStorageService;
     private final SettlementEmailService settlementEmailService;
     private final com.wenect.donation_paltform.domain.organization.repository.OrganizationRepository organizationRepository;
+    private final NotificationService notificationService;
 
     // ==================== 상태 전환 중앙화 메서드 ====================
 
@@ -218,6 +220,15 @@ public class SettlementManagementService {
                 .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
         settlementEmailService.sendSettlementRequestEmail(savedSettlement, organization, project.getTitle());
 
+        // 10. 정산 요청 접수 알림 생성
+        try {
+            Long userId = organization.getUser().getUserId();
+            notificationService.createSettlementRequestNotification(userId, project.getTitle(), savedSettlement.getSettlementId());
+            log.info("정산 요청 접수 알림 생성 완료 - userId: {}, settlementId: {}", userId, savedSettlement.getSettlementId());
+        } catch (Exception e) {
+            log.error("정산 요청 접수 알림 생성 실패 - settlementId: {}", savedSettlement.getSettlementId(), e);
+        }
+
         // NOTE: 프로젝트 상태는 정산 승인 시에만 SETTLEMENT로 변경됨
         // 정산 요청 단계에서는 COMPLETED 상태를 유지
 
@@ -276,6 +287,15 @@ public class SettlementManagementService {
                 .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
         settlementEmailService.sendSettlementApprovalEmail(savedSettlement, organization, project.getTitle());
 
+        // 9. 정산 승인 알림 생성
+        try {
+            Long userId = organization.getUser().getUserId();
+            notificationService.createSettlementApprovalNotification(userId, project.getTitle(), savedSettlement.getSettlementId());
+            log.info("정산 승인 알림 생성 완료 - userId: {}, settlementId: {}", userId, savedSettlement.getSettlementId());
+        } catch (Exception e) {
+            log.error("정산 승인 알림 생성 실패 - settlementId: {}", savedSettlement.getSettlementId(), e);
+        }
+
         return SettlementResponseDto.fromEntityWithProject(savedSettlement, project.getTitle());
     }
 
@@ -317,6 +337,16 @@ public class SettlementManagementService {
             organizationRepository.findById(project.getOrgId())
                 .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
         settlementEmailService.sendSettlementRejectionEmail(savedSettlement, organization, project.getTitle());
+
+        // 8. 정산 반려 알림 생성
+        try {
+            Long userId = organization.getUser().getUserId();
+            notificationService.createSettlementRejectionNotification(
+                userId, project.getTitle(), savedSettlement.getSettlementId(), rejectDto.getRejectionReason());
+            log.info("정산 반려 알림 생성 완료 - userId: {}, settlementId: {}", userId, savedSettlement.getSettlementId());
+        } catch (Exception e) {
+            log.error("정산 반려 알림 생성 실패 - settlementId: {}", savedSettlement.getSettlementId(), e);
+        }
 
         return SettlementResponseDto.fromEntityWithProject(savedSettlement, project.getTitle());
     }
