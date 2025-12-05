@@ -32,22 +32,25 @@ const IntroductionPage: React.FC = () => {
 
   const coreValues = [
     {
+      icon: <Heart className="w-8 h-8" />,
+      title: '마음이 닿는 기부',
+      description: '기부자와 수혜자를 직접 연결합니다. 여러분의 따뜻한 마음이 필요한 곳에 정확히 전달됩니다.',
+      gradient: 'from-amber-500 to-orange-500',
+      link: '/projects'
+    },
+    {
       icon: <Eye className="w-8 h-8" />,
       title: '100% 투명한 기부',
       description: '모든 기부금의 사용 내역을 실시간으로 확인할 수 있습니다. 저금통 시스템을 통해 기부금이 어디에 쓰이는지 투명하게 공개합니다.',
-      gradient: 'from-blue-500 to-cyan-500'
+      gradient: 'from-blue-500 to-cyan-500',
+      link: '/projects?status=settlement'
     },
     {
       icon: <Shield className="w-8 h-8" />,
       title: '검증된 단체만',
       description: '엄격한 심사를 통과한 비영리 단체만 프로젝트를 등록할 수 있습니다. 신뢰할 수 있는 기부 환경을 제공합니다.',
-      gradient: 'from-green-500 to-emerald-500'
-    },
-    {
-      icon: <Heart className="w-8 h-8" />,
-      title: '마음이 닿는 기부',
-      description: '기부자와 수혜자를 직접 연결합니다. 여러분의 따뜻한 마음이 필요한 곳에 정확히 전달됩니다.',
-      gradient: 'from-amber-500 to-orange-500'
+      gradient: 'from-green-500 to-emerald-500',
+      link: '/organizations'
     }
   ];
 
@@ -176,12 +179,6 @@ const IntroductionPage: React.FC = () => {
                 프로젝트 둘러보기
                 <ArrowRight className="w-5 h-5" />
               </Link>
-              <Link
-                to="/signup"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-xl transition-all"
-              >
-                회원가입
-              </Link>
             </div>
           </div>
         </div>
@@ -265,16 +262,17 @@ const IntroductionPage: React.FC = () => {
 
           <div className="grid sm:grid-cols-3 gap-6">
             {coreValues.map((value, index) => (
-              <div
+              <Link
                 key={index}
-                className="bg-white rounded-2xl p-6 sm:p-8 shadow-md border border-stone-100 hover:shadow-xl transition-all group"
+                to={value.link}
+                className="bg-white rounded-2xl p-6 sm:p-8 shadow-md border border-stone-100 hover:shadow-xl transition-all group cursor-pointer block"
               >
                 <div className={`inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br ${value.gradient} text-white rounded-2xl mb-5 group-hover:scale-110 transition-transform shadow-lg`}>
                   {value.icon}
                 </div>
                 <h3 className="text-lg sm:text-xl font-medium text-stone-800 mb-3">{value.title}</h3>
                 <p className="text-sm sm:text-base text-stone-600 leading-relaxed">{value.description}</p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -342,13 +340,6 @@ const IntroductionPage: React.FC = () => {
                   </div>
                 ))}
               </div>
-              <Link
-                to="/projects"
-                className="inline-flex items-center gap-2 mt-8 px-6 py-3 bg-stone-800 hover:bg-stone-700 text-white font-medium rounded-xl transition-colors"
-              >
-                프로젝트 보러가기
-                <ArrowRight className="w-4 h-4" />
-              </Link>
             </div>
             <div className="relative">
               <div className="bg-white rounded-2xl p-6 shadow-xl border border-stone-200">

@@ -28,6 +28,7 @@ import DonationHistoryPage from './DonationHistoryPage';
 import StatisticsPage from './StatisticsPage';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserFavoriteProjects, useProjects, useSettlementProjects, useToggleFavoriteProject } from '../../hooks/useProjects';
+import { useOrganizationStats } from '../../hooks/useOrganization';
 import { useMyDonations } from '../../hooks/useDonations';
 import { useNotificationSettings, useUpdateNotificationSettings } from '../../hooks/useUsers';
 import { deleteAccount } from '../../api/users';
@@ -427,6 +428,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     const totalDonation = donationHistory.reduce((sum: number, d: any) => sum + d.amount, 0);
     const projectCount = new Set(donationHistory.map((d: any) => d.projectTitle)).size;
 
+    // 기관 통계 (기관 사용자인 경우만 사용)
+    const { data: orgStats, isLoading: isOrgStatsLoading } = useOrganizationStats();
+
     // 알림 설정 API 연동
     const { data: notificationSettingsData, isLoading: isSettingsLoading } = useNotificationSettings();
     const updateSettingsMutation = useUpdateNotificationSettings();
@@ -494,49 +498,97 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             </div>
 
             {/* Statistics - 홈페이지 Our Impact 스타일 */}
-            <div className="grid grid-cols-3 gap-4 md:gap-6 max-w-2xl mx-auto">
-              <div className="text-center group">
-                <div className="w-12 h-12 mx-auto mb-3 bg-amber-100 rounded-full flex items-center justify-center group-hover:bg-amber-200 transition-colors">
-                  <TrendingUp className="text-amber-600" size={22} />
+            {userType === 'organization' ? (
+              // 기관 사용자용 통계
+              <div className="grid grid-cols-3 gap-4 md:gap-6 max-w-2xl mx-auto">
+                <div className="text-center group">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-amber-100 rounded-full flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                    <TrendingUp className="text-amber-600" size={22} />
+                  </div>
+                  <p className="text-xl md:text-2xl font-light text-white mb-1">
+                    {isOrgStatsLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                    ) : (
+                      `${formatAmount(orgStats?.totalFunding || 0)}원`
+                    )}
+                  </p>
+                  <p className="text-stone-400 text-xs md:text-sm">누적 모금액</p>
                 </div>
-                <p className="text-xl md:text-2xl font-light text-white mb-1">
-                  {isDonationsLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin mx-auto" />
-                  ) : (
-                    `${formatAmount(totalDonation)}원`
-                  )}
-                </p>
-                <p className="text-stone-400 text-xs md:text-sm">총 기부 금액</p>
-              </div>
 
-              <div className="text-center group">
-                <div className="w-12 h-12 mx-auto mb-3 bg-amber-100 rounded-full flex items-center justify-center group-hover:bg-amber-200 transition-colors">
-                  <Award className="text-amber-600" size={22} />
+                <div className="text-center group">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-amber-100 rounded-full flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                    <Award className="text-amber-600" size={22} />
+                  </div>
+                  <p className="text-xl md:text-2xl font-light text-white mb-1">
+                    {isOrgStatsLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                    ) : (
+                      `${orgStats?.totalProjects || 0}개`
+                    )}
+                  </p>
+                  <p className="text-stone-400 text-xs md:text-sm">등록 프로젝트</p>
                 </div>
-                <p className="text-xl md:text-2xl font-light text-white mb-1">
-                  {isDonationsLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin mx-auto" />
-                  ) : (
-                    `${projectCount}개`
-                  )}
-                </p>
-                <p className="text-stone-400 text-xs md:text-sm">참여 프로젝트</p>
-              </div>
 
-              <div className="text-center group">
-                <div className="w-12 h-12 mx-auto mb-3 bg-amber-100 rounded-full flex items-center justify-center group-hover:bg-amber-200 transition-colors">
-                  <Heart className="text-amber-600" size={22} />
+                <div className="text-center group">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-amber-100 rounded-full flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                    <BarChart3 className="text-amber-600" size={22} />
+                  </div>
+                  <p className="text-xl md:text-2xl font-light text-white mb-1">
+                    {isOrgStatsLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                    ) : (
+                      `${orgStats?.activeProjects || 0}개`
+                    )}
+                  </p>
+                  <p className="text-stone-400 text-xs md:text-sm">진행중 프로젝트</p>
                 </div>
-                <p className="text-xl md:text-2xl font-light text-white mb-1">
-                  {isFavoriteIdsLoading || isProjectsLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin mx-auto" />
-                  ) : (
-                    `${favoriteProjects.length}개`
-                  )}
-                </p>
-                <p className="text-stone-400 text-xs md:text-sm">관심 프로젝트</p>
               </div>
-            </div>
+            ) : (
+              // 개인 사용자용 통계
+              <div className="grid grid-cols-3 gap-4 md:gap-6 max-w-2xl mx-auto">
+                <div className="text-center group">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-amber-100 rounded-full flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                    <TrendingUp className="text-amber-600" size={22} />
+                  </div>
+                  <p className="text-xl md:text-2xl font-light text-white mb-1">
+                    {isDonationsLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                    ) : (
+                      `${formatAmount(totalDonation)}원`
+                    )}
+                  </p>
+                  <p className="text-stone-400 text-xs md:text-sm">총 기부 금액</p>
+                </div>
+
+                <div className="text-center group">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-amber-100 rounded-full flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                    <Award className="text-amber-600" size={22} />
+                  </div>
+                  <p className="text-xl md:text-2xl font-light text-white mb-1">
+                    {isDonationsLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                    ) : (
+                      `${projectCount}개`
+                    )}
+                  </p>
+                  <p className="text-stone-400 text-xs md:text-sm">참여 프로젝트</p>
+                </div>
+
+                <div className="text-center group">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-amber-100 rounded-full flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                    <Heart className="text-amber-600" size={22} />
+                  </div>
+                  <p className="text-xl md:text-2xl font-light text-white mb-1">
+                    {isFavoriteIdsLoading || isProjectsLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                    ) : (
+                      `${favoriteProjects.length}개`
+                    )}
+                  </p>
+                  <p className="text-stone-400 text-xs md:text-sm">관심 프로젝트</p>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
@@ -603,7 +655,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     onClick={() => setSelectedMenu('statistics')}
                     className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
                   >
-                    <span>통계</span>
+                    <span>{userType === 'organization' ? '프로젝트별 기부 통계' : '통계'}</span>
                     <ChevronRight size={16} className="text-stone-400 group-hover:text-amber-500" />
                   </button>
                 </div>
@@ -1253,7 +1305,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     return (
                       <div
                         key={project.id}
-                        className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all relative group"
+                        className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all relative group cursor-pointer"
+                        onClick={() => {
+                          setSelectedProject(project);
+                          navigate(`/projects/${project.id}`);
+                        }}
                       >
                         <button
                           onClick={(e) => {
@@ -1265,13 +1321,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                           <Heart size={18} className="text-amber-500" fill="currentColor" />
                         </button>
 
-                        <div
-                          className="cursor-pointer"
-                          onClick={() => {
-                            setSelectedProject(project);
-                            navigate(`/projects/${project.id}`);
-                          }}
-                        >
+                        <div>
                           <div className="h-36 bg-gradient-to-br from-amber-200 to-orange-200 overflow-hidden">
                             {project.image ? (
                               <img
@@ -1342,7 +1392,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
       )}
       {selectedMenu === 'favorite-projects' && <FavoriteProjectsPage />}
       {selectedMenu === 'statistics' && (
-        <StatisticsPage onBack={() => setSelectedMenu('main')} />
+        <StatisticsPage onBack={() => setSelectedMenu('main')} userType={userType} />
       )}
       {showPasswordModal && <PasswordChangeModal />}
       {showDeleteAccountModal && <DeleteAccountModal />}

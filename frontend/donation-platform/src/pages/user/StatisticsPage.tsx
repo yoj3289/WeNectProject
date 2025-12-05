@@ -22,14 +22,16 @@ import {
   useDonationTimeline,
   useFavoriteCategoryDistribution,
 } from '../../hooks/useStatistics';
+import type { UserType } from '../../types';
 
 interface StatisticsPageProps {
   onBack: () => void;
+  userType?: UserType;
 }
 
 const COLORS = ['#f59e0b', '#ea580c', '#dc2626', '#c026d3', '#7c3aed', '#2563eb', '#0891b2', '#059669'];
 
-const StatisticsPage: React.FC<StatisticsPageProps> = ({ onBack }) => {
+const StatisticsPage: React.FC<StatisticsPageProps> = ({ onBack, userType }) => {
   const [period, setPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [year, setYear] = useState<number>(new Date().getFullYear());
 
@@ -103,10 +105,16 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ onBack }) => {
           </button>
           <p className="text-amber-400 uppercase tracking-[0.3em] text-xs mb-3">Statistics</p>
           <h1 className="text-2xl md:text-3xl text-white font-light">
-            나의 <span className="font-medium">기부 통계</span>
+            {userType === 'organization' ? (
+              <>프로젝트별 <span className="font-medium">기부 통계</span></>
+            ) : (
+              <>나의 <span className="font-medium">기부 통계</span></>
+            )}
           </h1>
           <p className="text-stone-400 text-sm mt-2">
-            기부 활동을 한눈에 확인하세요
+            {userType === 'organization'
+              ? '프로젝트별 기부 현황을 확인하세요'
+              : '기부 활동을 한눈에 확인하세요'}
           </p>
         </div>
       </section>

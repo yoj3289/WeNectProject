@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DollarSign, Users, Clock, FileText, ArrowUp, ArrowDown, Heart, Building2, Wallet, Receipt, ChevronDown, ChevronUp, Home, Star } from 'lucide-react';
+import { DollarSign, Users, Clock, FileText, ArrowUp, ArrowDown, Heart, Building2, Wallet, Receipt, ChevronDown, ChevronUp, Home, Star, Flag } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { AdminDashboardProps } from '../../types/admin';
 import SystemMonitoringDashboard from './SystemMonitoringDashboard';
@@ -8,6 +8,7 @@ import AdminChartsSection from './AdminChartsSection';
 import { useAdminDashboard, useCategoryDistribution, useOrganizationApprovals, useAdminSettlements } from '../../hooks/useAdmin';
 import { useRecentDonations, useToggleFeatured } from '../../hooks/useDonations';
 import { useExpensesByStatus } from '../../hooks/useExpenses';
+import { useReportStats } from '../../hooks/useReports';
 import { formatAmount } from '../../utils/formatters';
 
 type ActivityTab = 'donations' | 'organizations' | 'settlements' | 'expenses';
@@ -20,14 +21,13 @@ interface DashboardPageProps extends AdminDashboardProps {
 
 // 스켈레톤 컴포넌트들
 const SkeletonCard = () => (
-  <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm animate-pulse">
-    <div className="flex items-center justify-between mb-4">
-      <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
-      <div className="w-16 h-5 bg-gray-200 rounded"></div>
+  <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm animate-pulse">
+    <div className="flex items-center justify-between mb-2">
+      <div className="w-9 h-9 bg-gray-200 rounded-lg"></div>
+      <div className="w-12 h-4 bg-gray-200 rounded"></div>
     </div>
-    <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-    <div className="h-8 bg-gray-200 rounded w-32 mb-2"></div>
-    <div className="h-3 bg-gray-200 rounded w-16"></div>
+    <div className="h-3 bg-gray-200 rounded w-16 mb-1"></div>
+    <div className="h-6 bg-gray-200 rounded w-20"></div>
   </div>
 );
 
@@ -85,6 +85,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
   const { data: organizationApprovals, isLoading: isLoadingOrganizations } = useOrganizationApprovals({ status: 'pending' });
   const { data: settlementsData, isLoading: isLoadingSettlements } = useAdminSettlements({ status: 'pending', size: 10 });
   const { data: pendingExpenses, isLoading: isLoadingExpenses } = useExpensesByStatus('PENDING');
+  const { data: reportStats, isLoading: isLoadingReports } = useReportStats();
 
   const stats = dashboardData?.data || {
     todayDonation: 0,
@@ -121,9 +122,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-5 gap-6">
-        {isLoadingDashboard ? (
+      <div className="grid grid-cols-3 lg:grid-cols-6 gap-4">
+        {isLoadingDashboard || isLoadingReports ? (
           <>
+            <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
@@ -131,7 +133,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             <SkeletonCard />
           </>
         ) : isErrorDashboard ? (
-          <div className="col-span-5 bg-red-50 rounded-xl p-6 border border-red-200 text-center">
+          <div className="col-span-6 bg-red-50 rounded-xl p-4 border border-red-200 text-center">
             <p className="text-red-600 mb-2">통계 데이터를 불러오는데 실패했습니다.</p>
             <button
               onClick={() => window.location.reload()}
@@ -142,76 +144,76 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         ) : (
           <>
-            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-red-100 to-pink-100 rounded-lg flex items-center justify-center">
-                  <DollarSign className="text-red-600" size={24} />
+            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-9 h-9 bg-gradient-to-br from-red-100 to-pink-100 rounded-lg flex items-center justify-center">
+                  <DollarSign className="text-red-600" size={18} />
                 </div>
-                <span className={`flex items-center gap-1 text-sm font-semibold ${stats.donationChange >= 0 ? 'text-red-600' : 'text-blue-600'}`}>
-                  {stats.donationChange >= 0 ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
+                <span className={`flex items-center gap-0.5 text-xs font-semibold ${stats.donationChange >= 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                  {stats.donationChange >= 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
                   {Math.abs(stats.donationChange).toFixed(1)}%
                 </span>
               </div>
-              <p className="text-gray-600 text-sm mb-1">오늘 기부 금액</p>
-              <p className="text-3xl font-bold text-gray-800">{formatAmount(stats.todayDonation)}원</p>
-              <p className="text-xs text-gray-500 mt-2">전일 대비</p>
+              <p className="text-gray-500 text-xs mb-0.5">오늘 기부 금액</p>
+              <p className="text-xl font-bold text-gray-800">{formatAmount(stats.todayDonation)}원</p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-pink-100 to-rose-100 rounded-lg flex items-center justify-center">
-                  <Users className="text-pink-600" size={24} />
+            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-9 h-9 bg-gradient-to-br from-pink-100 to-rose-100 rounded-lg flex items-center justify-center">
+                  <Users className="text-pink-600" size={18} />
                 </div>
-                <span className={`flex items-center gap-1 text-sm font-semibold ${stats.userChange >= 0 ? 'text-pink-600' : 'text-blue-600'}`}>
-                  {stats.userChange >= 0 ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
+                <span className={`flex items-center gap-0.5 text-xs font-semibold ${stats.userChange >= 0 ? 'text-pink-600' : 'text-blue-600'}`}>
+                  {stats.userChange >= 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
                   {Math.abs(stats.userChange).toFixed(1)}%
                 </span>
               </div>
-              <p className="text-gray-600 text-sm mb-1">신규 회원</p>
-              <p className="text-3xl font-bold text-gray-800">{stats.newUsers}명</p>
-              <p className="text-xs text-gray-500 mt-2">이번 주</p>
+              <p className="text-gray-500 text-xs mb-0.5">신규 회원</p>
+              <p className="text-xl font-bold text-gray-800">{stats.newUsers}명</p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleNavigate('organizations')}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-red-100 rounded-lg flex items-center justify-center">
-                  <Clock className="text-orange-600" size={24} />
+            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleNavigate('organizations')}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-9 h-9 bg-gradient-to-br from-orange-100 to-red-100 rounded-lg flex items-center justify-center">
+                  <Building2 className="text-orange-600" size={18} />
                 </div>
-                <button className="text-red-600 hover:text-red-700 font-semibold text-sm">
-                  보기 →
-                </button>
+                <span className="text-orange-600 hover:text-orange-700 font-semibold text-xs">보기 →</span>
               </div>
-              <p className="text-gray-600 text-sm mb-1">승인 대기</p>
-              <p className="text-3xl font-bold text-gray-800">{stats.pendingApprovals}건</p>
-              <p className="text-xs text-gray-500 mt-2">기관 가입 신청</p>
+              <p className="text-gray-500 text-xs mb-0.5">기관 승인 대기</p>
+              <p className="text-xl font-bold text-gray-800">{stats.pendingApprovals}건</p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleNavigate('settlements')}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-rose-100 to-pink-100 rounded-lg flex items-center justify-center">
-                  <FileText className="text-rose-600" size={24} />
+            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleNavigate('settlements')}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-9 h-9 bg-gradient-to-br from-rose-100 to-pink-100 rounded-lg flex items-center justify-center">
+                  <Wallet className="text-rose-600" size={18} />
                 </div>
-                <button className="text-pink-600 hover:text-pink-700 font-semibold text-sm">
-                  보기 →
-                </button>
+                <span className="text-rose-600 hover:text-rose-700 font-semibold text-xs">보기 →</span>
               </div>
-              <p className="text-gray-600 text-sm mb-1">정산 요청</p>
-              <p className="text-3xl font-bold text-gray-800">{stats.pendingSettlements}건</p>
-              <p className="text-xs text-gray-500 mt-2">처리 대기중</p>
+              <p className="text-gray-500 text-xs mb-0.5">정산 요청</p>
+              <p className="text-xl font-bold text-gray-800">{stats.pendingSettlements}건</p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleNavigate('expenses')}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
-                  <FileText className="text-blue-600" size={24} />
+            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleNavigate('expenses')}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-9 h-9 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
+                  <Receipt className="text-blue-600" size={18} />
                 </div>
-                <button className="text-blue-600 hover:text-blue-700 font-semibold text-sm">
-                  보기 →
-                </button>
+                <span className="text-blue-600 hover:text-blue-700 font-semibold text-xs">보기 →</span>
               </div>
-              <p className="text-gray-600 text-sm mb-1">지출 승인 대기</p>
-              <p className="text-3xl font-bold text-gray-800">{stats.pendingExpenses}건</p>
-              <p className="text-xs text-gray-500 mt-2">검토 필요</p>
+              <p className="text-gray-500 text-xs mb-0.5">지출 승인 대기</p>
+              <p className="text-xl font-bold text-gray-800">{stats.pendingExpenses}건</p>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleNavigate('reports')}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-9 h-9 bg-gradient-to-br from-yellow-100 to-amber-100 rounded-lg flex items-center justify-center">
+                  <Flag className="text-yellow-600" size={18} />
+                </div>
+                <span className="text-yellow-600 hover:text-yellow-700 font-semibold text-xs">보기 →</span>
+              </div>
+              <p className="text-gray-500 text-xs mb-0.5">신고 처리 대기</p>
+              <p className="text-xl font-bold text-gray-800">{reportStats?.pendingCount || 0}건</p>
             </div>
           </>
         )}

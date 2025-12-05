@@ -371,15 +371,15 @@ const BoardPage: React.FC<BoardPageProps> = ({
     <div className="min-h-screen bg-stone-100">
       {/* 헤더 */}
       <div className="bg-stone-900">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
-              <p className="text-amber-400 uppercase tracking-widest text-xs font-medium mb-1">Community</p>
-              <h1 className="text-2xl text-white font-light">
+              <p className="text-amber-400 uppercase tracking-widest text-xs font-medium mb-0.5">Community</p>
+              <h1 className="text-xl text-white font-light">
                 커뮤니티 <span className="font-semibold">게시판</span>
               </h1>
             </div>
-            <div className="flex gap-8 text-center">
+            <div className="flex gap-6 text-center">
               {[
                 { type: 'NOTICE' as PostType, count: extendedPosts.filter(p => p.type === 'NOTICE').length },
                 { type: 'QUESTION' as PostType, count: extendedPosts.filter(p => p.type === 'QUESTION').length },
@@ -388,7 +388,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
                 const config = getCategoryConfig(item.type);
                 return (
                   <div key={item.type}>
-                    <p className="text-2xl font-light text-white">{item.count}</p>
+                    <p className="text-xl font-light text-white">{item.count}</p>
                     <p className="text-xs text-stone-400">{config.label}</p>
                   </div>
                 );
