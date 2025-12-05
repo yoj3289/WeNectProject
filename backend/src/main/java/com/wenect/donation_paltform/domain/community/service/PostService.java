@@ -94,10 +94,17 @@ public class PostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        // NOTICE 타입은 관리자/기관만 작성 가능
+        // 게시글 타입별 권한 체크
+        // NOTICE(공지): 관리자만
+        // NEWS(소식): 관리자 + 기관
+        // QUESTION, SUPPORT, GENERAL: 모든 사용자
         if ("NOTICE".equals(request.getType())) {
+            if (user.getUserType() != User.UserType.ADMIN) {
+                throw new IllegalArgumentException("공지사항은 관리자만 작성할 수 있습니다.");
+            }
+        } else if ("NEWS".equals(request.getType())) {
             if (user.getUserType() != User.UserType.ADMIN && user.getUserType() != User.UserType.ORGANIZATION) {
-                throw new IllegalArgumentException("공지사항은 관리자 또는 기관만 작성할 수 있습니다.");
+                throw new IllegalArgumentException("소식은 관리자 또는 기관만 작성할 수 있습니다.");
             }
         }
 

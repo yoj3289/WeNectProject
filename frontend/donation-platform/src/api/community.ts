@@ -2,7 +2,7 @@ import { apiClient } from '../lib/apiClient';
 
 // ==================== 요청 타입 ====================
 export interface CreatePostRequest {
-  type: 'NOTICE' | 'QUESTION' | 'SUPPORT' | 'GENERAL';
+  type: 'NOTICE' | 'NEWS' | 'QUESTION' | 'SUPPORT' | 'GENERAL';
   title: string;
   content: string;
   images?: File[];
@@ -34,7 +34,7 @@ export interface CommentFilters {
 // ==================== 응답 타입 ====================
 export interface PostResponse {
   postId: number;
-  type: 'NOTICE' | 'QUESTION' | 'SUPPORT' | 'GENERAL';
+  type: 'NOTICE' | 'NEWS' | 'QUESTION' | 'SUPPORT' | 'GENERAL';
   title: string;
   content: string;
   author: {

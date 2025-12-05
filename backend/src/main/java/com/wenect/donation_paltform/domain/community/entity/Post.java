@@ -83,7 +83,11 @@ public class Post {
     }
 
     public enum PostType {
-        NOTICE, QUESTION, SUPPORT, GENERAL
+        NOTICE,     // 공지 - 관리자만
+        NEWS,       // 소식 - 관리자 + 기관
+        QUESTION,   // 질문 - 모든 사용자
+        SUPPORT,    // 응원 - 모든 사용자
+        GENERAL     // 일반 - 모든 사용자
     }
 
     // 조회수 증가

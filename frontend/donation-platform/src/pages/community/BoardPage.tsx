@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import {
   MessageSquare, Eye, Heart, Search, Reply, Image as ImageIcon, Send, X,
   Pin, Loader2, Link, Edit2, Trash2, Users, Megaphone, HelpCircle,
-  Sparkles, ArrowLeft, Calendar, ChevronRight, MessageCircle
+  Sparkles, ArrowLeft, Calendar, ChevronRight, MessageCircle, Newspaper
 } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import toast from 'react-hot-toast';
 import type { CommunityPost, PostType } from '../../types';
-import { POST_TYPE_LABELS } from '../../types';
+import { POST_TYPE_LABELS, canWritePostType, getWritablePostTypes } from '../../types';
+import type { UserType } from '../../types';
 import { usePosts, useLikePost, useCreateComment, useComments, useLikeComment, useUpdateComment, useDeleteComment } from '../../hooks/useCommunity';
 import { createPost } from '../../api/community';
 import { useAuth } from '../../hooks/useAuth';
@@ -277,8 +278,16 @@ const BoardPage: React.FC<BoardPageProps> = ({
       return;
     }
 
-    if (postType === 'NOTICE' && userType === 'individual') {
-      toast.error('일반 사용자는 공지사항을 작성할 수 없습니다.');
+    // 권한 체크: canWritePostType 함수 사용
+    const mappedUserType = userType === 'individual' ? 'individual' : userType === 'organization' ? 'organization' : 'admin';
+    if (!canWritePostType(postType, mappedUserType)) {
+      if (postType === 'NOTICE') {
+        toast.error('공지사항은 관리자만 작성할 수 있습니다.');
+      } else if (postType === 'NEWS') {
+        toast.error('소식은 관리자 또는 기관만 작성할 수 있습니다.');
+      } else {
+        toast.error('해당 카테고리에 글을 작성할 권한이 없습니다.');
+      }
       return;
     }
 
@@ -305,7 +314,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
   };
 
   // 카테고리 설정
-  const categoryConfig = {
+  const categoryConfig: Record<PostType, { icon: any; color: string; lightBg: string; border: string; text: string; label: string; description: string }> = {
     NOTICE: {
       icon: Megaphone,
       color: 'bg-rose-500',
@@ -313,7 +322,16 @@ const BoardPage: React.FC<BoardPageProps> = ({
       border: 'border-rose-300',
       text: 'text-rose-600',
       label: '공지',
-      description: '중요한 소식을 전합니다'
+      description: '관리자 공지사항'
+    },
+    NEWS: {
+      icon: Newspaper,
+      color: 'bg-purple-500',
+      lightBg: 'bg-purple-50',
+      border: 'border-purple-300',
+      text: 'text-purple-600',
+      label: '소식',
+      description: '기관 소식을 전합니다'
     },
     QUESTION: {
       icon: HelpCircle,
@@ -353,7 +371,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
     <div className="min-h-screen bg-stone-100">
       {/* 헤더 */}
       <div className="bg-stone-900">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-10">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
               <p className="text-amber-400 uppercase tracking-widest text-xs font-medium mb-1">Community</p>
@@ -393,7 +411,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
             >
               전체
             </button>
-            {(['NOTICE', 'QUESTION', 'SUPPORT'] as PostType[]).map(type => {
+            {(['NOTICE', 'NEWS', 'QUESTION', 'SUPPORT'] as PostType[]).map(type => {
               const config = getCategoryConfig(type);
               return (
                 <button
@@ -777,10 +795,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
               <div>
                 <label className="block text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">카테고리</label>
                 <div className="flex gap-px bg-stone-200 inline-flex">
-                  {(userType === 'organization' || userType === 'admin'
-                    ? (['NOTICE', 'QUESTION', 'SUPPORT'] as PostType[])
-                    : (['QUESTION', 'SUPPORT'] as PostType[])
-                  ).map(type => {
+                  {getWritablePostTypes(userType === 'individual' ? 'individual' : userType === 'organization' ? 'organization' : 'admin').map(type => {
                     const typeConfig = getCategoryConfig(type);
                     const isSelected = postType === type;
                     return (

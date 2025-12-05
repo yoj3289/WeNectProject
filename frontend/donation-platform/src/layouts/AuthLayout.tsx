@@ -15,10 +15,10 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
       <div className="p-6">
         <button
           onClick={() => navigate('/')}
-          className="flex items-center space-x-2 text-rose-600 hover:text-rose-700 transition-colors"
+          className="flex items-center space-x-2 transition-colors"
         >
-          <Heart className="w-8 h-8 fill-current" />
-          <span className="text-2xl font-bold">위넥트</span>
+          <Heart className="w-8 h-8 fill-current text-amber-500" />
+          <span className="text-2xl font-bold text-black">위넥트</span>
         </button>
       </div>
 

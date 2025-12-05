@@ -73,14 +73,36 @@ export interface PiggyBank {
 }
 
 // 커뮤니티 관련 타입
-export type PostType = 'NOTICE' | 'QUESTION' | 'SUPPORT' | 'GENERAL';
+export type PostType = 'NOTICE' | 'NEWS' | 'QUESTION' | 'SUPPORT' | 'GENERAL';
 
 // UI 표시용 매핑 유틸
 export const POST_TYPE_LABELS: Record<PostType, string> = {
   NOTICE: '공지',
+  NEWS: '소식',
   QUESTION: '질문',
   SUPPORT: '응원',
   GENERAL: '일반'
+};
+
+// 글쓰기 권한 체크 유틸 (공지: 관리자만, 소식: 관리자+기관, 질문/응원/일반: 모든 사용자)
+export const canWritePostType = (postType: PostType, userType: UserType): boolean => {
+  switch (postType) {
+    case 'NOTICE':
+      return userType === 'admin';
+    case 'NEWS':
+      return userType === 'admin' || userType === 'organization';
+    case 'QUESTION':
+    case 'SUPPORT':
+    case 'GENERAL':
+      return true;
+    default:
+      return false;
+  }
+};
+
+export const getWritablePostTypes = (userType: UserType): PostType[] => {
+  const allTypes: PostType[] = ['NOTICE', 'NEWS', 'QUESTION', 'SUPPORT', 'GENERAL'];
+  return allTypes.filter(type => canWritePostType(type, userType));
 };
 
 // 카테고리 영어 -> 한글 매핑

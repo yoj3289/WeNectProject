@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Eye, Edit, Trash2, Reply, Send, X, Loader2, Heart, Link, Megaphone, HelpCircle, MessageSquare, ArrowLeft, Flag } from 'lucide-react';
+import { Eye, Edit, Trash2, Reply, Send, X, Loader2, Heart, Link, Megaphone, HelpCircle, MessageSquare, ArrowLeft, Flag, Newspaper } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { CommunityPost, Comment, PostType } from '../../types';
 import { usePost, useComments, useCreateComment, useDeleteComment, useUpdateComment, useLikePost, useLikeComment } from '../../hooks/useCommunity';
@@ -42,6 +42,14 @@ const categoryConfig: Record<PostType, {
     border: 'border-rose-300',
     text: 'text-rose-600',
     label: '공지'
+  },
+  NEWS: {
+    icon: Newspaper,
+    color: 'bg-purple-500',
+    lightBg: 'bg-purple-50',
+    border: 'border-purple-300',
+    text: 'text-purple-600',
+    label: '소식'
   },
   QUESTION: {
     icon: HelpCircle,

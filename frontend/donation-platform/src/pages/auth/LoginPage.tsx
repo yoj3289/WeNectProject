@@ -101,7 +101,7 @@ const LoginPage: React.FC = () => {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Heart className="text-amber-500" size={32} fill="currentColor" />
-            <span className="text-xl font-bold text-stone-800">위넥트</span>
+            <span className="text-xl font-bold text-black">위넥트</span>
           </div>
           <h1 className="text-2xl font-bold text-stone-800 mb-1">로그인</h1>
           <p className="text-sm text-stone-500">따뜻한 나눔에 오신 것을 환영합니다</p>

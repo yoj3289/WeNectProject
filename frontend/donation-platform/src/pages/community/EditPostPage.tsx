@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Image as ImageIcon, X, Loader2, ArrowLeft, Edit2, Megaphone, HelpCircle, Heart, MessageSquare } from 'lucide-react';
+import { Image as ImageIcon, X, Loader2, ArrowLeft, Edit2, Megaphone, HelpCircle, Heart, MessageSquare, Newspaper } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { CommunityPost, PostType } from '../../types';
-import { POST_TYPE_LABELS } from '../../types';
+import { POST_TYPE_LABELS, canWritePostType, getWritablePostTypes } from '../../types';
 import { useUpdatePost, useCreatePost } from '../../hooks/useCommunity';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
@@ -27,7 +27,7 @@ interface ExtendedPost extends CommunityPost {
 }
 
 // 카테고리 설정
-const categoryConfig = {
+const categoryConfig: Record<PostType, { icon: any; color: string; lightBg: string; border: string; text: string; label: string; description: string }> = {
   NOTICE: {
     icon: Megaphone,
     color: 'bg-rose-500',
@@ -36,6 +36,15 @@ const categoryConfig = {
     text: 'text-rose-600',
     label: '공지',
     description: '중요한 소식을 전합니다'
+  },
+  NEWS: {
+    icon: Newspaper,
+    color: 'bg-purple-500',
+    lightBg: 'bg-purple-50',
+    border: 'border-purple-300',
+    text: 'text-purple-600',
+    label: '소식',
+    description: '기관 소식을 전합니다'
   },
   QUESTION: {
     icon: HelpCircle,
@@ -117,8 +126,16 @@ const EditPostPage: React.FC<EditPostPageProps> = ({
       return;
     }
 
-    if (postType === 'NOTICE' && userType === 'individual') {
-      toast.error('일반 사용자는 공지사항을 작성할 수 없습니다.');
+    // 권한 체크: canWritePostType 함수 사용
+    const mappedUserType = userType === 'individual' ? 'individual' : userType === 'organization' ? 'organization' : 'admin';
+    if (!canWritePostType(postType, mappedUserType)) {
+      if (postType === 'NOTICE') {
+        toast.error('공지사항은 관리자만 작성할 수 있습니다.');
+      } else if (postType === 'NEWS') {
+        toast.error('소식은 관리자 또는 기관만 작성할 수 있습니다.');
+      } else {
+        toast.error('해당 카테고리에 글을 작성할 권한이 없습니다.');
+      }
       return;
     }
 
@@ -209,10 +226,7 @@ const EditPostPage: React.FC<EditPostPageProps> = ({
                 카테고리
               </label>
               <div className="flex gap-px bg-stone-200 inline-flex">
-                {(userType === 'organization' || userType === 'admin'
-                  ? (['NOTICE', 'QUESTION', 'SUPPORT'] as PostType[])
-                  : (['QUESTION', 'SUPPORT'] as PostType[])
-                ).map(type => {
+                {getWritablePostTypes(userType === 'individual' ? 'individual' : userType === 'organization' ? 'organization' : 'admin').map(type => {
                   const typeConfig = getCategoryConfig(type);
                   const isSelected = postType === type;
 
