@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, FileText, X, CreditCard, AlertCircle, Download, Eye, CheckCircle, XCircle, Clock, RefreshCw, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Search, FileText, X, CreditCard, AlertCircle, Download, Eye, CheckCircle, XCircle, Clock, RefreshCw, ChevronLeft, ChevronRight, Loader2, TrendingDown, Calendar, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { getSettlementsByStatus, approveSettlement, rejectSettlement, type SettlementResponse, type SettlementDocument } from '../../api/admin';
@@ -239,97 +239,132 @@ const SettlementManagementPage: React.FC = () => {
     <>
       {/* 정산 상세 모달 */}
       {showDetailModal && selectedSettlement && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">정산 상세</h2>
-                <p className="text-sm text-gray-600 mt-1">정산 정보를 확인하고 처리하세요</p>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* 헤더 - 다크 스타일 */}
+            <div className="bg-stone-800 px-6 py-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                    <CreditCard size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-medium text-white">정산 상세</h2>
+                    <p className="text-sm text-stone-400">정산 정보를 확인하세요</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setShowDetailModal(false); setSelectedSettlement(null); setRejectReason(''); setAdminMemo(''); }}
+                  className="p-2 hover:bg-stone-700 rounded-xl transition-colors"
+                >
+                  <X size={20} className="text-stone-400" />
+                </button>
               </div>
-              <button onClick={() => { setShowDetailModal(false); setSelectedSettlement(null); setRejectReason(''); setAdminMemo(''); }} className="p-2 hover:bg-gray-100 rounded-lg">
-                <X size={24} />
-              </button>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* 기본 정보 */}
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
-                {renderStatusBadge(selectedSettlement.status)}
-                <h3 className="text-2xl font-bold text-gray-800 mt-3">{selectedSettlement.projectTitle || '프로젝트 정보 없음'}</h3>
-                <div className="bg-white rounded-lg p-6 mt-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-gray-600">정산 금액</span>
-                    <span className="text-3xl font-bold text-green-600">{formatAmount(selectedSettlement.settlementAmount)}</span>
+            {/* 프로젝트 정보 카드 */}
+            <div className="bg-amber-500 px-6 py-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-amber-100 text-sm">정산 대상 프로젝트</p>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  selectedSettlement.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                  selectedSettlement.status === 'APPROVED' ? 'bg-blue-100 text-blue-700' :
+                  selectedSettlement.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                  'bg-red-100 text-red-700'
+                }`}>
+                  {selectedSettlement.status === 'PENDING' ? '대기중' :
+                   selectedSettlement.status === 'APPROVED' ? '승인됨' :
+                   selectedSettlement.status === 'COMPLETED' ? '완료' : '반려됨'}
+                </span>
+              </div>
+              <h3 className="text-white font-medium text-lg mb-4 line-clamp-1">
+                {selectedSettlement.projectTitle || '프로젝트 정보 없음'}
+              </h3>
+              <div className="bg-white/20 backdrop-blur rounded-xl px-4 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <TrendingDown size={18} className="text-white" />
+                    <span className="text-white/90 text-sm">정산 금액</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">신청일</span>
-                    <span className="font-semibold text-gray-800">{formatDate(selectedSettlement.requestedAt)}</span>
+                  <span className="text-white text-xl font-bold">{formatAmount(selectedSettlement.settlementAmount)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={18} className="text-white" />
+                    <span className="text-white/90 text-sm">신청일</span>
                   </div>
-                  {selectedSettlement.approvedAt && (
-                    <div className="flex items-center justify-between text-sm mt-2">
-                      <span className="text-gray-600">승인일</span>
-                      <span className="font-semibold text-gray-800">{formatDate(selectedSettlement.approvedAt)}</span>
+                  <span className="text-white font-medium">{formatDate(selectedSettlement.requestedAt)}</span>
+                </div>
+                {selectedSettlement.approvedAt && (
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={18} className="text-white" />
+                      <span className="text-white/90 text-sm">승인일</span>
                     </div>
-                  )}
+                    <span className="text-white font-medium">{formatDate(selectedSettlement.approvedAt)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 스크롤 가능한 콘텐츠 영역 */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* STEP 1: 계좌 정보 */}
+              <div className="bg-white rounded-xl p-5 border border-stone-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                  <h4 className="font-medium text-stone-800">입금 계좌 정보</h4>
+                </div>
+                <div className="bg-stone-50 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building2 size={16} className="text-stone-500" />
+                      <span className="text-sm text-stone-600">은행명</span>
+                    </div>
+                    <span className="font-medium text-stone-800">{selectedSettlement.bankName}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CreditCard size={16} className="text-stone-500" />
+                      <span className="text-sm text-stone-600">계좌번호</span>
+                    </div>
+                    <span className="font-medium text-stone-800">{selectedSettlement.accountNumber}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-stone-600">예금주</span>
+                    <span className="font-medium text-stone-800">{selectedSettlement.accountHolder}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* 계좌 정보 */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <CreditCard size={20} className="text-blue-500" />
-                  입금 계좌 정보
-                </h4>
-                <div className="bg-blue-50 rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">은행명</span>
-                    <span className="font-semibold text-gray-800">{selectedSettlement.bankName}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">계좌번호</span>
-                    <span className="font-semibold text-gray-800">{selectedSettlement.accountNumber}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">예금주</span>
-                    <span className="font-semibold text-gray-800">{selectedSettlement.accountHolder}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 첨부 서류 */}
+              {/* STEP 2: 첨부 서류 */}
               {selectedSettlement.documents && selectedSettlement.documents.length > 0 && (
-                <div className="bg-white border border-gray-200 rounded-xl p-6">
-                  <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <FileText size={20} className="text-purple-500" />
-                    첨부 서류 ({selectedSettlement.documents.length}개)
-                  </h4>
+                <div className="bg-white rounded-xl p-5 border border-stone-200">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                    <h4 className="font-medium text-stone-800">첨부 서류 ({selectedSettlement.documents.length}개)</h4>
+                  </div>
                   <div className="space-y-3">
                     {selectedSettlement.documents.map((doc) => (
-                      <div key={doc.documentId} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                      <div key={doc.documentId} className="flex items-center justify-between p-4 bg-stone-50 rounded-xl hover:bg-stone-100 transition">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                            <FileText size={20} className="text-red-500" />
+                          <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                            <FileText size={20} className="text-amber-600" />
                           </div>
                           <div>
-                            <p className="font-semibold text-gray-800">{doc.fileName}</p>
-                            <p className="text-sm text-gray-500">{(doc.fileSize / 1024 / 1024).toFixed(2)} MB</p>
+                            <p className="font-medium text-stone-800 text-sm">{doc.fileName}</p>
+                            <p className="text-xs text-stone-500">{(doc.fileSize / 1024 / 1024).toFixed(2)} MB</p>
                           </div>
                         </div>
                         <button
                           onClick={() => handleDownload(doc)}
                           disabled={downloadingDocId === doc.documentId}
-                          className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                          className="px-3 py-2 bg-stone-800 text-white rounded-lg text-sm font-medium hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
                           {downloadingDocId === doc.documentId ? (
-                            <>
-                              <Loader2 size={16} className="animate-spin" />
-                              다운로드 중...
-                            </>
+                            <Loader2 size={14} className="animate-spin" />
                           ) : (
-                            <>
-                              <Download size={16} />
-                              다운로드
-                            </>
+                            <Download size={14} />
                           )}
                         </button>
                       </div>
@@ -340,31 +375,33 @@ const SettlementManagementPage: React.FC = () => {
 
               {/* 반려된 경우 반려 사유 표시 */}
               {selectedSettlement.status === 'REJECTED' && selectedSettlement.rejectionReason && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-                  <h4 className="text-lg font-bold text-red-800 mb-3 flex items-center gap-2">
-                    <XCircle size={20} className="text-red-600" />
-                    반려 사유
-                  </h4>
-                  <p className="text-red-900">{selectedSettlement.rejectionReason}</p>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center">
+                      <XCircle size={14} />
+                    </div>
+                    <h4 className="font-medium text-red-800">반려 사유</h4>
+                  </div>
+                  <p className="text-red-700 text-sm">{selectedSettlement.rejectionReason}</p>
                 </div>
               )}
 
               {/* 관리자 메모 표시 */}
               {selectedSettlement.adminMemo && (
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-                  <h4 className="text-lg font-bold text-gray-800 mb-3">관리자 메모</h4>
-                  <p className="text-gray-700">{selectedSettlement.adminMemo}</p>
+                <div className="bg-stone-100 rounded-xl p-5">
+                  <h4 className="font-medium text-stone-800 mb-2">관리자 메모</h4>
+                  <p className="text-stone-600 text-sm">{selectedSettlement.adminMemo}</p>
                 </div>
               )}
 
               {/* 대기중일 때만 승인/반려 폼 표시 */}
               {selectedSettlement.status === 'PENDING' && (
                 <>
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
-                    <h4 className="text-lg font-bold text-amber-800 mb-3 flex items-center gap-2">
-                      <AlertCircle size={20} className="text-amber-600" />
-                      주의사항
-                    </h4>
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <AlertCircle size={18} className="text-amber-600" />
+                      <h4 className="font-medium text-amber-800">주의사항</h4>
+                    </div>
                     <ul className="space-y-2 text-sm text-amber-900">
                       <li className="flex items-start gap-2">
                         <span className="text-amber-600 mt-0.5">•</span>
@@ -377,28 +414,28 @@ const SettlementManagementPage: React.FC = () => {
                     </ul>
                   </div>
 
-                  <div className="bg-white border border-gray-200 rounded-xl p-6">
-                    <h4 className="text-lg font-bold text-gray-800 mb-4">관리자 메모 (선택)</h4>
+                  <div className="bg-white rounded-xl p-5 border border-stone-200">
+                    <h4 className="font-medium text-stone-800 mb-3">관리자 메모 (선택)</h4>
                     <textarea
                       value={adminMemo}
                       onChange={(e) => setAdminMemo(e.target.value)}
                       placeholder="승인 시 남길 메모를 입력하세요..."
                       rows={3}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      className="w-full px-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none text-sm"
                     />
                   </div>
 
-                  <div className="bg-white border border-gray-200 rounded-xl p-6">
-                    <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                      <AlertCircle size={20} className="text-red-500" />
-                      반려 사유 (반려 시 필수)
-                    </h4>
+                  <div className="bg-white rounded-xl p-5 border border-stone-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <AlertCircle size={18} className="text-red-500" />
+                      <h4 className="font-medium text-stone-800">반려 사유 (반려 시 필수)</h4>
+                    </div>
                     <textarea
                       value={rejectReason}
                       onChange={(e) => setRejectReason(e.target.value)}
                       placeholder="정산을 반려할 경우 사유를 입력해주세요..."
-                      rows={4}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                      rows={3}
+                      className="w-full px-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none text-sm"
                     />
                   </div>
                 </>
@@ -406,10 +443,10 @@ const SettlementManagementPage: React.FC = () => {
             </div>
 
             {/* 하단 버튼 */}
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex gap-3">
+            <div className="border-t border-stone-200 p-4 bg-white flex gap-3">
               <button
                 onClick={() => { setShowDetailModal(false); setSelectedSettlement(null); setRejectReason(''); setAdminMemo(''); }}
-                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-bold hover:bg-gray-50"
+                className="flex-1 px-4 py-3 border-2 border-stone-300 text-stone-700 rounded-xl font-medium hover:bg-stone-50 transition"
               >
                 닫기
               </button>
@@ -426,7 +463,7 @@ const SettlementManagementPage: React.FC = () => {
                       });
                     }}
                     disabled={isProcessing}
-                    className="flex-1 px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 disabled:opacity-50"
+                    className="flex-1 px-4 py-3 bg-stone-800 text-white rounded-xl font-medium hover:bg-stone-700 disabled:opacity-50 transition"
                   >
                     반려
                   </button>
@@ -440,7 +477,7 @@ const SettlementManagementPage: React.FC = () => {
                       });
                     }}
                     disabled={isProcessing}
-                    className="flex-1 px-6 py-3 bg-green-500 text-white rounded-lg font-bold hover:bg-green-600 disabled:opacity-50"
+                    className="flex-1 px-4 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 disabled:opacity-50 transition"
                   >
                     승인
                   </button>
@@ -474,7 +511,7 @@ const SettlementManagementPage: React.FC = () => {
             onClick={() => setActiveTab('pending')}
             className={`px-6 py-2 rounded-lg font-semibold transition ${
               activeTab === 'pending'
-                ? 'bg-white text-green-600 shadow'
+                ? 'bg-white text-amber-600 shadow'
                 : 'text-gray-600 hover:text-gray-800'
             }`}
           >
@@ -489,7 +526,7 @@ const SettlementManagementPage: React.FC = () => {
             onClick={() => setActiveTab('processed')}
             className={`px-6 py-2 rounded-lg font-semibold transition ${
               activeTab === 'processed'
-                ? 'bg-white text-green-600 shadow'
+                ? 'bg-white text-amber-600 shadow'
                 : 'text-gray-600 hover:text-gray-800'
             }`}
           >
@@ -509,14 +546,14 @@ const SettlementManagementPage: React.FC = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="프로젝트명, 예금주로 검색..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
                 />
               </div>
               {activeTab === 'processed' && (
                 <select
                   value={processedFilter}
                   onChange={(e) => setProcessedFilter(e.target.value as ProcessedFilterType)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
                 >
                   <option value="ALL">모든 상태</option>
                   <option value="APPROVED">승인됨</option>
@@ -614,7 +651,7 @@ const SettlementManagementPage: React.FC = () => {
                                     setSelectedSettlement(settlement);
                                     setShowDetailModal(true);
                                   }}
-                                  className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                                  className="p-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200"
                                   title="반려"
                                 >
                                   <XCircle size={18} />
@@ -636,7 +673,7 @@ const SettlementManagementPage: React.FC = () => {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-800 truncate">{settlement.projectTitle || '-'}</p>
-                        <p className="text-lg font-bold text-green-600 mt-1">{formatAmount(settlement.settlementAmount)}</p>
+                        <p className="text-lg font-bold text-amber-600 mt-1">{formatAmount(settlement.settlementAmount)}</p>
                         <div className="flex items-center gap-2 mt-2">
                           {renderStatusBadge(settlement.status)}
                           <span className="text-xs text-gray-500">{formatDate(settlement.requestedAt)}</span>
@@ -690,7 +727,7 @@ const SettlementManagementPage: React.FC = () => {
                           onClick={() => setCurrentPage(page)}
                           className={`w-8 h-8 rounded-lg text-sm font-medium ${
                             currentPage === page
-                              ? 'bg-green-500 text-white'
+                              ? 'bg-amber-500 text-white'
                               : 'border border-gray-300 hover:bg-gray-50'
                           }`}
                         >

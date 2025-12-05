@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Download, Eye, CheckCircle, XCircle, X, Users, FileText, AlertCircle } from 'lucide-react';
+import { Search, Download, Eye, CheckCircle, XCircle, X, Users, FileText, AlertCircle, Target, Calendar, Building2, Tag } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { AdminDashboardProps } from '../../types/admin';
 import ConfirmModal from '../../components/common/ConfirmModal';
@@ -34,148 +34,188 @@ const ProjectDetailModalContent: React.FC<{
   });
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div
-        ref={scrollContainerRef}
-        onScroll={handleScroll}
-        className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-      >
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">프로젝트 검토</h2>
-            <p className="text-sm text-gray-600 mt-1">프로젝트 정보를 확인하고 승인/반려 처리하세요</p>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+        {/* 헤더 - 다크 스타일 */}
+        <div className="bg-stone-800 px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                <FileText size={20} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-medium text-white">프로젝트 검토</h2>
+                <p className="text-sm text-stone-400">승인/반려 처리하세요</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-stone-700 rounded-xl transition-colors">
+              <X size={20} className="text-stone-400" />
+            </button>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-            <X size={24} />
-          </button>
         </div>
 
-        <div className="p-6 space-y-6">
-          <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-6 border border-red-200">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">승인 대기중</span>
-                <h3 className="text-2xl font-bold text-gray-800 mt-3">{selectedProject.title}</h3>
-                <p className="text-gray-600 mt-2">{selectedProject.organization || selectedProject.org}</p>
-              </div>
-              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium">{selectedProject.category}</span>
+        {/* 프로젝트 정보 카드 */}
+        <div className="bg-amber-500 px-6 py-5">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-amber-100 text-sm">프로젝트 신청</p>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                승인 대기중
+              </span>
+              <span className="px-3 py-1 bg-white/20 text-white rounded-full text-xs font-medium">
+                {selectedProject.category}
+              </span>
             </div>
-            <div className="grid grid-cols-3 gap-4 mt-4">
-              <div className="bg-white rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">목표 금액</p>
-                <p className="text-xl font-bold text-red-600">{(selectedProject.targetAmount || selectedProject.amount).toLocaleString()}원</p>
+          </div>
+          <h3 className="text-white font-medium text-lg mb-4 line-clamp-2">
+            {selectedProject.title}
+          </h3>
+          <div className="bg-white/20 backdrop-blur rounded-xl px-4 py-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Target size={18} className="text-white" />
+                <span className="text-white/90 text-sm">목표 금액</span>
               </div>
-              <div className="bg-white rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">신청일</p>
-                <p className="text-lg font-semibold text-gray-800">{selectedProject.date || '2024.11.15'}</p>
+              <span className="text-white text-xl font-bold">{(selectedProject.targetAmount || selectedProject.amount).toLocaleString()}원</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Calendar size={18} className="text-white" />
+                <span className="text-white/90 text-sm">신청일</span>
               </div>
-              <div className="bg-white rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">프로젝트 ID</p>
-                <p className="text-lg font-semibold text-gray-800">#{selectedProject.id}</p>
+              <span className="text-white font-medium">{selectedProject.date || '2024.11.15'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 스크롤 가능한 콘텐츠 영역 */}
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-6 space-y-5"
+        >
+          {/* STEP 1: 기관 정보 */}
+          <div className="bg-white rounded-xl p-5 border border-stone-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
+              <h4 className="font-medium text-stone-800">기관 정보</h4>
+            </div>
+            <div className="bg-stone-50 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Building2 size={16} className="text-stone-500" />
+                  <span className="text-sm text-stone-600">기관명</span>
+                </div>
+                <span className="font-medium text-stone-800">{selectedProject.org || selectedProject.organization || '교육나눔재단'}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-stone-600">사업자등록번호</span>
+                <span className="font-medium text-stone-800">123-45-67890</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-stone-600">대표자</span>
+                <span className="font-medium text-stone-800">홍길동</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-stone-600">연락처</span>
+                <span className="font-medium text-stone-800">02-1234-5678</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Users size={20} className="text-pink-500" />
-              기관 정보
-            </h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">기관명</p>
-                <p className="font-semibold text-gray-800">{selectedProject.org || selectedProject.organization || '교육나눔재단'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">사업자등록번호</p>
-                <p className="font-semibold text-gray-800">123-45-67890</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">대표자</p>
-                <p className="font-semibold text-gray-800">홍길동</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">연락처</p>
-                <p className="font-semibold text-gray-800">02-1234-5678</p>
-              </div>
+          {/* STEP 2: 프로젝트 설명 */}
+          <div className="bg-white rounded-xl p-5 border border-stone-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">2</div>
+              <h4 className="font-medium text-stone-800">프로젝트 설명</h4>
+            </div>
+            <div className="bg-amber-50 rounded-xl p-4">
+              <p className="text-stone-700 text-sm leading-relaxed">
+                저소득층 학생들에게 양질의 교육 기회를 제공하여 교육 격차를 해소하고자 합니다.
+                본 프로젝트는 학습 교재 지원, 온라인 교육 플랫폼 구독, 그리고 전문 튜터링 서비스를 포함합니다.
+              </p>
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <FileText size={20} className="text-pink-500" />
-              프로젝트 설명
-            </h4>
-            <p className="text-gray-700 leading-relaxed">
-              저소득층 학생들에게 양질의 교육 기회를 제공하여 교육 격차를 해소하고자 합니다.
-              본 프로젝트는 학습 교재 지원, 온라인 교육 플랫폼 구독, 그리고 전문 튜터링 서비스를 포함합니다.
-            </p>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <FileText size={20} className="text-purple-500" />
-              첨부 서류
-            </h4>
+          {/* STEP 3: 첨부 서류 */}
+          <div className="bg-white rounded-xl p-5 border border-stone-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">3</div>
+              <h4 className="font-medium text-stone-800">첨부 서류</h4>
+            </div>
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+              <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl hover:bg-stone-100 transition">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                    <FileText size={20} className="text-red-500" />
+                  <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <FileText size={20} className="text-amber-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-800">사업계획서.pdf</p>
-                    <p className="text-sm text-gray-500">2.4 MB</p>
+                    <p className="font-medium text-stone-800 text-sm">사업계획서.pdf</p>
+                    <p className="text-xs text-stone-500">2.4 MB</p>
                   </div>
                 </div>
-                <button className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600">다운로드</button>
+                <button className="px-3 py-2 bg-stone-800 text-white rounded-lg text-sm font-medium hover:bg-stone-700">
+                  <Download size={14} />
+                </button>
               </div>
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+              <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl hover:bg-stone-100 transition">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <FileText size={20} className="text-green-500" />
+                  <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <FileText size={20} className="text-amber-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-800">예산서.xlsx</p>
-                    <p className="text-sm text-gray-500">156 KB</p>
+                    <p className="font-medium text-stone-800 text-sm">예산서.xlsx</p>
+                    <p className="text-xs text-stone-500">156 KB</p>
                   </div>
                 </div>
-                <button className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600">다운로드</button>
+                <button className="px-3 py-2 bg-stone-800 text-white rounded-lg text-sm font-medium hover:bg-stone-700">
+                  <Download size={14} />
+                </button>
               </div>
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+              <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl hover:bg-stone-100 transition">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <FileText size={20} className="text-blue-500" />
+                  <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <FileText size={20} className="text-amber-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-800">사업자등록증.pdf</p>
-                    <p className="text-sm text-gray-500">890 KB</p>
+                    <p className="font-medium text-stone-800 text-sm">사업자등록증.pdf</p>
+                    <p className="text-xs text-stone-500">890 KB</p>
                   </div>
                 </div>
-                <button className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600">다운로드</button>
+                <button className="px-3 py-2 bg-stone-800 text-white rounded-lg text-sm font-medium hover:bg-stone-700">
+                  <Download size={14} />
+                </button>
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <AlertCircle size={20} className="text-orange-500" />
-              반려 사유 (선택)
-            </h4>
+          {/* 반려 사유 입력 */}
+          <div className="bg-white rounded-xl p-5 border border-stone-200">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertCircle size={18} className="text-amber-500" />
+              <h4 className="font-medium text-stone-800">반려 사유 (반려 시 필수)</h4>
+            </div>
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="프로젝트를 반려할 경우 사유를 입력해주세요..."
-              rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+              rows={3}
+              className="w-full px-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none text-sm"
             />
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex gap-3">
-          <button onClick={onClose} className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-bold hover:bg-gray-50">취소</button>
-          <button onClick={handleRejectProject} className="flex-1 px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600">반려</button>
-          <button onClick={handleApproveProject} className="flex-1 px-6 py-3 bg-green-500 text-white rounded-lg font-bold hover:bg-green-600">승인</button>
+        {/* 하단 버튼 */}
+        <div className="border-t border-stone-200 p-4 bg-white flex gap-3">
+          <button onClick={onClose} className="flex-1 px-4 py-3 border-2 border-stone-300 text-stone-700 rounded-xl font-medium hover:bg-stone-50 transition">
+            취소
+          </button>
+          <button onClick={handleRejectProject} className="flex-1 px-4 py-3 bg-stone-800 text-white rounded-xl font-medium hover:bg-stone-700 transition">
+            반려
+          </button>
+          <button onClick={handleApproveProject} className="flex-1 px-4 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition">
+            승인
+          </button>
         </div>
       </div>
     </div>
@@ -286,13 +326,13 @@ const ProjectManagementPage: React.FC<ProjectManagementPageProps> = ({
                   value={projectSearchTerm}
                   onChange={(e) => setProjectSearchTerm(e.target.value)}
                   placeholder="프로젝트명, 기관명으로 검색..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
               </div>
               <select
                 value={projectFilter}
                 onChange={(e) => setProjectFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
               >
                 <option value="all">모든 상태</option>
                 <option value="pending">승인 대기</option>
@@ -302,7 +342,7 @@ const ProjectManagementPage: React.FC<ProjectManagementPageProps> = ({
               <select
                 value={projectCategoryFilter}
                 onChange={(e) => setProjectCategoryFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
               >
                 <option value="all">모든 카테고리</option>
                 <option value="교육">교육</option>
@@ -319,7 +359,7 @@ const ProjectManagementPage: React.FC<ProjectManagementPageProps> = ({
 
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">빠른 필터:</span>
-              <button className="px-3 py-1 bg-gradient-to-r from-red-50 to-pink-50 text-red-600 rounded-lg text-sm font-medium hover:from-red-100 hover:to-pink-100 border border-red-200">
+              <button className="px-3 py-1 bg-amber-50 text-amber-600 rounded-lg text-sm font-medium hover:bg-amber-100 border border-amber-200">
                 오늘 신청 (3)
               </button>
               <button className="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200">
@@ -459,7 +499,7 @@ const ProjectManagementPage: React.FC<ProjectManagementPageProps> = ({
                                 setSelectedProject(project);
                                 setShowProjectModal(true);
                               }}
-                              className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                              className="p-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200"
                               title="반려"
                             >
                               <XCircle size={18} />
@@ -489,7 +529,7 @@ const ProjectManagementPage: React.FC<ProjectManagementPageProps> = ({
             </p>
             <div className="flex gap-2">
               <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>이전</button>
-              <button className="px-3 py-1 border rounded-lg bg-red-500 text-white border-red-500">1</button>
+              <button className="px-3 py-1 border rounded-lg bg-amber-500 text-white border-amber-500">1</button>
               <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>다음</button>
             </div>
           </div>

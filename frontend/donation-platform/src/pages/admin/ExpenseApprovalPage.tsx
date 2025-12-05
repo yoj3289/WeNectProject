@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar, FileText, CheckCircle, XCircle, Eye, Loader2, AlertCircle, X, ChevronLeft, ChevronRight, Search, RefreshCw, Receipt, Tag, Clock, Download } from 'lucide-react';
+import { Calendar, FileText, CheckCircle, XCircle, Eye, Loader2, AlertCircle, X, ChevronLeft, ChevronRight, Search, RefreshCw, Receipt, Tag, Clock, Download, TrendingDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useApproveExpense, useRejectExpense } from '../../hooks/useExpenses';
 import { getAllExpensesByStatus } from '../../api/expenses';
@@ -280,7 +280,7 @@ const ExpenseApprovalPage: React.FC = () => {
           onClick={() => setActiveTab('pending')}
           className={`px-6 py-2 rounded-lg font-semibold transition ${
             activeTab === 'pending'
-              ? 'bg-white text-orange-600 shadow'
+              ? 'bg-white text-amber-600 shadow'
               : 'text-gray-600 hover:text-gray-800'
           }`}
         >
@@ -295,7 +295,7 @@ const ExpenseApprovalPage: React.FC = () => {
           onClick={() => setActiveTab('processed')}
           className={`px-6 py-2 rounded-lg font-semibold transition ${
             activeTab === 'processed'
-              ? 'bg-white text-orange-600 shadow'
+              ? 'bg-white text-amber-600 shadow'
               : 'text-gray-600 hover:text-gray-800'
           }`}
         >
@@ -314,14 +314,14 @@ const ExpenseApprovalPage: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="프로젝트명, 카테고리, 설명으로 검색..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
             />
           </div>
           {activeTab === 'processed' && (
             <select
               value={processedFilter}
               onChange={(e) => setProcessedFilter(e.target.value as ProcessedFilterType)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
             >
               <option value="ALL">모든 상태</option>
               <option value="APPROVED">승인됨</option>
@@ -331,7 +331,7 @@ const ExpenseApprovalPage: React.FC = () => {
         </div>
         {isLoading ? (
           <div className="p-12 text-center">
-            <Loader2 className="w-8 h-8 text-orange-500 animate-spin mx-auto mb-2" />
+            <Loader2 className="w-8 h-8 text-amber-500 animate-spin mx-auto mb-2" />
             <p className="text-gray-600">지출 내역을 불러오는 중...</p>
           </div>
         ) : filteredExpenses.length === 0 ? (
@@ -378,7 +378,7 @@ const ExpenseApprovalPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-4 px-6 text-right whitespace-nowrap">
-                      <span className="font-bold text-orange-600">
+                      <span className="font-bold text-amber-600">
                         {formatAmount(expense.amount)}원
                       </span>
                     </td>
@@ -409,7 +409,7 @@ const ExpenseApprovalPage: React.FC = () => {
                             <button
                               onClick={() => handleRejectClick(expense)}
                               disabled={rejectMutation.isPending}
-                              className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="p-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed"
                               title="반려"
                             >
                               <XCircle size={18} />
@@ -459,7 +459,7 @@ const ExpenseApprovalPage: React.FC = () => {
                           onClick={() => setCurrentPage(page)}
                           className={`w-8 h-8 rounded-lg text-sm font-medium ${
                             currentPage === page
-                              ? 'bg-orange-500 text-white'
+                              ? 'bg-amber-500 text-white'
                               : 'border border-gray-300 hover:bg-gray-50'
                           }`}
                         >
@@ -483,161 +483,183 @@ const ExpenseApprovalPage: React.FC = () => {
 
       {/* 상세보기 모달 */}
       {showDetailModal && selectedExpense && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            {/* 모달 헤더 */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">지출 상세</h2>
-                <p className="text-sm text-gray-600 mt-1">지출 정보를 확인하고 처리하세요</p>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* 헤더 - 다크 스타일 */}
+            <div className="bg-stone-800 px-6 py-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                    <Receipt size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-medium text-white">지출 상세</h2>
+                    <p className="text-sm text-stone-400">지출 정보를 확인하세요</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setSelectedExpense(null);
+                  }}
+                  className="p-2 hover:bg-stone-700 rounded-xl transition-colors"
+                >
+                  <X size={20} className="text-stone-400" />
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setShowDetailModal(false);
-                  setSelectedExpense(null);
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <X size={24} />
-              </button>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* 기본 정보 */}
-              <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-200">
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(selectedExpense.status)}`}>
-                  {getStatusLabel(selectedExpense.status)}
-                </span>
-                <h3 className="text-2xl font-bold text-gray-800 mt-3">{selectedExpense.projectTitle || `프로젝트 #${selectedExpense.projectId}`}</h3>
-                <p className="text-sm text-gray-500 mt-1">프로젝트 ID: #{selectedExpense.projectId}</p>
-                <div className="bg-white rounded-lg p-6 mt-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-gray-600">지출 금액</span>
-                    <span className="text-3xl font-bold text-orange-600">{formatAmount(selectedExpense.amount)}원</span>
+            {/* 콘텐츠 영역 */}
+            <div className="flex-1 overflow-y-auto">
+              {/* 프로젝트 정보 카드 */}
+              <div className="bg-amber-500 px-6 py-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-amber-100 text-sm">지출 대상 프로젝트</p>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    selectedExpense.status === 'APPROVED'
+                      ? 'bg-green-100 text-green-700'
+                      : selectedExpense.status === 'PENDING'
+                      ? 'bg-white/90 text-amber-700'
+                      : selectedExpense.status === 'REJECTED'
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-stone-100 text-stone-700'
+                  }`}>
+                    {getStatusLabel(selectedExpense.status)}
+                  </span>
+                </div>
+                <h3 className="text-white font-medium text-lg mb-4 line-clamp-1">{selectedExpense.projectTitle || `프로젝트 #${selectedExpense.projectId}`}</h3>
+                <div className="bg-white/20 backdrop-blur rounded-xl px-4 py-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <TrendingDown size={18} className="text-white" />
+                      <span className="text-white/90 text-sm">지출 금액</span>
+                    </div>
+                    <span className="text-white text-xl font-bold">{formatAmount(selectedExpense.amount)}원</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">지출일</span>
-                    <span className="font-semibold text-gray-800">{formatDate(selectedExpense.expenseDate)}</span>
+                    <div className="flex items-center gap-2">
+                      <Calendar size={14} className="text-white/70" />
+                      <span className="text-white/70">지출일</span>
+                    </div>
+                    <span className="text-white/90 font-medium">{formatDate(selectedExpense.expenseDate)}</span>
                   </div>
                 </div>
               </div>
 
-              {/* 지출 정보 */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Tag size={20} className="text-blue-500" />
-                  지출 정보
-                </h4>
-                <div className="bg-blue-50 rounded-lg p-4 space-y-4">
-                  <div>
-                    <span className="text-sm text-gray-600 block mb-1">카테고리</span>
-                    <span className="px-3 py-1 bg-white text-gray-700 rounded-lg text-sm font-semibold border border-gray-200 inline-block">
-                      {selectedExpense.category}
-                    </span>
+              <div className="p-6 space-y-6">
+                {/* STEP 1: 지출 정보 */}
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                    <h4 className="font-medium text-stone-800">지출 정보</h4>
                   </div>
-                  <div>
-                    <span className="text-sm text-gray-600 block mb-1">설명</span>
-                    <p className="font-medium text-gray-800 whitespace-pre-wrap break-words">
-                      {selectedExpense.description || '-'}
-                    </p>
-                  </div>
-                </div>
-              </div>
 
-              {/* 영수증 */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Receipt size={20} className="text-purple-500" />
-                  영수증
-                </h4>
-                {selectedExpense.receiptUrl ? (
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        {getFileType(selectedExpense.receiptUrl) === 'pdf' ? (
-                          <FileText size={20} className="text-red-500" />
-                        ) : getFileType(selectedExpense.receiptUrl) === 'image' ? (
-                          <Receipt size={20} className="text-purple-500" />
-                        ) : (
-                          <FileText size={20} className="text-blue-500" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-800">
-                          {selectedExpense.receiptUrl.split('/').pop() || '영수증'}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {getFileType(selectedExpense.receiptUrl) === 'pdf' ? 'PDF 문서' :
-                           getFileType(selectedExpense.receiptUrl) === 'image' ? '이미지 파일' : '문서 파일'}
-                        </p>
+                  <div className="bg-white rounded-xl border border-stone-200 p-4 space-y-4">
+                    <div>
+                      <label className="flex items-center gap-1.5 text-sm text-stone-600 mb-1.5">
+                        <Tag size={14} />
+                        카테고리
+                      </label>
+                      <span className="px-3 py-1.5 bg-stone-50 text-stone-700 rounded-lg text-sm font-medium border border-stone-200 inline-block">
+                        {selectedExpense.category}
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="flex items-center gap-1.5 text-sm text-stone-600 mb-1.5">
+                        <FileText size={14} />
+                        설명
+                      </label>
+                      <div className="px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700">
+                        {selectedExpense.description || '-'}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDownloadReceipt(selectedExpense.receiptUrl!)}
-                      disabled={isDownloading}
-                      className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-semibold hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      {isDownloading ? (
-                        <>
-                          <Loader2 size={16} className="animate-spin" />
-                          다운로드 중...
-                        </>
-                      ) : (
-                        <>
-                          <Download size={16} />
-                          다운로드
-                        </>
-                      )}
-                    </button>
                   </div>
-                ) : (
-                  <div className="bg-gray-50 rounded-lg p-6 text-center">
-                    <Receipt size={32} className="mx-auto text-gray-300 mb-2" />
-                    <p className="text-gray-500">첨부된 영수증이 없습니다</p>
+                </div>
+
+                {/* STEP 2: 영수증 */}
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                    <h4 className="font-medium text-stone-800">영수증</h4>
+                  </div>
+
+                  <div className="bg-white rounded-xl border border-stone-200 p-4">
+                    {selectedExpense.receiptUrl ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+                            {getFileType(selectedExpense.receiptUrl) === 'pdf' ? (
+                              <FileText size={20} className="text-red-500" />
+                            ) : (
+                              <Receipt size={20} className="text-amber-500" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium text-stone-800 text-sm truncate max-w-[180px]">
+                              {selectedExpense.receiptUrl.split('/').pop() || '영수증'}
+                            </p>
+                            <p className="text-xs text-stone-500">
+                              {getFileType(selectedExpense.receiptUrl) === 'pdf' ? 'PDF 문서' : '이미지 파일'}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDownloadReceipt(selectedExpense.receiptUrl!)}
+                          disabled={isDownloading}
+                          className="px-3 py-2 bg-stone-800 text-white rounded-lg text-sm font-medium hover:bg-stone-700 disabled:opacity-50 flex items-center gap-2"
+                        >
+                          {isDownloading ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Download size={14} />
+                          )}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <Receipt size={32} className="mx-auto text-stone-300 mb-2" />
+                        <p className="text-sm text-stone-500">첨부된 영수증이 없습니다</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 반려 사유 (반려된 경우) */}
+                {selectedExpense.status === 'REJECTED' && selectedExpense.rejectionReason && (
+                  <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <XCircle size={18} className="text-red-500" />
+                      <span className="font-medium text-red-800">반려 사유</span>
+                    </div>
+                    <p className="text-sm text-red-700 ml-7">{selectedExpense.rejectionReason}</p>
+                  </div>
+                )}
+
+                {/* 대기중일 때 주의사항 */}
+                {selectedExpense.status === 'PENDING' && (
+                  <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle size={18} className="text-amber-600" />
+                      <span className="font-medium text-amber-800">주의사항</span>
+                    </div>
+                    <ul className="space-y-1 text-sm text-amber-700 ml-7">
+                      <li>• 지출 승인 시 저금통에서 해당 금액이 차감됩니다.</li>
+                      <li>• 영수증을 반드시 확인하신 후 처리해주세요.</li>
+                    </ul>
                   </div>
                 )}
               </div>
-
-              {/* 반려 사유 (반려된 경우) */}
-              {selectedExpense.status === 'REJECTED' && selectedExpense.rejectionReason && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-                  <h4 className="text-lg font-bold text-red-800 mb-3 flex items-center gap-2">
-                    <XCircle size={20} className="text-red-600" />
-                    반려 사유
-                  </h4>
-                  <p className="text-red-900">{selectedExpense.rejectionReason}</p>
-                </div>
-              )}
-
-              {/* 대기중일 때 주의사항 */}
-              {selectedExpense.status === 'PENDING' && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
-                  <h4 className="text-lg font-bold text-amber-800 mb-3 flex items-center gap-2">
-                    <AlertCircle size={20} className="text-amber-600" />
-                    주의사항
-                  </h4>
-                  <ul className="space-y-2 text-sm text-amber-900">
-                    <li className="flex items-start gap-2">
-                      <span className="text-amber-600 mt-0.5">•</span>
-                      <span>지출 승인 시 저금통에서 해당 금액이 차감됩니다.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-amber-600 mt-0.5">•</span>
-                      <span>영수증을 반드시 확인하신 후 처리해주세요.</span>
-                    </li>
-                  </ul>
-                </div>
-              )}
             </div>
 
             {/* 하단 버튼 */}
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex gap-3">
+            <div className="bg-white border-t border-stone-200 px-6 py-4 flex gap-3">
               <button
                 onClick={() => {
                   setShowDetailModal(false);
                   setSelectedExpense(null);
                 }}
-                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-bold hover:bg-gray-50"
+                className="flex-1 px-4 py-3 border border-stone-300 text-stone-700 rounded-xl font-medium hover:bg-stone-50 transition"
               >
                 닫기
               </button>
@@ -646,14 +668,14 @@ const ExpenseApprovalPage: React.FC = () => {
                   <button
                     onClick={() => handleRejectClick(selectedExpense)}
                     disabled={rejectMutation.isPending}
-                    className="flex-1 px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 disabled:opacity-50"
+                    className="flex-1 px-4 py-3 bg-stone-800 text-white rounded-xl font-medium hover:bg-stone-700 disabled:opacity-50 transition"
                   >
                     반려
                   </button>
                   <button
                     onClick={() => handleApprove(selectedExpense.expenseId)}
                     disabled={approveMutation.isPending}
-                    className="flex-1 px-6 py-3 bg-green-500 text-white rounded-lg font-bold hover:bg-green-600 disabled:opacity-50"
+                    className="flex-1 px-4 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 disabled:opacity-50 transition"
                   >
                     {approveMutation.isPending ? '처리 중...' : '승인'}
                   </button>
@@ -667,53 +689,58 @@ const ExpenseApprovalPage: React.FC = () => {
       {/* 반려 모달 */}
       {showRejectModal && selectedExpense && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <AlertCircle className="text-red-600" size={24} />
+          <div className="bg-stone-50 rounded-2xl max-w-md w-full mx-4 overflow-hidden">
+            {/* 헤더 */}
+            <div className="bg-stone-800 px-6 py-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                  <AlertCircle className="text-white" size={20} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-medium text-white">지출 반려</h2>
+                  <p className="text-sm text-stone-400">반려 사유를 입력해주세요</p>
+                </div>
               </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-white rounded-xl p-4 border border-stone-200">
+                <p className="text-sm text-stone-600 mb-1">카테고리: {selectedExpense.category}</p>
+                <p className="text-sm text-stone-600 mb-1">금액: {formatAmount(selectedExpense.amount)}원</p>
+                <p className="text-sm text-stone-600">설명: {selectedExpense.description}</p>
+              </div>
+
               <div>
-                <h2 className="text-xl font-bold text-gray-900">지출 반려</h2>
-                <p className="text-sm text-gray-600">반려 사유를 입력해주세요</p>
+                <label className="block text-sm font-medium text-stone-700 mb-2">
+                  반려 사유 <span className="text-amber-500">*</span>
+                </label>
+                <textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  className="w-full border border-stone-300 rounded-xl p-3 min-h-[100px] focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  placeholder="지출을 반려하는 사유를 입력해주세요..."
+                />
               </div>
-            </div>
 
-            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">카테고리: {selectedExpense.category}</p>
-              <p className="text-sm text-gray-600 mb-1">금액: {formatAmount(selectedExpense.amount)}원</p>
-              <p className="text-sm text-gray-600">설명: {selectedExpense.description}</p>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                반려 사유 <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg p-3 min-h-[100px] focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                placeholder="지출을 반려하는 사유를 입력해주세요..."
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowRejectModal(false);
-                  setSelectedExpense(null);
-                  setRejectReason('');
-                }}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50"
-              >
-                취소
-              </button>
-              <button
-                onClick={handleRejectSubmit}
-                disabled={rejectMutation.isPending || !rejectReason.trim()}
-                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {rejectMutation.isPending ? '처리 중...' : '반려'}
-              </button>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowRejectModal(false);
+                    setSelectedExpense(null);
+                    setRejectReason('');
+                  }}
+                  className="flex-1 px-4 py-3 border-2 border-stone-300 text-stone-700 rounded-xl font-medium hover:bg-stone-100"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleRejectSubmit}
+                  disabled={rejectMutation.isPending || !rejectReason.trim()}
+                  className="flex-1 px-4 py-3 bg-stone-800 text-white rounded-xl font-medium hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {rejectMutation.isPending ? '처리 중...' : '반려'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

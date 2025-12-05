@@ -67,6 +67,13 @@ const OrganizationListPage: React.FC = () => {
     <div className="bg-stone-50">
       {/* ========== Hero Section ========== */}
       <section className="relative min-h-[280px] md:min-h-[320px] bg-stone-900 overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
+            backgroundSize: '32px 32px'
+          }}
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-transparent to-stone-900" />
 
         <div className="relative h-full min-h-[280px] md:min-h-[320px] flex flex-col items-center justify-center text-center px-4 py-12">

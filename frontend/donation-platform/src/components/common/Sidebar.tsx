@@ -81,13 +81,13 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
   });
 
   return (
-    <div className={`fixed left-0 top-0 h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'}`}>
+    <div className={`fixed left-0 top-0 h-screen bg-stone-800 text-white transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'}`}>
       {/* 헤더 */}
-      <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+      <div className="p-4 border-b border-stone-700 flex items-center justify-between">
         {sidebarOpen && <h1 className="text-xl font-bold">위넥트 관리자</h1>}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 hover:bg-gray-700 rounded-lg"
+          className="p-2 hover:bg-stone-700 rounded-lg"
         >
           <Menu size={20} />
         </button>
@@ -106,8 +106,8 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 activeMenu === item.id
-                  ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white'
-                  : 'text-gray-300 hover:bg-gray-700'
+                  ? 'bg-amber-500 text-white'
+                  : 'text-stone-300 hover:bg-stone-700'
               }`}
             >
               <Icon size={20} />

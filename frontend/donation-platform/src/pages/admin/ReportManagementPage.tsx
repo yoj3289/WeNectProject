@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Flag, Search, Eye, CheckCircle, XCircle, Clock, AlertTriangle, MessageCircle, FileText, User, Loader2, X } from 'lucide-react';
+import { Flag, Search, Eye, CheckCircle, XCircle, Clock, AlertTriangle, MessageCircle, MessageSquare, FileText, User, Loader2, X, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAdminReports, useProcessReport, useReportStats } from '../../hooks/useReports';
 import { REPORT_TYPE_LABELS, REPORT_STATUS_LABELS, REPORT_REASON_LABELS } from '../../api/reports';
@@ -333,108 +333,124 @@ const ReportManagementPage: React.FC = () => {
 
       {/* 상세 보기 모달 */}
       {showDetailModal && selectedReport && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="max-w-lg w-full bg-white rounded-2xl overflow-hidden shadow-xl">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* 헤더 - 다크 스타일 */}
             <div className="bg-stone-800 px-6 py-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-amber-500/20 rounded-full flex items-center justify-center">
-                    <Flag className="text-amber-400" size={20} />
+                  <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                    <Flag size={20} className="text-white" />
                   </div>
-                  <h2 className="text-xl font-medium text-white">신고 상세</h2>
+                  <div>
+                    <h2 className="text-lg font-medium text-white">신고 상세</h2>
+                    <p className="text-sm text-stone-400">신고 정보를 확인하세요</p>
+                  </div>
                 </div>
                 <button
                   onClick={() => setShowDetailModal(false)}
-                  className="text-stone-400 hover:text-white transition-colors"
+                  className="p-2 hover:bg-stone-700 rounded-xl transition-colors"
                 >
-                  <X size={24} />
+                  <X size={20} className="text-stone-400" />
                 </button>
               </div>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-stone-500 mb-1">신고 유형</p>
-                  <p className="text-sm font-medium text-stone-900">
-                    {REPORT_TYPE_LABELS[selectedReport.reportType]}
-                  </p>
+            {/* 신고 정보 카드 */}
+            <div className="bg-amber-500 px-6 py-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-amber-100 text-sm">{REPORT_TYPE_LABELS[selectedReport.reportType]} 신고</p>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(selectedReport.status)}`}>
+                  {selectedReport.statusLabel}
+                </span>
+              </div>
+              <h3 className="text-white font-medium text-lg mb-4 line-clamp-2">
+                {selectedReport.reportedItemTitle}
+              </h3>
+              <div className="bg-white/20 backdrop-blur rounded-xl px-4 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <User size={18} className="text-white" />
+                    <span className="text-white/90 text-sm">신고자</span>
+                  </div>
+                  <span className="text-white font-medium">{selectedReport.reporterName}</span>
                 </div>
-                <div>
-                  <p className="text-xs text-stone-500 mb-1">상태</p>
-                  <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-                      selectedReport.status
-                    )}`}
-                  >
-                    {getStatusIcon(selectedReport.status)}
-                    {selectedReport.statusLabel}
-                  </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={18} className="text-white" />
+                    <span className="text-white/90 text-sm">접수일</span>
+                  </div>
+                  <span className="text-white font-medium">{new Date(selectedReport.createdAt).toLocaleDateString('ko-KR')}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 스크롤 가능한 콘텐츠 영역 */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* STEP 1: 신고 사유 */}
+              <div className="bg-white rounded-xl p-5 border border-stone-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                  <h4 className="font-medium text-stone-800">신고 사유</h4>
+                </div>
+                <div className="bg-red-50 rounded-xl p-4">
+                  <p className="text-red-700 font-medium">{selectedReport.reasonLabel}</p>
                 </div>
               </div>
 
-              <div>
-                <p className="text-xs text-stone-500 mb-1">신고 대상</p>
-                <p className="text-sm font-medium text-stone-900">{selectedReport.reportedItemTitle}</p>
-              </div>
-
+              {/* STEP 2: 신고 대상 */}
               {selectedReport.reportedUserName && (
-                <div>
-                  <p className="text-xs text-stone-500 mb-1">신고 대상 사용자</p>
-                  <p className="text-sm font-medium text-stone-900">{selectedReport.reportedUserName}</p>
+                <div className="bg-white rounded-xl p-5 border border-stone-200">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                    <h4 className="font-medium text-stone-800">신고 대상 사용자</h4>
+                  </div>
+                  <div className="bg-stone-50 rounded-xl p-4">
+                    <p className="font-medium text-stone-800">{selectedReport.reportedUserName}</p>
+                  </div>
                 </div>
               )}
 
-              <div>
-                <p className="text-xs text-stone-500 mb-1">신고 사유</p>
-                <p className="text-sm font-medium text-stone-900">{selectedReport.reasonLabel}</p>
-              </div>
-
+              {/* 상세 설명 */}
               {selectedReport.description && (
-                <div>
-                  <p className="text-xs text-stone-500 mb-1">상세 설명</p>
-                  <p className="text-sm text-stone-700 bg-stone-50 rounded-lg p-3">
-                    {selectedReport.description}
-                  </p>
+                <div className="bg-white rounded-xl p-5 border border-stone-200">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">{selectedReport.reportedUserName ? '3' : '2'}</div>
+                    <h4 className="font-medium text-stone-800">상세 설명</h4>
+                  </div>
+                  <div className="bg-amber-50 rounded-xl p-4">
+                    <p className="text-stone-700 text-sm whitespace-pre-wrap">{selectedReport.description}</p>
+                  </div>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-stone-500 mb-1">신고자</p>
-                  <p className="text-sm font-medium text-stone-900">{selectedReport.reporterName}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-stone-500 mb-1">접수일</p>
-                  <p className="text-sm font-medium text-stone-900">
-                    {new Date(selectedReport.createdAt).toLocaleString('ko-KR')}
-                  </p>
-                </div>
-              </div>
-
+              {/* 관리자 메모 */}
               {selectedReport.adminNote && (
-                <div>
-                  <p className="text-xs text-stone-500 mb-1">관리자 메모</p>
-                  <p className="text-sm text-stone-700 bg-amber-50 rounded-lg p-3">
-                    {selectedReport.adminNote}
-                  </p>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare size={18} className="text-amber-600" />
+                    <h4 className="font-medium text-amber-800">관리자 메모</h4>
+                  </div>
+                  <p className="text-amber-900 text-sm">{selectedReport.adminNote}</p>
                 </div>
               )}
 
+              {/* 처리일 */}
               {selectedReport.processedAt && (
-                <div>
-                  <p className="text-xs text-stone-500 mb-1">처리일</p>
-                  <p className="text-sm font-medium text-stone-900">
+                <div className="bg-stone-100 rounded-xl p-4">
+                  <p className="text-sm text-stone-600 mb-1">처리일</p>
+                  <p className="font-medium text-stone-800">
                     {new Date(selectedReport.processedAt).toLocaleString('ko-KR')}
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="px-6 pb-6 flex gap-3">
+            {/* 하단 버튼 */}
+            <div className="border-t border-stone-200 p-4 bg-white flex gap-3">
               <button
                 onClick={() => setShowDetailModal(false)}
-                className="flex-1 py-3 border border-stone-300 hover:bg-stone-50 rounded-xl font-medium text-stone-700 transition-colors"
+                className="flex-1 px-4 py-3 border-2 border-stone-300 text-stone-700 rounded-xl font-medium hover:bg-stone-50 transition"
               >
                 닫기
               </button>
@@ -444,7 +460,7 @@ const ReportManagementPage: React.FC = () => {
                     setShowDetailModal(false);
                     setShowProcessModal(true);
                   }}
-                  className="flex-1 py-3 bg-amber-500 text-stone-900 rounded-xl font-medium hover:bg-amber-400 transition-colors"
+                  className="flex-1 px-4 py-3 bg-stone-800 text-white rounded-xl font-medium hover:bg-stone-700 transition"
                 >
                   처리하기
                 </button>
@@ -456,42 +472,55 @@ const ReportManagementPage: React.FC = () => {
 
       {/* 처리 모달 */}
       {showProcessModal && selectedReport && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="max-w-md w-full bg-white rounded-2xl overflow-hidden shadow-xl">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* 헤더 - 다크 스타일 */}
             <div className="bg-stone-800 px-6 py-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
-                    <CheckCircle className="text-green-400" size={20} />
+                  <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                    <CheckCircle size={20} className="text-white" />
                   </div>
-                  <h2 className="text-xl font-medium text-white">신고 처리</h2>
+                  <div>
+                    <h2 className="text-lg font-medium text-white">신고 처리</h2>
+                    <p className="text-sm text-stone-400">처리 결과를 선택하세요</p>
+                  </div>
                 </div>
                 <button
                   onClick={() => setShowProcessModal(false)}
-                  className="text-stone-400 hover:text-white transition-colors"
+                  className="p-2 hover:bg-stone-700 rounded-xl transition-colors"
                 >
-                  <X size={24} />
+                  <X size={20} className="text-stone-400" />
                 </button>
               </div>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="p-4 bg-stone-50 rounded-xl">
-                <p className="text-xs text-stone-500 mb-1">처리 대상</p>
-                <p className="text-sm font-medium text-stone-900">{selectedReport.reportedItemTitle}</p>
-                <p className="text-xs text-stone-500 mt-1">사유: {selectedReport.reasonLabel}</p>
+            {/* 처리 대상 정보 */}
+            <div className="bg-amber-500 px-6 py-5">
+              <p className="text-amber-100 text-sm mb-2">처리 대상</p>
+              <h3 className="text-white font-medium text-lg line-clamp-2">{selectedReport.reportedItemTitle}</h3>
+              <div className="bg-white/20 backdrop-blur rounded-xl px-4 py-3 mt-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-white/90 text-sm">신고 사유</span>
+                  <span className="text-white font-medium">{selectedReport.reasonLabel}</span>
+                </div>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-2">
-                  처리 결과
-                </label>
-                <div className="flex gap-2">
+            {/* 스크롤 가능한 콘텐츠 영역 */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* 처리 결과 선택 */}
+              <div className="bg-white rounded-xl p-5 border border-stone-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                  <h4 className="font-medium text-stone-800">처리 결과</h4>
+                </div>
+                <div className="flex gap-3">
                   <button
                     onClick={() => setProcessStatus('RESOLVED')}
                     className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
                       processStatus === 'RESOLVED'
-                        ? 'bg-green-500 text-white'
+                        ? 'bg-stone-800 text-white'
                         : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                     }`}
                   >
@@ -510,36 +539,39 @@ const ReportManagementPage: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-2">
-                  관리자 메모 (선택)
-                </label>
+              {/* 관리자 메모 */}
+              <div className="bg-white rounded-xl p-5 border border-stone-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                  <h4 className="font-medium text-stone-800">관리자 메모 (선택)</h4>
+                </div>
                 <textarea
                   value={processNote}
                   onChange={(e) => setProcessNote(e.target.value)}
                   placeholder="처리 내용을 기록하세요..."
                   rows={3}
-                  className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none text-sm"
                 />
               </div>
             </div>
 
-            <div className="px-6 pb-6 flex gap-3">
+            {/* 하단 버튼 */}
+            <div className="border-t border-stone-200 p-4 bg-white flex gap-3">
               <button
                 onClick={() => setShowProcessModal(false)}
                 disabled={processReportMutation.isPending}
-                className="flex-1 py-3 border border-stone-300 hover:bg-stone-50 rounded-xl font-medium text-stone-700 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-3 border-2 border-stone-300 text-stone-700 rounded-xl font-medium hover:bg-stone-50 disabled:opacity-50 transition"
               >
                 취소
               </button>
               <button
                 onClick={handleProcessReport}
                 disabled={processReportMutation.isPending}
-                className="flex-1 py-3 bg-amber-500 text-stone-900 rounded-xl font-medium hover:bg-amber-400 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 bg-stone-800 text-white rounded-xl font-medium hover:bg-stone-700 disabled:opacity-50 flex items-center justify-center gap-2 transition"
               >
                 {processReportMutation.isPending ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" />
+                    <Loader2 size={16} className="animate-spin" />
                     처리 중...
                   </>
                 ) : (

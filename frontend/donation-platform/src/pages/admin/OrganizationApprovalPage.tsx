@@ -180,153 +180,170 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
     <>
       {/* Detail Modal */}
       {showDetailModal && selectedApproval && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">기관 회원가입 신청 상세</h2>
-                <p className="text-sm text-gray-600 mt-1">신청 정보를 확인하고 승인/거절 처리하세요</p>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* 헤더 - 다크 스타일 */}
+            <div className="bg-stone-800 px-6 py-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                    <Building2 size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-medium text-white">기관 신청 상세</h2>
+                    <p className="text-sm text-stone-400">승인/거절 처리하세요</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setSelectedApproval(null);
+                  }}
+                  className="p-2 hover:bg-stone-700 rounded-xl transition-colors"
+                >
+                  <X size={20} className="text-stone-400" />
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setShowDetailModal(false);
-                  setSelectedApproval(null);
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <X size={24} />
-              </button>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* 상태 표시 */}
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
+            {/* 기관 정보 카드 */}
+            <div className="bg-amber-500 px-6 py-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-amber-100 text-sm">기관 회원가입 신청</p>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedApproval.status)}`}>
+                  {getStatusLabel(selectedApproval.status)}
+                </span>
+              </div>
+              <h3 className="text-white font-medium text-lg mb-4 line-clamp-1">
+                {selectedApproval.organizationName}
+              </h3>
+              <div className="bg-white/20 backdrop-blur rounded-xl px-4 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <FileText size={18} className="text-white" />
+                    <span className="text-white/90 text-sm">사업자번호</span>
+                  </div>
+                  <span className="text-white font-medium">{selectedApproval.businessNumber}</span>
+                </div>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-800">{selectedApproval.organizationName}</h3>
-                    <p className="text-gray-600 mt-1">사업자번호: {selectedApproval.businessNumber}</p>
+                  <div className="flex items-center gap-2">
+                    <Calendar size={18} className="text-white" />
+                    <span className="text-white/90 text-sm">신청일</span>
                   </div>
-                  <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(selectedApproval.status)}`}>
-                    {getStatusLabel(selectedApproval.status)}
-                  </span>
+                  <span className="text-white font-medium">{selectedApproval.appliedDate}</span>
                 </div>
               </div>
+            </div>
 
-              {/* 기본 정보 */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Building2 size={20} className="text-blue-500" />
-                  기관 정보
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <User size={18} className="text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">대표자명</p>
-                        <p className="text-sm font-semibold text-gray-800">{selectedApproval.representativeName}</p>
-                      </div>
+            {/* 스크롤 가능한 콘텐츠 영역 */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* STEP 1: 기관 정보 */}
+              <div className="bg-white rounded-xl p-5 border border-stone-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                  <h4 className="font-medium text-stone-800">기관 정보</h4>
+                </div>
+                <div className="bg-stone-50 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <User size={16} className="text-stone-500" />
+                      <span className="text-sm text-stone-600">대표자명</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Mail size={18} className="text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">이메일</p>
-                        <p className="text-sm font-semibold text-gray-800">{selectedApproval.email}</p>
-                      </div>
-                    </div>
+                    <span className="font-medium text-stone-800">{selectedApproval.representativeName}</span>
                   </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <Building2 size={18} className="text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">기관명 (회원가입 입력)</p>
-                        <p className="text-sm font-semibold text-gray-800">{selectedApproval.userName}</p>
-                      </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Mail size={16} className="text-stone-500" />
+                      <span className="text-sm text-stone-600">이메일</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Phone size={18} className="text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">연락처</p>
-                        <p className="text-sm font-semibold text-gray-800">{selectedApproval.phone}</p>
-                      </div>
+                    <span className="font-medium text-stone-800 text-sm">{selectedApproval.email}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Phone size={16} className="text-stone-500" />
+                      <span className="text-sm text-stone-600">연락처</span>
                     </div>
+                    <span className="font-medium text-stone-800">{selectedApproval.phone}</span>
                   </div>
                 </div>
               </div>
 
-              {/* 제출 서류 */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <FileText size={20} className="text-green-500" />
-                  제출 서류
-                </h4>
-                <div className="space-y-2">
+              {/* STEP 2: 제출 서류 */}
+              <div className="bg-white rounded-xl p-5 border border-stone-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                  <h4 className="font-medium text-stone-800">제출 서류</h4>
+                </div>
+                <div className="space-y-3">
                   {selectedApproval.documents.map((doc) => (
-                    <div key={doc.docId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                    <div key={doc.docId} className="flex items-center justify-between p-4 bg-stone-50 rounded-xl hover:bg-stone-100 transition">
                       <div className="flex items-center gap-3">
-                        <FileText size={18} className="text-red-500" />
+                        <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                          <FileText size={20} className="text-amber-600" />
+                        </div>
                         <div>
-                          <span className="text-sm font-medium text-gray-800">{doc.fileName}</span>
-                          <span className="text-xs text-gray-500 ml-2">({formatFileSize(doc.fileSize)})</span>
+                          <p className="font-medium text-stone-800 text-sm">{doc.fileName}</p>
+                          <p className="text-xs text-stone-500">{formatFileSize(doc.fileSize)}</p>
                         </div>
                       </div>
                       <button
                         onClick={() => handleDownload(doc)}
                         disabled={downloadingDocId === doc.docId}
-                        className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-2 bg-stone-800 text-white rounded-lg text-sm font-medium hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       >
-                        <Download size={16} className={downloadingDocId === doc.docId ? 'animate-bounce' : ''} />
-                        {downloadingDocId === doc.docId ? '다운로드 중...' : '다운로드'}
+                        <Download size={14} className={downloadingDocId === doc.docId ? 'animate-bounce' : ''} />
                       </button>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* 신청 일시 */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Calendar size={20} className="text-purple-500" />
-                  처리 정보
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-purple-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">신청일시</p>
-                    <p className="text-lg font-bold text-gray-800">{selectedApproval.appliedDate}</p>
-                  </div>
-                  {selectedApproval.processedDate && (
-                    <div className="bg-pink-50 rounded-lg p-4">
-                      <p className="text-sm text-gray-600 mb-1">처리일시</p>
-                      <p className="text-lg font-bold text-gray-800">{selectedApproval.processedDate}</p>
-                    </div>
-                  )}
+              {/* 처리일시 */}
+              {selectedApproval.processedDate && (
+                <div className="bg-stone-100 rounded-xl p-4">
+                  <p className="text-sm text-stone-600 mb-1">처리일시</p>
+                  <p className="font-medium text-stone-800">{selectedApproval.processedDate}</p>
                 </div>
-                {selectedApproval.rejectionReason && (
-                  <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-                    <p className="text-sm font-semibold text-red-700 mb-2">거절 사유</p>
-                    <p className="text-sm text-gray-700">{selectedApproval.rejectionReason}</p>
-                  </div>
-                )}
-              </div>
+              )}
 
-              {/* 액션 버튼 (승인 대기인 경우만) */}
+              {/* 거절 사유 */}
+              {selectedApproval.rejectionReason && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <XCircle size={18} className="text-red-600" />
+                    <h4 className="font-medium text-red-800">거절 사유</h4>
+                  </div>
+                  <p className="text-red-700 text-sm">{selectedApproval.rejectionReason}</p>
+                </div>
+              )}
+            </div>
+
+            {/* 하단 버튼 */}
+            <div className="border-t border-stone-200 p-4 bg-white flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  setSelectedApproval(null);
+                }}
+                className="flex-1 px-4 py-3 border-2 border-stone-300 text-stone-700 rounded-xl font-medium hover:bg-stone-50 transition"
+              >
+                닫기
+              </button>
               {selectedApproval.status === 'pending' && (
-                <div className="flex gap-3 pt-4">
+                <>
                   <button
                     onClick={() => setShowRejectModal(true)}
-                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 border-2 border-red-500 text-red-500 rounded-lg font-bold hover:bg-red-50"
+                    className="flex-1 px-4 py-3 bg-stone-800 text-white rounded-xl font-medium hover:bg-stone-700 transition"
                   >
-                    <X size={20} />
                     거절
                   </button>
                   <button
                     onClick={() => setShowApproveModal(true)}
-                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-500 text-white rounded-lg font-bold hover:bg-green-600"
+                    className="flex-1 px-4 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition"
                   >
-                    <Check size={20} />
                     승인
                   </button>
-                </div>
+                </>
               )}
             </div>
           </div>
@@ -382,65 +399,78 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
       {/* Reject Modal */}
       {showRejectModal && selectedApproval && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">기관 회원가입 거절</h2>
-              <button onClick={() => setShowRejectModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
-                <X size={24} />
-              </button>
+          <div className="bg-stone-50 rounded-2xl max-w-2xl w-full overflow-hidden">
+            {/* 헤더 */}
+            <div className="bg-stone-800 px-6 py-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                    <X size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-medium text-white">기관 회원가입 거절</h2>
+                    <p className="text-sm text-stone-400">거절 사유를 입력해주세요</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowRejectModal(false)} className="p-2 hover:bg-stone-700 rounded-xl">
+                  <X size={20} className="text-stone-400" />
+                </button>
+              </div>
             </div>
-            <div className="space-y-4">
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm text-gray-700">
+
+            <div className="p-6 space-y-4">
+              <div className="bg-amber-500 rounded-xl p-4">
+                <p className="text-sm text-white">
                   <strong>{selectedApproval.organizationName}</strong>의 회원가입을 거절하시겠습니까?
                 </p>
-                <p className="text-xs text-gray-600 mt-2">거절 사유는 신청자에게 전달됩니다.</p>
+                <p className="text-xs text-amber-100 mt-2">거절 사유는 신청자에게 전달됩니다.</p>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">문제가 있는 항목 선택 (중복 선택 가능)</label>
+              <div className="bg-white rounded-xl p-4 border border-stone-200">
+                <label className="block text-sm font-semibold text-stone-700 mb-3">문제가 있는 항목 선택 (중복 선택 가능)</label>
                 <div className="grid grid-cols-2 gap-3">
                   {['기관명', '연락처', '사업자번호', '대표자명', '제출서류'].map((field) => (
                     <label
                       key={field}
                       className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${
                         selectedFields.includes(field)
-                          ? 'bg-red-50 border-red-500'
-                          : 'border-gray-300 hover:bg-gray-50'
+                          ? 'bg-amber-50 border-amber-500'
+                          : 'border-stone-300 hover:bg-stone-50'
                       }`}
                     >
                       <input
                         type="checkbox"
                         checked={selectedFields.includes(field)}
                         onChange={() => toggleField(field)}
-                        className="w-4 h-4 text-red-500 focus:ring-red-500"
+                        className="w-4 h-4 text-amber-500 focus:ring-amber-500"
                       />
-                      <span className="text-sm font-medium text-gray-700">{field}</span>
+                      <span className="text-sm font-medium text-stone-700">{field}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">상세 거절 사유 <span className="text-red-500">*</span></label>
+              <div className="bg-white rounded-xl p-4 border border-stone-200">
+                <label className="block text-sm font-semibold text-stone-700 mb-2">상세 거절 사유 <span className="text-amber-500">*</span></label>
                 <textarea
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                   placeholder="거절 사유를 상세히 입력하세요... (예: 사업자등록증이 만료되었습니다)"
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 resize-none"
+                  className="w-full px-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500 resize-none"
                 />
               </div>
-              <div className="flex gap-3 pt-4">
+
+              <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShowRejectModal(false)}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-bold hover:bg-gray-50"
+                  className="flex-1 px-6 py-3 border-2 border-stone-300 text-stone-700 rounded-xl font-bold hover:bg-stone-100"
                 >
                   취소
                 </button>
                 <button
                   onClick={handleReject}
-                  className="flex-1 px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600"
+                  className="flex-1 px-6 py-3 bg-stone-800 text-white rounded-xl font-bold hover:bg-stone-700"
                 >
                   거절하기
                 </button>
@@ -513,13 +543,13 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="기관명, 대표자명, 이메일로 검색..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
               />
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
             >
               <option value="all">모든 상태</option>
               <option value="pending">승인대기</option>
@@ -594,7 +624,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
                                 setSelectedApproval(approval);
                                 setShowRejectModal(true);
                               }}
-                              className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                              className="p-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200"
                               title="거절"
                             >
                               <XCircle size={18} />
@@ -642,7 +672,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
                           onClick={() => setCurrentPage(page)}
                           className={`w-8 h-8 rounded-lg text-sm font-medium ${
                             currentPage === page
-                              ? 'bg-red-500 text-white'
+                              ? 'bg-amber-500 text-white'
                               : 'border border-gray-300 hover:bg-gray-50'
                           }`}
                         >

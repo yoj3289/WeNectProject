@@ -45,11 +45,11 @@ const TestMailPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-white p-8">
+    <div className="min-h-screen bg-stone-50 p-8">
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <Mail className="text-white" size={32} />
             </div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">
@@ -71,7 +71,7 @@ const TestMailPage: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="example@gmail.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 disabled={isSending}
               />
             </div>
@@ -82,7 +82,7 @@ const TestMailPage: React.FC = () => {
               className={`w-full py-4 rounded-lg font-bold text-white text-lg transition-all flex items-center justify-center gap-2 ${
                 isSending
                   ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 shadow-md hover:shadow-lg'
+                  : 'bg-amber-500 hover:bg-amber-600 shadow-md hover:shadow-lg'
               }`}
             >
               {isSending ? (

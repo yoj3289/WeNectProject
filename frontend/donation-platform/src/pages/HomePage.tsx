@@ -179,9 +179,15 @@ const HomePage: React.FC<HomePageProps> = ({
             backgroundPosition: '65% center'
           }}
         />
-
-        {/* 그라디언트 오버레이 */}
-        <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-transparent to-stone-900" />
+        {/* 도트 패턴 */}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
+            backgroundSize: '32px 32px'
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-stone-900/0 to-stone-900" />
 
         <div className={`relative h-full flex flex-col items-center justify-center text-center px-4 py-16 transition-all duration-700 ${
           isHeroExpanded ? 'min-h-screen' : 'min-h-[500px] md:min-h-[600px]'

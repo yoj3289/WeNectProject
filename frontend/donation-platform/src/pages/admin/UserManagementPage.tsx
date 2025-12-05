@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Eye, Edit, Trash2, X, Heart, FileText, Clock, Settings, Shield, LogOut, History } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, X, Heart, FileText, Clock, Settings, Shield, LogOut, History, User, Mail, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { AdminDashboardProps } from '../../types/admin';
 import { useAdminUsers } from '../../hooks/useAdmin';
@@ -210,7 +210,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
       <div className="p-8">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
             <p className="text-gray-600">사용자 목록을 불러오는 중...</p>
           </div>
         </div>
@@ -252,7 +252,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
                 <select
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value as UserRole)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 >
                   <option value="user">일반</option>
                   <option value="organization_admin">기관관리자</option>
@@ -266,7 +266,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
                   onChange={(e) => setRoleChangeReason(e.target.value)}
                   placeholder="권한 변경 사유를 입력하세요..."
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 resize-none"
                 />
               </div>
               <div className="flex gap-3 pt-4">
@@ -278,7 +278,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
                 </button>
                 <button
                   onClick={handleChangeRole}
-                  className="flex-1 px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600"
+                  className="flex-1 px-6 py-3 bg-amber-500 text-white rounded-lg font-bold hover:bg-amber-600"
                 >
                   권한 변경
                 </button>
@@ -359,138 +359,171 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
 
       {/* User Detail Modal */}
       {showUserModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">사용자 상세 정보</h2>
-                <p className="text-sm text-gray-600 mt-1">사용자 활동 내역 및 정보를 확인하세요</p>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* 헤더 - 다크 스타일 */}
+            <div className="bg-stone-800 px-6 py-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                    <User size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-medium text-white">사용자 상세</h2>
+                    <p className="text-sm text-stone-400">사용자 정보를 확인하세요</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowUserModal(false);
+                    setSelectedUser(null);
+                  }}
+                  className="p-2 hover:bg-stone-700 rounded-xl transition-colors"
+                >
+                  <X size={20} className="text-stone-400" />
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setShowUserModal(false);
-                  setSelectedUser(null);
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <X size={24} />
-              </button>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* 사용자 기본 정보 */}
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-800">{(selectedUser as User).name}</h3>
-                    <p className="text-gray-600 mt-1">{(selectedUser as User).email}</p>
-                  </div>
-                  <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getRoleColor((selectedUser as User).role)}`}>
+            {/* 사용자 정보 카드 */}
+            <div className="bg-amber-500 px-6 py-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-amber-100 text-sm">회원 정보</p>
+                <div className="flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleColor((selectedUser as User).role)}`}>
                     {getRoleLabel((selectedUser as User).role)}
                   </span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor((selectedUser as User).status)}`}>
+                    {getStatusLabel((selectedUser as User).status)}
+                  </span>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">가입일</p>
-                    <p className="text-lg font-bold text-gray-800">{(selectedUser as User).registeredDate}</p>
+              </div>
+              <h3 className="text-white font-medium text-lg mb-4">
+                {(selectedUser as User).name}
+              </h3>
+              <div className="bg-white/20 backdrop-blur rounded-xl px-4 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Mail size={18} className="text-white" />
+                    <span className="text-white/90 text-sm">이메일</span>
                   </div>
-                  <div className="bg-white rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">마지막 로그인</p>
-                    <p className="text-lg font-bold text-gray-800">{(selectedUser as User).lastLogin}</p>
+                  <span className="text-white font-medium text-sm">{(selectedUser as User).email}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={18} className="text-white" />
+                    <span className="text-white/90 text-sm">가입일</span>
+                  </div>
+                  <span className="text-white font-medium">{(selectedUser as User).registeredDate}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 스크롤 가능한 콘텐츠 영역 */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* STEP 1: 활동 통계 */}
+              <div className="bg-white rounded-xl p-5 border border-stone-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                  <h4 className="font-medium text-stone-800">활동 통계</h4>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-amber-50 rounded-xl p-3 text-center">
+                    <p className="text-xs text-stone-600 mb-1">총 기부 금액</p>
+                    <p className="text-lg font-bold text-amber-600">{(selectedUser as User).totalDonations.toLocaleString()}원</p>
+                  </div>
+                  <div className="bg-stone-50 rounded-xl p-3 text-center">
+                    <p className="text-xs text-stone-600 mb-1">기부 횟수</p>
+                    <p className="text-lg font-bold text-stone-600">{(selectedUser as User).donationCount}회</p>
+                  </div>
+                  <div className="bg-blue-50 rounded-xl p-3 text-center">
+                    <p className="text-xs text-stone-600 mb-1">참여 프로젝트</p>
+                    <p className="text-lg font-bold text-blue-600">{(selectedUser as User).projects}개</p>
                   </div>
                 </div>
               </div>
 
-              {/* 활동 통계 */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Heart size={20} className="text-red-500" />
-                  활동 통계
-                </h4>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-red-50 rounded-lg p-4 text-center">
-                    <p className="text-sm text-gray-600 mb-1">총 기부 금액</p>
-                    <p className="text-2xl font-bold text-red-600">{(selectedUser as User).totalDonations.toLocaleString()}원</p>
-                  </div>
-                  <div className="bg-pink-50 rounded-lg p-4 text-center">
-                    <p className="text-sm text-gray-600 mb-1">기부 횟수</p>
-                    <p className="text-2xl font-bold text-pink-600">{(selectedUser as User).donationCount}회</p>
-                  </div>
-                  <div className="bg-purple-50 rounded-lg p-4 text-center">
-                    <p className="text-sm text-gray-600 mb-1">참여 프로젝트</p>
-                    <p className="text-2xl font-bold text-purple-600">{(selectedUser as User).projects}개</p>
-                  </div>
+              {/* STEP 2: 권한 및 활동 관리 */}
+              <div className="bg-white rounded-xl p-5 border border-stone-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                  <h4 className="font-medium text-stone-800">권한 및 활동 관리</h4>
                 </div>
-              </div>
-
-              {/* 권한 및 로그 버튼 */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Shield size={20} className="text-blue-500" />
-                  권한 및 활동 관리
-                </h4>
                 <div className="grid grid-cols-3 gap-3">
                   <button
                     onClick={() => {
                       setSelectedRole((selectedUser as User).role);
                       setShowRoleModal(true);
                     }}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-50 text-purple-700 rounded-lg font-semibold hover:bg-purple-100 transition"
+                    className="flex items-center justify-center gap-2 px-3 py-3 bg-amber-50 text-amber-700 rounded-xl font-medium hover:bg-amber-100 transition text-sm"
                   >
-                    <Shield size={18} />
+                    <Shield size={16} />
                     권한 변경
                   </button>
                   <button
                     onClick={() => setShowActivityLog(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg font-semibold hover:bg-blue-100 transition"
+                    className="flex items-center justify-center gap-2 px-3 py-3 bg-blue-50 text-blue-700 rounded-xl font-medium hover:bg-blue-100 transition text-sm"
                   >
-                    <Clock size={18} />
+                    <Clock size={16} />
                     활동 로그
                   </button>
                   <button
                     onClick={() => setShowRoleHistory(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-indigo-50 text-indigo-700 rounded-lg font-semibold hover:bg-indigo-100 transition"
+                    className="flex items-center justify-center gap-2 px-3 py-3 bg-stone-100 text-stone-700 rounded-xl font-medium hover:bg-stone-200 transition text-sm"
                   >
-                    <History size={18} />
+                    <History size={16} />
                     권한 이력
                   </button>
                 </div>
               </div>
 
-              {/* 관리 액션 */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Settings size={20} className="text-gray-500" />
-                  관리 액션
-                </h4>
-                <div className="grid grid-cols-4 gap-3">
+              {/* STEP 3: 관리 액션 */}
+              <div className="bg-white rounded-xl p-5 border border-stone-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">3</div>
+                  <h4 className="font-medium text-stone-800">관리 액션</h4>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => handleChangeUserStatus('active')}
-                    className="px-4 py-3 bg-green-50 text-green-700 rounded-lg font-semibold hover:bg-green-100 transition"
+                    className="px-3 py-3 bg-green-50 text-green-700 rounded-xl font-medium hover:bg-green-100 transition text-sm"
                   >
                     활성화
                   </button>
                   <button
                     onClick={() => handleChangeUserStatus('inactive')}
-                    className="px-4 py-3 bg-gray-50 text-gray-700 rounded-lg font-semibold hover:bg-gray-100 transition"
+                    className="px-3 py-3 bg-stone-100 text-stone-700 rounded-xl font-medium hover:bg-stone-200 transition text-sm"
                   >
                     비활성화
                   </button>
                   <button
                     onClick={() => handleChangeUserStatus('suspended')}
-                    className="px-4 py-3 bg-red-50 text-red-700 rounded-lg font-semibold hover:bg-red-100 transition"
+                    className="px-3 py-3 bg-red-50 text-red-700 rounded-xl font-medium hover:bg-red-100 transition text-sm"
                   >
                     정지
                   </button>
                   <button
                     onClick={handleForceLogout}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-orange-50 text-orange-700 rounded-lg font-semibold hover:bg-orange-100 transition"
+                    className="flex items-center justify-center gap-2 px-3 py-3 bg-orange-50 text-orange-700 rounded-xl font-medium hover:bg-orange-100 transition text-sm"
                   >
-                    <LogOut size={18} />
+                    <LogOut size={16} />
                     강제 로그아웃
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* 하단 버튼 */}
+            <div className="border-t border-stone-200 p-4 bg-white">
+              <button
+                onClick={() => {
+                  setShowUserModal(false);
+                  setSelectedUser(null);
+                }}
+                className="w-full px-4 py-3 border-2 border-stone-300 text-stone-700 rounded-xl font-medium hover:bg-stone-50 transition"
+              >
+                닫기
+              </button>
             </div>
           </div>
         </div>
@@ -514,7 +547,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
                   value={userSearchTerm}
                   onChange={(e) => setUserSearchTerm(e.target.value)}
                   placeholder="이름, 이메일로 검색..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
               </div>
 
@@ -523,7 +556,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
                 <select
                   value={userTypeFilter}
                   onChange={(e) => setUserTypeFilter(e.target.value)}
-                  className="flex-1 md:flex-none px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+                  className="flex-1 md:flex-none px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
                 >
                   <option value="all">모든 유형</option>
                   <option value="individual">일반</option>
@@ -533,7 +566,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
                 <select
                   value={userStatusFilter}
                   onChange={(e) => setUserStatusFilter(e.target.value)}
-                  className="flex-1 md:flex-none px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+                  className="flex-1 md:flex-none px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
                 >
                   <option value="all">모든 상태</option>
                   <option value="active">활성</option>
@@ -544,7 +577,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
 
               {/* 선택 항목 관리 버튼 - 데스크톱만 */}
               <button
-                className="hidden md:block px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap text-sm"
+                className="hidden md:block px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap text-sm"
                 disabled={selectedUsers.length === 0}
                 onClick={() => {
                   toast.success(`${selectedUsers.length}명의 사용자를 관리합니다.`);
@@ -630,7 +663,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
                           <Edit size={18} />
                         </button>
                         <button
-                          className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                          className="p-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200"
                           title="삭제"
                         >
                           <Trash2 size={18} />
@@ -693,7 +726,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
             </p>
             <div className="flex gap-2">
               <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>이전</button>
-              <button className="px-3 py-1 border rounded-lg bg-red-500 text-white border-red-500">1</button>
+              <button className="px-3 py-1 border rounded-lg bg-amber-500 text-white border-amber-500">1</button>
               <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>다음</button>
             </div>
           </div>

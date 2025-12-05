@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, MessageSquare, Eye, Star, StarOff, RefreshCw, ChevronLeft, ChevronRight, Calendar, X, CreditCard } from 'lucide-react';
+import { Heart, MessageSquare, Eye, Star, StarOff, RefreshCw, ChevronLeft, ChevronRight, Calendar, X, CreditCard, TrendingUp, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAdminDonations, useToggleFeatured } from '../../hooks/useDonations';
 import type { AdminDonationFilters } from '../../api/donations';
@@ -172,7 +172,7 @@ const DonationManagementPage: React.FC = () => {
                   onClick={() => handlePageChange(page)}
                   className={`w-8 h-8 rounded-lg text-sm font-medium ${
                     currentPage === page
-                      ? 'bg-rose-500 text-white'
+                      ? 'bg-amber-500 text-white'
                       : 'border border-gray-300 hover:bg-gray-50'
                   }`}
                 >
@@ -196,98 +196,130 @@ const DonationManagementPage: React.FC = () => {
     <>
       {/* 상세 모달 */}
       {showDetailModal && selectedDonation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-gray-800">기부 상세</h2>
-                <p className="text-sm text-gray-600 mt-1">기부 정보를 확인합니다</p>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* 헤더 - 다크 스타일 */}
+            <div className="bg-stone-800 px-6 py-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                    <Heart size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-medium text-white">기부 상세</h2>
+                    <p className="text-sm text-stone-400">기부 정보를 확인하세요</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setShowDetailModal(false); setSelectedDonation(null); }}
+                  className="p-2 hover:bg-stone-700 rounded-xl transition-colors"
+                >
+                  <X size={20} className="text-stone-400" />
+                </button>
               </div>
-              <button
-                onClick={() => { setShowDetailModal(false); setSelectedDonation(null); }}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <X size={24} />
-              </button>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* 기본 정보 */}
-              <div className="bg-gradient-to-r from-rose-50 to-pink-50 rounded-xl p-6 border border-rose-200">
-                <div className="flex items-center justify-between mb-4">
-                  {renderStatusBadge(selectedDonation.status)}
+            {/* 프로젝트 정보 카드 */}
+            <div className="bg-amber-500 px-6 py-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-amber-100 text-sm">기부 프로젝트</p>
+                <div className="flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    selectedDonation.status?.toUpperCase() === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                    selectedDonation.status?.toUpperCase() === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                    selectedDonation.status?.toUpperCase() === 'CANCELLED' ? 'bg-gray-100 text-gray-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {selectedDonation.status?.toUpperCase() === 'COMPLETED' ? '완료' :
+                     selectedDonation.status?.toUpperCase() === 'PENDING' ? '대기중' :
+                     selectedDonation.status?.toUpperCase() === 'CANCELLED' ? '취소' : '실패'}
+                  </span>
                   {selectedDonation.isFeatured && (
-                    <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold flex items-center gap-1">
-                      <Star size={12} fill="currentColor" />
-                      홈페이지 노출중
+                    <span className="px-3 py-1 bg-white/20 text-white rounded-full text-xs font-medium flex items-center gap-1">
+                      <Star size={10} fill="currentColor" />
+                      노출중
                     </span>
                   )}
                 </div>
-                <h3 className="text-xl font-bold text-gray-800">{selectedDonation.projectTitle}</h3>
-                <div className="bg-white rounded-lg p-4 mt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-gray-600">기부금액</span>
-                    <span className="text-2xl font-bold text-rose-600">{formatAmount(selectedDonation.amount)}</span>
+              </div>
+              <h3 className="text-white font-medium text-lg mb-4 line-clamp-1">
+                {selectedDonation.projectTitle}
+              </h3>
+              <div className="bg-white/20 backdrop-blur rounded-xl px-4 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp size={18} className="text-white" />
+                    <span className="text-white/90 text-sm">기부 금액</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">기부일</span>
-                    <span className="font-semibold text-gray-800">{formatDate(selectedDonation.donatedAt)}</span>
+                  <span className="text-white text-xl font-bold">{formatAmount(selectedDonation.amount)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={18} className="text-white" />
+                    <span className="text-white/90 text-sm">기부일</span>
                   </div>
+                  <span className="text-white font-medium">{formatDate(selectedDonation.donatedAt)}</span>
                 </div>
               </div>
+            </div>
 
-              {/* 기부자 정보 */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Heart size={20} className="text-rose-500" />
-                  기부자 정보
-                </h4>
-                <div className="space-y-3">
+            {/* 스크롤 가능한 콘텐츠 영역 */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* STEP 1: 기부자 정보 */}
+              <div className="bg-white rounded-xl p-5 border border-stone-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                  <h4 className="font-medium text-stone-800">기부자 정보</h4>
+                </div>
+                <div className="bg-stone-50 rounded-xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">기부자</span>
-                    <span className="font-semibold text-gray-800">
+                    <div className="flex items-center gap-2">
+                      <User size={16} className="text-stone-500" />
+                      <span className="text-sm text-stone-600">기부자</span>
+                    </div>
+                    <span className="font-medium text-stone-800">
                       {selectedDonation.isAnonymous ? '익명' : selectedDonation.donorName}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">익명 여부</span>
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${selectedDonation.isAnonymous ? 'bg-gray-100 text-gray-600' : 'bg-blue-100 text-blue-600'}`}>
+                    <span className="text-sm text-stone-600">공개 여부</span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${selectedDonation.isAnonymous ? 'bg-stone-200 text-stone-600' : 'bg-amber-100 text-amber-700'}`}>
                       {selectedDonation.isAnonymous ? '익명' : '공개'}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* 응원 메시지 */}
+              {/* STEP 2: 응원 메시지 */}
               {selectedDonation.message && (
-                <div className="bg-white border border-gray-200 rounded-xl p-6">
-                  <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <MessageSquare size={20} className="text-blue-500" />
-                    응원 메시지
-                  </h4>
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <p className="text-gray-800 whitespace-pre-wrap">{selectedDonation.message}</p>
+                <div className="bg-white rounded-xl p-5 border border-stone-200">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                    <h4 className="font-medium text-stone-800">응원 메시지</h4>
+                  </div>
+                  <div className="bg-amber-50 rounded-xl p-4">
+                    <p className="text-stone-800 whitespace-pre-wrap text-sm">{selectedDonation.message}</p>
                   </div>
                 </div>
               )}
 
               {/* Featured 토글 (메시지 있는 경우만) */}
               {selectedDonation.message && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
-                  <h4 className="text-lg font-bold text-amber-800 mb-3 flex items-center gap-2">
-                    <Star size={20} className="text-amber-600" />
-                    홈페이지 노출 설정
-                  </h4>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Star size={18} className="text-amber-600" />
+                    <h4 className="font-medium text-amber-800">홈페이지 노출 설정</h4>
+                  </div>
                   <p className="text-sm text-amber-700 mb-4">
                     이 응원 메시지를 홈페이지 후기 섹션에 노출할 수 있습니다.
                   </p>
                   <button
                     onClick={() => handleToggleFeatured(selectedDonation.donationId, selectedDonation.isFeatured)}
                     disabled={toggleFeaturedMutation.isPending}
-                    className={`w-full py-3 rounded-lg font-bold transition ${
+                    className={`w-full py-3 rounded-xl font-medium transition ${
                       selectedDonation.isFeatured
-                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        : 'bg-amber-500 text-white hover:bg-amber-600'
+                        ? 'bg-stone-200 text-stone-700 hover:bg-stone-300'
+                        : 'bg-stone-800 text-white hover:bg-stone-700'
                     } disabled:opacity-50`}
                   >
                     {selectedDonation.isFeatured ? '노출 해제하기' : '홈페이지에 노출하기'}
@@ -297,10 +329,10 @@ const DonationManagementPage: React.FC = () => {
             </div>
 
             {/* 하단 버튼 */}
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6">
+            <div className="border-t border-stone-200 p-4 bg-white">
               <button
                 onClick={() => { setShowDetailModal(false); setSelectedDonation(null); }}
-                className="w-full px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-bold hover:bg-gray-50"
+                className="w-full px-4 py-3 border-2 border-stone-300 text-stone-700 rounded-xl font-medium hover:bg-stone-50 transition"
               >
                 닫기
               </button>
@@ -336,7 +368,7 @@ const DonationManagementPage: React.FC = () => {
             onClick={() => setActiveTab('donations')}
             className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition ${
               activeTab === 'donations'
-                ? 'bg-rose-500 text-white'
+                ? 'bg-amber-500 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -347,7 +379,7 @@ const DonationManagementPage: React.FC = () => {
             onClick={() => setActiveTab('messages')}
             className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition ${
               activeTab === 'messages'
-                ? 'bg-rose-500 text-white'
+                ? 'bg-amber-500 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -367,7 +399,7 @@ const DonationManagementPage: React.FC = () => {
                   <select
                     value={filters.period}
                     onChange={(e) => setFilters(prev => ({ ...prev, period: e.target.value }))}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
                   >
                     {PERIOD_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -473,7 +505,7 @@ const DonationManagementPage: React.FC = () => {
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-800 truncate">{donation.projectTitle}</p>
-                          <p className="text-lg font-bold text-rose-600 mt-1">{formatAmount(donation.amount)}</p>
+                          <p className="text-lg font-bold text-amber-600 mt-1">{formatAmount(donation.amount)}</p>
                           <div className="flex items-center gap-2 mt-2">
                             {renderStatusBadge(donation.status)}
                           </div>
@@ -523,7 +555,7 @@ const DonationManagementPage: React.FC = () => {
                   <select
                     value={filters.period}
                     onChange={(e) => setFilters(prev => ({ ...prev, period: e.target.value }))}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
                   >
                     {PERIOD_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -536,7 +568,7 @@ const DonationManagementPage: React.FC = () => {
                   <select
                     value={isFeaturedFilter}
                     onChange={(e) => setIsFeaturedFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
                   >
                     {FEATURED_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -592,7 +624,7 @@ const DonationManagementPage: React.FC = () => {
                         <div className="bg-blue-50 rounded-lg p-4">
                           <p className="text-gray-800 whitespace-pre-wrap">{donation.message}</p>
                         </div>
-                        <p className="text-sm text-rose-600 font-semibold mt-2">
+                        <p className="text-sm text-amber-600 font-semibold mt-2">
                           {formatAmount(donation.amount)} 기부
                         </p>
                       </div>

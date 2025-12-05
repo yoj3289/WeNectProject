@@ -146,10 +146,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
           <>
             <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-2">
-                <div className="w-9 h-9 bg-gradient-to-br from-red-100 to-pink-100 rounded-lg flex items-center justify-center">
-                  <DollarSign className="text-red-600" size={18} />
+                <div className="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center">
+                  <DollarSign className="text-amber-600" size={18} />
                 </div>
-                <span className={`flex items-center gap-0.5 text-xs font-semibold ${stats.donationChange >= 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                <span className={`flex items-center gap-0.5 text-xs font-semibold ${stats.donationChange >= 0 ? 'text-amber-600' : 'text-blue-600'}`}>
                   {stats.donationChange >= 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
                   {Math.abs(stats.donationChange).toFixed(1)}%
                 </span>
@@ -160,10 +160,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
             <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-2">
-                <div className="w-9 h-9 bg-gradient-to-br from-pink-100 to-rose-100 rounded-lg flex items-center justify-center">
-                  <Users className="text-pink-600" size={18} />
+                <div className="w-9 h-9 bg-stone-100 rounded-lg flex items-center justify-center">
+                  <Users className="text-stone-600" size={18} />
                 </div>
-                <span className={`flex items-center gap-0.5 text-xs font-semibold ${stats.userChange >= 0 ? 'text-pink-600' : 'text-blue-600'}`}>
+                <span className={`flex items-center gap-0.5 text-xs font-semibold ${stats.userChange >= 0 ? 'text-amber-600' : 'text-blue-600'}`}>
                   {stats.userChange >= 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
                   {Math.abs(stats.userChange).toFixed(1)}%
                 </span>
@@ -174,10 +174,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
             <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleNavigate('organizations')}>
               <div className="flex items-center justify-between mb-2">
-                <div className="w-9 h-9 bg-gradient-to-br from-orange-100 to-red-100 rounded-lg flex items-center justify-center">
-                  <Building2 className="text-orange-600" size={18} />
+                <div className="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center">
+                  <Building2 className="text-amber-600" size={18} />
                 </div>
-                <span className="text-orange-600 hover:text-orange-700 font-semibold text-xs">보기 →</span>
+                <span className="text-amber-600 hover:text-amber-700 font-semibold text-xs">보기 →</span>
               </div>
               <p className="text-gray-500 text-xs mb-0.5">기관 승인 대기</p>
               <p className="text-xl font-bold text-gray-800">{stats.pendingApprovals}건</p>
@@ -185,10 +185,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
             <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleNavigate('settlements')}>
               <div className="flex items-center justify-between mb-2">
-                <div className="w-9 h-9 bg-gradient-to-br from-rose-100 to-pink-100 rounded-lg flex items-center justify-center">
-                  <Wallet className="text-rose-600" size={18} />
+                <div className="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center">
+                  <Wallet className="text-amber-600" size={18} />
                 </div>
-                <span className="text-rose-600 hover:text-rose-700 font-semibold text-xs">보기 →</span>
+                <span className="text-amber-600 hover:text-amber-700 font-semibold text-xs">보기 →</span>
               </div>
               <p className="text-gray-500 text-xs mb-0.5">정산 요청</p>
               <p className="text-xl font-bold text-gray-800">{stats.pendingSettlements}건</p>
@@ -196,10 +196,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
             <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleNavigate('expenses')}>
               <div className="flex items-center justify-between mb-2">
-                <div className="w-9 h-9 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
-                  <Receipt className="text-blue-600" size={18} />
+                <div className="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center">
+                  <Receipt className="text-amber-600" size={18} />
                 </div>
-                <span className="text-blue-600 hover:text-blue-700 font-semibold text-xs">보기 →</span>
+                <span className="text-amber-600 hover:text-amber-700 font-semibold text-xs">보기 →</span>
               </div>
               <p className="text-gray-500 text-xs mb-0.5">지출 승인 대기</p>
               <p className="text-xl font-bold text-gray-800">{stats.pendingExpenses}건</p>
@@ -207,10 +207,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
             <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleNavigate('reports')}>
               <div className="flex items-center justify-between mb-2">
-                <div className="w-9 h-9 bg-gradient-to-br from-yellow-100 to-amber-100 rounded-lg flex items-center justify-center">
-                  <Flag className="text-yellow-600" size={18} />
+                <div className="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center">
+                  <Flag className="text-amber-600" size={18} />
                 </div>
-                <span className="text-yellow-600 hover:text-yellow-700 font-semibold text-xs">보기 →</span>
+                <span className="text-amber-600 hover:text-amber-700 font-semibold text-xs">보기 →</span>
               </div>
               <p className="text-gray-500 text-xs mb-0.5">신고 처리 대기</p>
               <p className="text-xl font-bold text-gray-800">{reportStats?.pendingCount || 0}건</p>

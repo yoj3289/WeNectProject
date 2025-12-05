@@ -177,13 +177,13 @@ const AdminChartsSection: React.FC = () => {
               <div>
                 {/* 요약 통계 */}
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-lg p-4">
+                  <div className="bg-amber-50 rounded-lg p-4">
                     <p className="text-sm text-gray-600 mb-1">총 기부 금액 ({period === 'weekly' ? '8주간' : '12개월'})</p>
-                    <p className="text-2xl font-bold text-red-600">{formatAmount(donationTotals.amount)}원</p>
+                    <p className="text-2xl font-bold text-amber-600">{formatAmount(donationTotals.amount)}원</p>
                   </div>
-                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-4">
+                  <div className="bg-stone-50 rounded-lg p-4">
                     <p className="text-sm text-gray-600 mb-1">총 기부 건수</p>
-                    <p className="text-2xl font-bold text-amber-600">{donationTotals.count}건</p>
+                    <p className="text-2xl font-bold text-stone-600">{donationTotals.count}건</p>
                   </div>
                 </div>
 
@@ -254,13 +254,13 @@ const AdminChartsSection: React.FC = () => {
               <div>
                 {/* 요약 통계 */}
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4">
+                  <div className="bg-amber-50 rounded-lg p-4">
                     <p className="text-sm text-gray-600 mb-1">일반 회원 ({period === 'weekly' ? '8주간' : '12개월'})</p>
-                    <p className="text-2xl font-bold text-blue-600">{userTotals.individual}명</p>
+                    <p className="text-2xl font-bold text-amber-600">{userTotals.individual}명</p>
                   </div>
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4">
+                  <div className="bg-stone-50 rounded-lg p-4">
                     <p className="text-sm text-gray-600 mb-1">기관 회원</p>
-                    <p className="text-2xl font-bold text-green-600">{userTotals.organization}명</p>
+                    <p className="text-2xl font-bold text-stone-600">{userTotals.organization}명</p>
                   </div>
                 </div>
 
