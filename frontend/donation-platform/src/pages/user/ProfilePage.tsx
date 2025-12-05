@@ -94,14 +94,21 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
   // URL 파라미터 변경 시 탭 동기화
+  const tabParam = searchParams.get('tab');
   useEffect(() => {
-    const tab = searchParams.get('tab');
-    if (tab === 'favorite-projects' || tab === 'favorites') {
+    if (tabParam === 'favorite-projects' || tabParam === 'favorites') {
       setSelectedMenu('favorite-projects');
-    } else if (tab === 'donation-history' || tab === 'donations') {
+    } else if (tabParam === 'donation-history' || tabParam === 'donations') {
       setSelectedMenu('donation-history');
+    } else if (tabParam === 'profile-edit') {
+      setSelectedMenu('profile-edit');
+    } else if (tabParam === 'statistics') {
+      setSelectedMenu('statistics');
+    } else if (!tabParam) {
+      // tab 파라미터가 없으면 메인으로
+      setSelectedMenu('main');
     }
-  }, [searchParams]);
+  }, [tabParam]);
 
   // ✅ 실제 API로 기부 내역 조회
   const { data: donationHistoryData, isLoading: isDonationsLoading } = useMyDonations({});

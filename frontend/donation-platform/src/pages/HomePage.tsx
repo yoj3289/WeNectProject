@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Heart, ChevronDown, Quote, ArrowRight, Users, Target, HandHeart, ChevronLeft, ChevronRight, TrendingUp, Award } from 'lucide-react';
 import type { UserType } from '../types';
 import { getCategoryLabel } from '../types';
@@ -27,6 +27,92 @@ const HomePage: React.FC<HomePageProps> = ({
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const trendingScrollRef = useRef<HTMLDivElement>(null);
+
+  // 캐러셀 스크롤 위치 추적 (끝 도달 시 화살표 숨김용)
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  // 스크롤 위치 확인 함수
+  const checkScrollPosition = useCallback((ref: React.RefObject<HTMLDivElement | null>) => {
+    if (ref.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = ref.current;
+      setCanScrollLeft(scrollLeft > 10);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  }, []);
+
+  // 스크롤 이벤트 리스너
+  useEffect(() => {
+    const ref = trendingScrollRef.current;
+    if (ref) {
+      const handleScroll = () => checkScrollPosition(trendingScrollRef);
+      ref.addEventListener('scroll', handleScroll);
+      // 초기 상태 체크
+      checkScrollPosition(trendingScrollRef);
+      return () => ref.removeEventListener('scroll', handleScroll);
+    }
+  }, [checkScrollPosition, popularProjects]);
+
+  // 히어로 섹션 풀스크린 상태
+  const [isHeroExpanded, setIsHeroExpanded] = useState(true);
+  const heroRef = useRef<HTMLElement>(null);
+
+  // 페이지 진입 시 항상 히어로 펼친 상태로 초기화
+  useEffect(() => {
+    setIsHeroExpanded(true);
+    window.scrollTo(0, 0);
+  }, []);
+
+  // 스크롤/클릭 시 히어로 접기 (스크롤 이동 없이 축소만)
+  const collapseHero = useCallback(() => {
+    if (isHeroExpanded) {
+      setIsHeroExpanded(false);
+    }
+  }, [isHeroExpanded]);
+
+  // SCROLL 버튼 클릭 핸들러
+  const handleScrollClick = () => {
+    collapseHero();
+  };
+
+  // 휠 이벤트로 히어로 접기
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (isHeroExpanded && e.deltaY > 0) {
+        e.preventDefault();
+        collapseHero();
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [isHeroExpanded, collapseHero]);
+
+  // 터치 스와이프로 히어로 접기 (모바일)
+  useEffect(() => {
+    let touchStartY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isHeroExpanded) {
+        const touchEndY = e.touches[0].clientY;
+        const deltaY = touchStartY - touchEndY;
+        if (deltaY > 50) { // 50px 이상 위로 스와이프
+          collapseHero();
+        }
+      }
+    };
+
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchmove', handleTouchMove);
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [isHeroExpanded, collapseHero]);
 
   // 실제 API 응답을 stories 형식으로 변환
   const stories = featuredMessages && featuredMessages.length > 0
@@ -75,26 +161,40 @@ const HomePage: React.FC<HomePageProps> = ({
   return (
     <div className="bg-stone-50">
 
-      {/* 히어로 섹션 */}
-      <section className="relative min-h-[600px] md:min-h-[700px] bg-stone-900 overflow-hidden">
-        {/* 배경 오버레이 패턴 */}
+      {/* 히어로 섹션 - 풀스크린 인터랙티브 */}
+      <section
+        ref={heroRef}
+        onClick={collapseHero}
+        className={`relative bg-stone-900 overflow-hidden transition-all duration-700 ease-out cursor-pointer ${
+          isHeroExpanded
+            ? 'h-screen min-h-[600px]'
+            : 'min-h-[500px] md:min-h-[600px]'
+        }`}
+      >
+        {/* 돼지 저금통 배경 이미지 */}
         <div
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0 bg-no-repeat bg-contain opacity-[0.15]"
           style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
-            backgroundSize: '32px 32px'
+            backgroundImage: `url('/icon_piggy2.png')`,
+            backgroundPosition: '65% center'
           }}
         />
 
         {/* 그라디언트 오버레이 */}
         <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-transparent to-stone-900" />
 
-        <div className="relative h-full min-h-[600px] md:min-h-[700px] flex flex-col items-center justify-center text-center px-4 py-16">
-          <p className="text-amber-400 uppercase tracking-[0.3em] text-xs md:text-sm mb-6">
+        <div className={`relative h-full flex flex-col items-center justify-center text-center px-4 py-16 transition-all duration-700 ${
+          isHeroExpanded ? 'min-h-screen' : 'min-h-[500px] md:min-h-[600px]'
+        }`}>
+          <p className={`text-amber-400 uppercase tracking-[0.3em] text-xs md:text-sm mb-6 transition-all duration-500 ${
+            isHeroExpanded ? 'opacity-100 translate-y-0' : 'opacity-100'
+          }`}>
             Together We Can Make a Difference
           </p>
 
-          <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl text-white font-light leading-tight mb-6 max-w-3xl">
+          <h1 className={`text-2xl sm:text-3xl md:text-5xl lg:text-6xl text-white font-light leading-tight mb-6 max-w-3xl transition-all duration-500 ${
+            isHeroExpanded ? 'opacity-100 translate-y-0' : 'opacity-100'
+          }`}>
             당신의 <span className="text-amber-400 font-medium">작은 나눔</span>이<br />
             누군가의 <span className="text-amber-400 font-medium">전부</span>가 됩니다
           </h1>
@@ -103,30 +203,82 @@ const HomePage: React.FC<HomePageProps> = ({
             {stats?.totalDonors?.toLocaleString() || 0}명의 기부자와 함께 {stats?.totalDonationAmount ? formatAmount(stats.totalDonationAmount) : '0'}원의 사랑을 전달했습니다.
           </p>
 
-          <div className="flex items-center gap-4">
-            <Link
-              to="/projects"
-              className="bg-amber-500 text-stone-900 px-8 py-4 text-base font-medium hover:bg-amber-400 transition-colors"
-            >
-              함께하기
-            </Link>
+          <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+            {isLoggedIn && userType === 'organization' ? (
+              <Link
+                to="/projects/create"
+                className="bg-amber-500 text-stone-900 px-8 py-4 text-base font-medium hover:bg-amber-400 transition-colors"
+              >
+                프로젝트 등록하기
+              </Link>
+            ) : (
+              <Link
+                to="/projects"
+                className="bg-amber-500 text-stone-900 px-8 py-4 text-base font-medium hover:bg-amber-400 transition-colors"
+              >
+                함께하기
+              </Link>
+            )}
             <Link
               to="/community"
               className="text-white border-b-2 border-white/30 hover:border-white pb-1 transition-all text-sm"
             >
-              이야기 보기
+              소통하기
             </Link>
           </div>
         </div>
 
         {/* 스크롤 다운 인디케이터 */}
-        <div className="absolute bottom-8 left-0 right-0 flex justify-center">
-          <div className="text-white/50 flex flex-col items-center gap-2 animate-bounce">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleScrollClick();
+          }}
+          className={`absolute bottom-16 md:bottom-20 left-0 right-0 flex justify-center transition-opacity duration-500 ${
+            isHeroExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          <div className="text-white/50 flex flex-col items-center gap-2 animate-bounce hover:text-white/80 transition-colors">
             <span className="text-xs uppercase tracking-widest">Scroll</span>
             <ChevronDown size={20} />
           </div>
-        </div>
+        </button>
       </section>
+
+      {/* 실시간 기부 마퀴 - 히어로 바로 아래 */}
+      {recentDonations && recentDonations.length > 0 && (
+        <section className="py-3 bg-stone-800 text-white overflow-hidden">
+          <div className="relative">
+            <div className="flex items-center">
+              {/* 왼쪽 라벨 */}
+              <div className="flex items-center gap-2 shrink-0 bg-stone-800 z-10 pr-4 pl-4">
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                <span className="text-stone-300 text-sm font-medium">실시간 기부</span>
+              </div>
+
+              {/* 마퀴 애니메이션 */}
+              <div className="overflow-hidden flex-1">
+                <div className="animate-marquee flex gap-8 whitespace-nowrap">
+                  {/* 원본 */}
+                  {recentDonations.map((donation, idx) => (
+                    <span key={`a-${idx}`} className="text-stone-400 text-sm">
+                      <span className="text-white font-medium">{donation.donorName}</span>님이{' '}
+                      <span className="text-amber-400 font-medium">{formatAmount(donation.amount)}원</span>을 기부했습니다
+                    </span>
+                  ))}
+                  {/* 복제 (무한 루프용) */}
+                  {recentDonations.map((donation, idx) => (
+                    <span key={`b-${idx}`} className="text-stone-400 text-sm">
+                      <span className="text-white font-medium">{donation.donorName}</span>님이{' '}
+                      <span className="text-amber-400 font-medium">{formatAmount(donation.amount)}원</span>을 기부했습니다
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Our Impact 섹션 */}
       <section className="py-16 md:py-20 px-4">
@@ -181,33 +333,51 @@ const HomePage: React.FC<HomePageProps> = ({
 
           {/* 인용문 슬라이드 - Featured 메시지가 있을 때만 표시 */}
           {stories.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 md:p-10 shadow-lg relative overflow-hidden max-w-2xl mx-auto">
-              <Quote className="absolute top-4 left-4 text-amber-100" size={50} />
+            <div className="relative max-w-2xl mx-auto group">
+              {/* 왼쪽 화살표 - hover 시에만 표시, 무한 루프 */}
+              <button
+                onClick={() => setCurrentSlide(prev => prev === 0 ? stories.length - 1 : prev - 1)}
+                className="absolute -left-4 md:-left-12 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center bg-white border border-stone-200 rounded-full shadow-md hover:shadow-lg hover:bg-amber-50 transition-all opacity-0 group-hover:opacity-100"
+              >
+                <ChevronLeft size={20} className="text-stone-600" />
+              </button>
 
-              <div className="relative z-10 text-center">
-                <p className="text-lg md:text-xl text-stone-700 leading-relaxed mb-6 italic">
-                  "{stories[currentSlide]?.quote}"
-                </p>
-                <div>
-                  <p className="font-medium text-stone-800">{stories[currentSlide]?.name}</p>
-                  <p className="text-stone-500 text-sm">
-                    {stories[currentSlide]?.role} · {stories[currentSlide]?.year}
+              <div className="bg-white rounded-2xl p-6 md:p-10 shadow-lg relative overflow-hidden">
+                <Quote className="absolute top-4 left-4 text-amber-100" size={50} />
+
+                <div className="relative z-10 text-center">
+                  <p className="text-lg md:text-xl text-stone-700 leading-relaxed mb-6 italic">
+                    "{stories[currentSlide]?.quote}"
                   </p>
+                  <div>
+                    <p className="font-medium text-stone-800">{stories[currentSlide]?.name}</p>
+                    <p className="text-stone-500 text-sm">
+                      {stories[currentSlide]?.role} · {stories[currentSlide]?.year}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 슬라이드 인디케이터 */}
+                <div className="flex justify-center gap-2 mt-6">
+                  {stories.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentSlide(idx)}
+                      className={`h-1.5 rounded-full transition-all ${
+                        idx === currentSlide ? 'w-6 bg-amber-500' : 'w-1.5 bg-stone-300'
+                      }`}
+                    />
+                  ))}
                 </div>
               </div>
 
-              {/* 슬라이드 인디케이터 */}
-              <div className="flex justify-center gap-2 mt-6">
-                {stories.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCurrentSlide(idx)}
-                    className={`h-1.5 rounded-full transition-all ${
-                      idx === currentSlide ? 'w-6 bg-amber-500' : 'w-1.5 bg-stone-300'
-                    }`}
-                  />
-                ))}
-              </div>
+              {/* 오른쪽 화살표 - hover 시에만 표시, 무한 루프 */}
+              <button
+                onClick={() => setCurrentSlide(prev => (prev + 1) % stories.length)}
+                className="absolute -right-4 md:-right-12 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center bg-white border border-stone-200 rounded-full shadow-md hover:shadow-lg hover:bg-amber-50 transition-all opacity-0 group-hover:opacity-100"
+              >
+                <ChevronRight size={20} className="text-stone-600" />
+              </button>
             </div>
           )}
         </div>
@@ -246,16 +416,19 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
           ) : popularProjects && popularProjects.length > 0 ? (
             <div className="relative group">
-              <button
-                onClick={() => scroll('left', trendingScrollRef)}
-                className="hidden md:flex absolute -left-4 top-1/3 z-10 w-10 h-10 items-center justify-center bg-white border border-stone-200 rounded-full shadow-md hover:shadow-lg transition opacity-0 group-hover:opacity-100"
-              >
-                <ChevronLeft size={20} className="text-stone-600" />
-              </button>
+              {/* 왼쪽 화살표 - 스크롤 가능할 때만 표시 */}
+              {canScrollLeft && (
+                <button
+                  onClick={() => scroll('left', trendingScrollRef)}
+                  className="hidden md:flex absolute -left-4 top-1/3 z-10 w-10 h-10 items-center justify-center bg-white border border-stone-200 rounded-full shadow-md hover:shadow-lg hover:bg-amber-50 transition-all"
+                >
+                  <ChevronLeft size={20} className="text-stone-600" />
+                </button>
+              )}
 
               <div
                 ref={trendingScrollRef}
-                className="overflow-x-auto scrollbar-hide scroll-smooth -mx-4 px-4"
+                className="overflow-x-auto scrollbar-hide scroll-smooth -mx-4 px-4 touch-pan-x"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 <div className="flex gap-5" style={{ width: 'max-content' }}>
@@ -311,12 +484,15 @@ const HomePage: React.FC<HomePageProps> = ({
                 </div>
               </div>
 
-              <button
-                onClick={() => scroll('right', trendingScrollRef)}
-                className="hidden md:flex absolute -right-4 top-1/3 z-10 w-10 h-10 items-center justify-center bg-white border border-stone-200 rounded-full shadow-md hover:shadow-lg transition opacity-0 group-hover:opacity-100"
-              >
-                <ChevronRight size={20} className="text-stone-600" />
-              </button>
+              {/* 오른쪽 화살표 - 스크롤 가능할 때만 표시 */}
+              {canScrollRight && (
+                <button
+                  onClick={() => scroll('right', trendingScrollRef)}
+                  className="hidden md:flex absolute -right-4 top-1/3 z-10 w-10 h-10 items-center justify-center bg-white border border-stone-200 rounded-full shadow-md hover:shadow-lg hover:bg-amber-50 transition-all"
+                >
+                  <ChevronRight size={20} className="text-stone-600" />
+                </button>
+              )}
             </div>
           ) : (
             <div className="text-center py-8 text-stone-500">프로젝트가 없습니다.</div>
@@ -495,28 +671,6 @@ const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* 실시간 기부 스트립 */}
-      {recentDonations && recentDonations.length > 0 && (
-        <section className="py-4 px-4 bg-stone-800 text-white">
-          <div className="max-w-5xl mx-auto">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                <span className="text-stone-300 text-sm">실시간 기부</span>
-              </div>
-              <div className="flex items-center gap-6 overflow-hidden text-sm">
-                {recentDonations.slice(0, 3).map((donation, idx) => (
-                  <span key={idx} className="text-stone-400 whitespace-nowrap">
-                    <span className="text-white font-medium">{donation.donorName}</span>님{' '}
-                    <span className="text-amber-400">{formatAmount(donation.amount)}원</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* 하단 CTA */}
       <section className="py-16 md:py-20 px-4 bg-amber-500 text-center">
         <div className="max-w-2xl mx-auto">
@@ -527,26 +681,19 @@ const HomePage: React.FC<HomePageProps> = ({
             작은 나눔이 모여 큰 변화를 만듭니다
           </p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <Link
-              to="/projects"
-              className="bg-stone-900 text-white px-8 py-4 font-medium hover:bg-stone-800 transition-colors"
-            >
-              기부 시작하기
-            </Link>
-            {isLoggedIn && userType === 'organization' && (
+            {isLoggedIn && userType === 'organization' ? (
               <Link
                 to="/projects/create"
-                className="bg-white text-stone-900 px-8 py-4 font-medium hover:bg-stone-100 transition-colors"
+                className="bg-stone-900 text-white px-8 py-4 font-medium hover:bg-stone-800 transition-colors"
               >
-                프로젝트 등록
+                프로젝트 등록하기
               </Link>
-            )}
-            {!isLoggedIn && (
+            ) : (
               <Link
-                to="/register"
-                className="bg-white text-stone-900 px-8 py-4 font-medium hover:bg-stone-100 transition-colors"
+                to="/projects"
+                className="bg-stone-900 text-white px-8 py-4 font-medium hover:bg-stone-800 transition-colors"
               >
-                프로젝트 등록
+                함께하기
               </Link>
             )}
           </div>

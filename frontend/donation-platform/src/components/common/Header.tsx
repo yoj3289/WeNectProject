@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Heart, Bell, User, LogOut, Menu, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import NotificationDropdown from './NotificationDropdown';
@@ -20,6 +20,7 @@ const Header: React.FC<HeaderProps> = ({
   handleLogout,
 }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -46,7 +47,11 @@ const Header: React.FC<HeaderProps> = ({
           className="flex items-center gap-2 flex-shrink-0 group"
           onClick={closeMobileMenu}
         >
-          <Heart className="text-amber-500 group-hover:scale-110 transition-transform" size={24} fill="currentColor" />
+          <img
+            src="/WeNect_Logo.png"
+            alt="WeNect"
+            className="h-8 w-8 object-contain group-hover:scale-110 transition-transform"
+          />
           <span className="text-xl font-bold text-stone-800">위넥트</span>
         </Link>
 
@@ -111,13 +116,16 @@ const Header: React.FC<HeaderProps> = ({
           {isLoggedIn ? (
             <>
               {/* 관심 프로젝트 버튼 */}
-              <Link
-                to="/profile?tab=favorites"
+              <button
+                onClick={() => {
+                  // 같은 경로에서도 탭 전환이 되도록 navigate + replace 사용
+                  navigate('/profile?tab=favorites', { replace: location.pathname === '/profile' });
+                }}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 title="관심 프로젝트"
               >
                 <Heart size={20} className="text-gray-600 hover:text-red-500" />
-              </Link>
+              </button>
 
               {/* 알림 버튼 */}
               <div className="relative">
@@ -273,10 +281,12 @@ const Header: React.FC<HeaderProps> = ({
 
             {isLoggedIn ? (
               <>
-                <Link
-                  to="/profile?tab=favorites"
-                  onClick={closeMobileMenu}
-                  className={`px-4 py-3 text-sm font-medium flex items-center gap-3 transition-colors ${
+                <button
+                  onClick={() => {
+                    closeMobileMenu();
+                    navigate('/profile?tab=favorites', { replace: location.pathname === '/profile' });
+                  }}
+                  className={`px-4 py-3 text-sm font-medium flex items-center gap-3 transition-colors text-left w-full ${
                     isActive('/profile') && location.search.includes('favorites')
                       ? 'text-amber-600 bg-amber-50'
                       : 'text-stone-600 hover:bg-stone-50'
@@ -284,7 +294,7 @@ const Header: React.FC<HeaderProps> = ({
                 >
                   <Heart size={18} />
                   관심 프로젝트
-                </Link>
+                </button>
                 <Link
                   to="/profile"
                   onClick={closeMobileMenu}

@@ -68,8 +68,8 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
   // 사용계획서 파일
   const [planDocument, setPlanDocument] = useState<File | null>(null);
 
-  // 계획서 공개 여부
-  const [isPlanPublic, setIsPlanPublic] = useState(true);
+  // 계획서 공개 여부 (항상 공개)
+  const isPlanPublic = true;
 
   // 현재 단계
   const [currentStep, setCurrentStep] = useState(1);
@@ -144,7 +144,6 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
         setDescription(draftData.description || '');
         setDonationOptions(draftData.donationOptions || [{ optionName: '', amount: 0, optionDescription: '', iconEmoji: '💝' }]);
         setBudgetPlan(draftData.budgetPlan || '');
-        setIsPlanPublic(draftData.isPlanPublic ?? true);
         setCurrentStep(draftData.currentStep || 1);
         setLastSavedAt(draftData.savedAt);
         toast.success('임시 저장된 내용을 불러왔습니다.');
@@ -721,19 +720,6 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
                 </label>
               )}
 
-              {/* 공개 여부 */}
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-stone-200">
-                <span className="text-sm text-stone-700">계획서 사용자 공개</span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isPlanPublic}
-                    onChange={(e) => setIsPlanPublic(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
-                </label>
-              </div>
             </div>
 
             {/* 최종 확인 */}

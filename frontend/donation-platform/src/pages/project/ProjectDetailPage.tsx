@@ -251,16 +251,52 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                       <p className="text-xs sm:text-sm text-stone-500 truncate">PDF 문서로 다운로드 가능합니다</p>
                     </div>
                   </div>
-                  <a
-                    href={`${IMAGE_BASE_URL}${project.planDocumentUrl}`}
-                    download
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={async () => {
+                      try {
+                        const backendBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api').replace('/api', '');
+                        const fullUrl = project.planDocumentUrl?.startsWith('http')
+                          ? project.planDocumentUrl
+                          : `${backendBaseUrl}${project.planDocumentUrl}`;
+
+                        // 인증 토큰 가져오기
+                        const token = localStorage.getItem('accessToken');
+
+                        const response = await fetch(fullUrl, {
+                          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                        });
+                        if (!response.ok) throw new Error('파일 다운로드 실패');
+
+                        const blob = await response.blob();
+                        const blobUrl = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = blobUrl;
+
+                        // 파일명 추출
+                        const fileName = project.planDocumentUrl?.split('/').pop() || '사용계획서.pdf';
+                        link.download = fileName;
+
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(blobUrl);
+
+                        toast.success('문서 다운로드 완료');
+                      } catch (error) {
+                        console.error('다운로드 오류:', error);
+                        // 실패 시 새 탭에서 열기
+                        const backendBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api').replace('/api', '');
+                        const fullUrl = project.planDocumentUrl?.startsWith('http')
+                          ? project.planDocumentUrl
+                          : `${backendBaseUrl}${project.planDocumentUrl}`;
+                        window.open(fullUrl, '_blank');
+                      }
+                    }}
                     className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-medium hover:bg-amber-600 transition-colors flex-shrink-0"
                   >
                     <Download size={16} />
                     <span className="hidden sm:inline">다운로드</span>
-                  </a>
+                  </button>
                 </div>
               </div>
             )}

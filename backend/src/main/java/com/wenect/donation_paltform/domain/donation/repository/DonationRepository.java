@@ -112,10 +112,22 @@ public interface DonationRepository extends JpaRepository<Donation, Long> {
     Page<Donation> findAllWithMessage(Pageable pageable);
 
     /**
+     * 메시지가 없는 기부만 조회 (페이지네이션)
+     */
+    @Query("SELECT d FROM Donation d WHERE d.message IS NULL OR d.message = '' ORDER BY d.createdAt DESC")
+    Page<Donation> findAllWithoutMessage(Pageable pageable);
+
+    /**
      * 메시지가 있고 특정 상태인 기부 조회 (페이지네이션)
      */
     @Query("SELECT d FROM Donation d WHERE d.message IS NOT NULL AND d.message <> '' AND d.status = :status ORDER BY d.createdAt DESC")
     Page<Donation> findWithMessageAndStatus(@Param("status") Donation.DonationStatus status, Pageable pageable);
+
+    /**
+     * 메시지가 없고 특정 상태인 기부 조회 (페이지네이션)
+     */
+    @Query("SELECT d FROM Donation d WHERE (d.message IS NULL OR d.message = '') AND d.status = :status ORDER BY d.createdAt DESC")
+    Page<Donation> findWithoutMessageAndStatus(@Param("status") Donation.DonationStatus status, Pageable pageable);
 
     /**
      * Featured 상태별 기부 조회 (페이지네이션)

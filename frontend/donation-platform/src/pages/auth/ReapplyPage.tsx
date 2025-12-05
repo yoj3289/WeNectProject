@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Upload, Loader2, AlertCircle, Heart } from 'lucide-react';
+import { Upload, Loader2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { apiClient } from '../../lib/apiClient';
 
@@ -151,7 +151,7 @@ const ReapplyPage: React.FC = () => {
 
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Heart className="text-red-500" size={40} fill="currentColor" />
+            <img src="/WeNect_Logo.png" alt="WeNect" className="h-12 w-12 object-contain" />
           </div>
           <h1 className="text-4xl font-bold mb-2">재심사 요청</h1>
           <p className="text-gray-600">승인 거부된 항목을 수정하여 다시 제출해주세요</p>

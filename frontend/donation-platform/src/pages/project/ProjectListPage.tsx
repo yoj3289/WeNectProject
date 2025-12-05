@@ -45,6 +45,11 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const pageSize = 12;
 
+  // 페이지 진입 시 스크롤 맨 위로
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     const newSortOption = sortByParam || 'latest';
     setSortOption(newSortOption);
@@ -144,7 +149,7 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
   return (
     <div className="bg-stone-50">
       {/* ========== Hero Section ========== */}
-      <section className="relative min-h-[400px] md:min-h-[480px] bg-stone-900 overflow-hidden">
+      <section className="relative min-h-[280px] md:min-h-[320px] bg-stone-900 overflow-hidden">
         <div
           className="absolute inset-0 opacity-10"
           style={{
@@ -154,7 +159,7 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
         />
         <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-transparent to-stone-900" />
 
-        <div className="relative h-full min-h-[400px] md:min-h-[480px] flex flex-col items-center justify-center text-center px-4 py-16">
+        <div className="relative h-full min-h-[280px] md:min-h-[320px] flex flex-col items-center justify-center text-center px-4 py-10">
           <p className="text-amber-400 uppercase tracking-[0.3em] text-xs md:text-sm mb-6">
             Explore & Support
           </p>
@@ -188,30 +193,38 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
             </div>
           </div>
 
-          {/* 스크롤 인디케이터 */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 flex flex-col items-center gap-1 animate-bounce">
-            <span className="text-[10px] uppercase tracking-widest">Scroll</span>
-            <ChevronDown size={16} />
-          </div>
         </div>
       </section>
 
-      {/* ========== 실시간 기부 스트립 ========== */}
+      {/* ========== 실시간 기부 마퀴 ========== */}
       {recentDonations && recentDonations.length > 0 && (
-        <section className="py-3 px-4 bg-stone-800">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-center gap-4 overflow-hidden">
-              <div className="flex items-center gap-2 shrink-0">
+        <section className="py-3 bg-stone-800 text-white overflow-hidden">
+          <div className="relative">
+            <div className="flex items-center">
+              {/* 왼쪽 라벨 */}
+              <div className="flex items-center gap-2 shrink-0 bg-stone-800 z-10 pr-4 pl-4">
                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                <span className="text-stone-400 text-sm">실시간</span>
+                <span className="text-stone-300 text-sm font-medium">실시간 기부</span>
               </div>
-              <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide text-sm">
-                {recentDonations.map((donation, idx) => (
-                  <span key={idx} className="text-stone-400 whitespace-nowrap">
-                    <span className="text-white">{donation.donorName}</span>님이{' '}
-                    <span className="text-amber-400">{formatAmount(donation.amount)}원</span> 기부
-                  </span>
-                ))}
+
+              {/* 마퀴 애니메이션 */}
+              <div className="overflow-hidden flex-1">
+                <div className="animate-marquee flex gap-8 whitespace-nowrap">
+                  {/* 원본 */}
+                  {recentDonations.map((donation, idx) => (
+                    <span key={`a-${idx}`} className="text-stone-400 text-sm">
+                      <span className="text-white font-medium">{donation.donorName}</span>님이{' '}
+                      <span className="text-amber-400 font-medium">{formatAmount(donation.amount)}원</span>을 기부했습니다
+                    </span>
+                  ))}
+                  {/* 복제 (무한 루프용) */}
+                  {recentDonations.map((donation, idx) => (
+                    <span key={`b-${idx}`} className="text-stone-400 text-sm">
+                      <span className="text-white font-medium">{donation.donorName}</span>님이{' '}
+                      <span className="text-amber-400 font-medium">{formatAmount(donation.amount)}원</span>을 기부했습니다
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

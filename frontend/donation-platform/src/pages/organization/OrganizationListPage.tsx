@@ -66,17 +66,10 @@ const OrganizationListPage: React.FC = () => {
   return (
     <div className="bg-stone-50">
       {/* ========== Hero Section ========== */}
-      <section className="relative min-h-[400px] md:min-h-[480px] bg-stone-900 overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
-            backgroundSize: '32px 32px'
-          }}
-        />
+      <section className="relative min-h-[280px] md:min-h-[320px] bg-stone-900 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-transparent to-stone-900" />
 
-        <div className="relative h-full min-h-[400px] md:min-h-[480px] flex flex-col items-center justify-center text-center px-4 py-16">
+        <div className="relative h-full min-h-[280px] md:min-h-[320px] flex flex-col items-center justify-center text-center px-4 py-12">
           <p className="text-amber-400 uppercase tracking-[0.3em] text-xs md:text-sm mb-6">
             Verified Organizations
           </p>
@@ -108,12 +101,6 @@ const OrganizationListPage: React.FC = () => {
                 </button>
               )}
             </div>
-          </div>
-
-          {/* 스크롤 인디케이터 */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 flex flex-col items-center gap-1 animate-bounce">
-            <span className="text-[10px] uppercase tracking-widest">Scroll</span>
-            <ChevronDown size={16} />
           </div>
         </div>
       </section>

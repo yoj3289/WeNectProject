@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Heart, MessageSquare, Eye, Star, StarOff, RefreshCw, ChevronLeft, ChevronRight, Calendar, Filter, X } from 'lucide-react';
+import { Heart, MessageSquare, Eye, Star, StarOff, RefreshCw, ChevronLeft, ChevronRight, Calendar, X, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAdminDonations, useToggleFeatured } from '../../hooks/useDonations';
 import type { AdminDonationFilters } from '../../api/donations';
 
 const PAGE_SIZE = 20;
+
+// 탭 타입
+type TabType = 'donations' | 'messages';
 
 // 상태 필터 옵션
 const STATUS_OPTIONS = [
@@ -23,14 +26,7 @@ const PERIOD_OPTIONS = [
   { value: '3months', label: '최근 3개월' },
 ];
 
-// 메시지 필터 옵션
-const MESSAGE_OPTIONS = [
-  { value: '', label: '전체' },
-  { value: 'true', label: '메시지 있음' },
-  { value: 'false', label: '메시지 없음' },
-];
-
-// Featured 필터 옵션
+// Featured 필터 옵션 (응원 메시지 탭용)
 const FEATURED_OPTIONS = [
   { value: '', label: '전체' },
   { value: 'true', label: '노출중' },
@@ -38,6 +34,9 @@ const FEATURED_OPTIONS = [
 ];
 
 const DonationManagementPage: React.FC = () => {
+  // 현재 탭
+  const [activeTab, setActiveTab] = useState<TabType>('donations');
+
   // 필터 상태
   const [filters, setFilters] = useState<AdminDonationFilters>({
     status: '',
@@ -45,22 +44,29 @@ const DonationManagementPage: React.FC = () => {
     page: 0,
     size: PAGE_SIZE,
   });
-  const [hasMessageFilter, setHasMessageFilter] = useState<string>('');
   const [isFeaturedFilter, setIsFeaturedFilter] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState('');
 
   // 상세 모달
   const [selectedDonation, setSelectedDonation] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
-  // API 훅
+  // API 훅 - 탭에 따라 다른 필터 적용
   const { data, isLoading, refetch } = useAdminDonations({
     ...filters,
-    hasMessage: hasMessageFilter === '' ? undefined : hasMessageFilter === 'true',
-    isFeatured: isFeaturedFilter === '' ? undefined : isFeaturedFilter === 'true',
+    // 응원 메시지 탭에서는 메시지 있는 것만, 기부 내역 탭에서는 전체
+    hasMessage: activeTab === 'messages' ? true : undefined,
+    isFeatured: activeTab === 'messages' && isFeaturedFilter !== ''
+      ? isFeaturedFilter === 'true'
+      : undefined,
   });
 
   const toggleFeaturedMutation = useToggleFeatured();
+
+  // 탭 변경 시 페이지 초기화
+  useEffect(() => {
+    setFilters(prev => ({ ...prev, page: 0 }));
+    setIsFeaturedFilter('');
+  }, [activeTab]);
 
   // 날짜 포맷
   const formatDate = (dateStr: string | null) => {
@@ -128,20 +134,63 @@ const DonationManagementPage: React.FC = () => {
       page: 0,
       size: PAGE_SIZE,
     });
-    setHasMessageFilter('');
     setIsFeaturedFilter('');
-    setSearchTerm('');
   };
 
   // 필터 변경 시 페이지 초기화
   useEffect(() => {
     setFilters(prev => ({ ...prev, page: 0 }));
-  }, [filters.status, filters.period, hasMessageFilter, isFeaturedFilter]);
+  }, [filters.status, filters.period, isFeaturedFilter]);
 
   const donations = data?.content || [];
   const totalPages = data?.totalPages || 0;
   const totalElements = data?.totalElements || 0;
   const currentPage = filters.page || 0;
+
+  // 페이지네이션 컴포넌트
+  const Pagination = () => (
+    totalPages > 1 ? (
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => handlePageChange(Math.max(0, currentPage - 1))}
+          disabled={currentPage === 0}
+          className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft size={18} />
+        </button>
+        <div className="flex items-center gap-1">
+          {Array.from({ length: totalPages }, (_, i) => i)
+            .filter(page => {
+              return Math.abs(page - currentPage) <= 2 || page === 0 || page === totalPages - 1;
+            })
+            .map((page, idx, arr) => (
+              <React.Fragment key={page}>
+                {idx > 0 && arr[idx - 1] !== page - 1 && (
+                  <span className="px-2 text-gray-400">...</span>
+                )}
+                <button
+                  onClick={() => handlePageChange(page)}
+                  className={`w-8 h-8 rounded-lg text-sm font-medium ${
+                    currentPage === page
+                      ? 'bg-rose-500 text-white'
+                      : 'border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {page + 1}
+                </button>
+              </React.Fragment>
+            ))}
+        </div>
+        <button
+          onClick={() => handlePageChange(Math.min(totalPages - 1, currentPage + 1))}
+          disabled={currentPage === totalPages - 1}
+          className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronRight size={18} />
+        </button>
+      </div>
+    ) : null
+  );
 
   return (
     <>
@@ -265,7 +314,11 @@ const DonationManagementPage: React.FC = () => {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">기부 관리</h1>
-            <p className="text-sm text-gray-600 mt-1">전체 기부 내역을 조회하고 홈페이지 노출을 관리합니다</p>
+            <p className="text-sm text-gray-600 mt-1">
+              {activeTab === 'donations'
+                ? '전체 기부 내역을 조회합니다'
+                : '응원 메시지를 확인하고 홈페이지 노출을 관리합니다'}
+            </p>
           </div>
           <button
             onClick={() => refetch()}
@@ -277,12 +330,37 @@ const DonationManagementPage: React.FC = () => {
           </button>
         </div>
 
-        {/* 기부 목록 */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          {/* 필터 및 검색 */}
-          <div className="p-4 md:p-6 border-b border-gray-200">
-            <div className="flex flex-col gap-4">
-              {/* 상단 필터 행 */}
+        {/* 탭 네비게이션 */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('donations')}
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition ${
+              activeTab === 'donations'
+                ? 'bg-rose-500 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <CreditCard size={18} />
+            기부 내역
+          </button>
+          <button
+            onClick={() => setActiveTab('messages')}
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition ${
+              activeTab === 'messages'
+                ? 'bg-rose-500 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <MessageSquare size={18} />
+            응원 메시지
+          </button>
+        </div>
+
+        {/* 기부 내역 탭 */}
+        {activeTab === 'donations' && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            {/* 필터 */}
+            <div className="p-4 md:p-6 border-b border-gray-200">
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Calendar size={18} className="text-gray-400" />
@@ -307,14 +385,147 @@ const DonationManagementPage: React.FC = () => {
                   ))}
                 </select>
 
+                <button
+                  onClick={resetFilters}
+                  className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition"
+                >
+                  필터 초기화
+                </button>
+              </div>
+            </div>
+
+            {/* 테이블 */}
+            {isLoading ? (
+              <div className="p-12 text-center">
+                <RefreshCw size={32} className="animate-spin mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500">기부 내역을 불러오는 중...</p>
+              </div>
+            ) : donations.length === 0 ? (
+              <div className="p-12 text-center">
+                <Heart size={48} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500">조건에 맞는 기부 내역이 없습니다.</p>
+              </div>
+            ) : (
+              <>
+                {/* 데스크톱 테이블 뷰 */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기부일</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기부자</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">금액</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">상태</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {donations.map((donation: any) => (
+                        <tr key={donation.donationId} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <span className="text-gray-600 text-sm whitespace-nowrap">
+                              {formatDate(donation.donatedAt || donation.approvedAt || donation.createdAt)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="font-medium text-gray-800 line-clamp-1 max-w-[200px]">
+                              {donation.projectTitle}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-gray-700 text-sm">
+                              {donation.isAnonymous ? '익명' : donation.donorName}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-gray-800 font-bold whitespace-nowrap">
+                              {formatAmount(donation.amount)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {renderStatusBadge(donation.status)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-center">
+                              <button
+                                onClick={() => {
+                                  setSelectedDonation(donation);
+                                  setShowDetailModal(true);
+                                }}
+                                className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+                                title="상세보기"
+                              >
+                                <Eye size={18} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* 모바일 카드 뷰 */}
+                <div className="md:hidden divide-y divide-gray-200">
+                  {donations.map((donation: any) => (
+                    <div key={donation.donationId} className="p-4 hover:bg-gray-50">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-800 truncate">{donation.projectTitle}</p>
+                          <p className="text-lg font-bold text-rose-600 mt-1">{formatAmount(donation.amount)}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            {renderStatusBadge(donation.status)}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">
+                            {donation.isAnonymous ? '익명' : donation.donorName} · {formatDate(donation.donatedAt)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedDonation(donation);
+                            setShowDetailModal(true);
+                          }}
+                          className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 flex-shrink-0"
+                        >
+                          <Eye size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* 푸터 - 페이지네이션 */}
+            <div className="p-4 md:p-6 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between gap-3">
+              <p className="text-sm text-gray-600">
+                총 <strong>{totalElements}</strong>건
+                {donations.length > 0 && (
+                  <span className="hidden md:inline ml-2">
+                    ({currentPage * PAGE_SIZE + 1}-{Math.min((currentPage + 1) * PAGE_SIZE, totalElements)}건 표시)
+                  </span>
+                )}
+              </p>
+              <Pagination />
+            </div>
+          </div>
+        )}
+
+        {/* 응원 메시지 탭 */}
+        {activeTab === 'messages' && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            {/* 필터 */}
+            <div className="p-4 md:p-6 border-b border-gray-200">
+              <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <MessageSquare size={18} className="text-gray-400" />
+                  <Calendar size={18} className="text-gray-400" />
                   <select
-                    value={hasMessageFilter}
-                    onChange={(e) => setHasMessageFilter(e.target.value)}
+                    value={filters.period}
+                    onChange={(e) => setFilters(prev => ({ ...prev, period: e.target.value }))}
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm"
                   >
-                    {MESSAGE_OPTIONS.map(opt => (
+                    {PERIOD_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
@@ -341,205 +552,105 @@ const DonationManagementPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
 
-          {/* 테이블 */}
-          {isLoading ? (
-            <div className="p-12 text-center">
-              <RefreshCw size={32} className="animate-spin mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500">기부 내역을 불러오는 중...</p>
-            </div>
-          ) : donations.length === 0 ? (
-            <div className="p-12 text-center">
-              <Heart size={48} className="mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-500">조건에 맞는 기부 내역이 없습니다.</p>
-            </div>
-          ) : (
-            <>
-              {/* 데스크톱 테이블 뷰 */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기부일</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기부자</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">금액</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">응원 메시지</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">노출</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">상태</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {donations.map((donation: any) => (
-                      <tr key={donation.donationId} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <span className="text-gray-600 text-sm whitespace-nowrap">
-                            {formatDate(donation.donatedAt || donation.approvedAt || donation.createdAt)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="font-medium text-gray-800 line-clamp-1 max-w-[200px]">
-                            {donation.projectTitle}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="text-gray-700 text-sm">
+            {/* 메시지 리스트 */}
+            {isLoading ? (
+              <div className="p-12 text-center">
+                <RefreshCw size={32} className="animate-spin mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500">응원 메시지를 불러오는 중...</p>
+              </div>
+            ) : donations.length === 0 ? (
+              <div className="p-12 text-center">
+                <MessageSquare size={48} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500">조건에 맞는 응원 메시지가 없습니다.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {donations.map((donation: any) => (
+                  <div key={donation.donationId} className="p-4 md:p-6 hover:bg-gray-50">
+                    <div className="flex flex-col md:flex-row md:items-start gap-4">
+                      {/* 메시지 내용 */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <span className="font-semibold text-gray-800">
                             {donation.isAnonymous ? '익명' : donation.donorName}
                           </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="text-gray-800 font-bold whitespace-nowrap">
-                            {formatAmount(donation.amount)}
+                          <span className="text-gray-400">·</span>
+                          <span className="text-sm text-gray-500">
+                            {formatDate(donation.donatedAt)}
                           </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          {donation.message ? (
-                            <p className="text-gray-700 text-sm line-clamp-2 max-w-[250px]" title={donation.message}>
-                              {donation.message}
-                            </p>
-                          ) : (
-                            <span className="text-gray-400 text-sm">-</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          {donation.isFeatured ? (
-                            <Star size={18} className="mx-auto text-amber-500" fill="currentColor" />
-                          ) : (
-                            <StarOff size={18} className="mx-auto text-gray-300" />
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          {renderStatusBadge(donation.status)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              onClick={() => {
-                                setSelectedDonation(donation);
-                                setShowDetailModal(true);
-                              }}
-                              className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
-                              title="상세보기"
-                            >
-                              <Eye size={18} />
-                            </button>
-                            {donation.message && (
-                              <button
-                                onClick={() => handleToggleFeatured(donation.donationId, donation.isFeatured)}
-                                disabled={toggleFeaturedMutation.isPending}
-                                className={`p-2 rounded-lg ${
-                                  donation.isFeatured
-                                    ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                                }`}
-                                title={donation.isFeatured ? '노출 해제' : '홈페이지 노출'}
-                              >
-                                {donation.isFeatured ? <Star size={18} fill="currentColor" /> : <StarOff size={18} />}
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* 모바일 카드 뷰 */}
-              <div className="md:hidden divide-y divide-gray-200">
-                {donations.map((donation: any) => (
-                  <div key={donation.donationId} className="p-4 hover:bg-gray-50">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-800 truncate">{donation.projectTitle}</p>
-                        <p className="text-lg font-bold text-rose-600 mt-1">{formatAmount(donation.amount)}</p>
-                        <div className="flex items-center gap-2 mt-2 flex-wrap">
-                          {renderStatusBadge(donation.status)}
-                          {donation.message && (
-                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">메시지</span>
-                          )}
                           {donation.isFeatured && (
-                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs flex items-center gap-1">
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-semibold flex items-center gap-1">
                               <Star size={10} fill="currentColor" />
                               노출중
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">
-                          {donation.isAnonymous ? '익명' : donation.donorName} · {formatDate(donation.donatedAt)}
+                        <p className="text-sm text-gray-500 mb-2">
+                          프로젝트: {donation.projectTitle}
+                        </p>
+                        <div className="bg-blue-50 rounded-lg p-4">
+                          <p className="text-gray-800 whitespace-pre-wrap">{donation.message}</p>
+                        </div>
+                        <p className="text-sm text-rose-600 font-semibold mt-2">
+                          {formatAmount(donation.amount)} 기부
                         </p>
                       </div>
-                      <button
-                        onClick={() => {
-                          setSelectedDonation(donation);
-                          setShowDetailModal(true);
-                        }}
-                        className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 flex-shrink-0"
-                      >
-                        <Eye size={18} />
-                      </button>
+
+                      {/* 액션 버튼 */}
+                      <div className="flex md:flex-col gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => {
+                            setSelectedDonation(donation);
+                            setShowDetailModal(true);
+                          }}
+                          className="flex-1 md:flex-none px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm font-medium flex items-center justify-center gap-2"
+                        >
+                          <Eye size={16} />
+                          상세
+                        </button>
+                        <button
+                          onClick={() => handleToggleFeatured(donation.donationId, donation.isFeatured)}
+                          disabled={toggleFeaturedMutation.isPending}
+                          className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 ${
+                            donation.isFeatured
+                              ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {donation.isFeatured ? (
+                            <>
+                              <StarOff size={16} />
+                              노출 해제
+                            </>
+                          ) : (
+                            <>
+                              <Star size={16} />
+                              노출하기
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </>
-          )}
-
-          {/* 푸터 - 페이지네이션 */}
-          <div className="p-4 md:p-6 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between gap-3">
-            <p className="text-sm text-gray-600">
-              총 <strong>{totalElements}</strong>건
-              {donations.length > 0 && (
-                <span className="hidden md:inline ml-2">
-                  ({currentPage * PAGE_SIZE + 1}-{Math.min((currentPage + 1) * PAGE_SIZE, totalElements)}건 표시)
-                </span>
-              )}
-            </p>
-            {totalPages > 1 && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handlePageChange(Math.max(0, currentPage - 1))}
-                  disabled={currentPage === 0}
-                  className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i)
-                    .filter(page => {
-                      return Math.abs(page - currentPage) <= 2 || page === 0 || page === totalPages - 1;
-                    })
-                    .map((page, idx, arr) => (
-                      <React.Fragment key={page}>
-                        {idx > 0 && arr[idx - 1] !== page - 1 && (
-                          <span className="px-2 text-gray-400">...</span>
-                        )}
-                        <button
-                          onClick={() => handlePageChange(page)}
-                          className={`w-8 h-8 rounded-lg text-sm font-medium ${
-                            currentPage === page
-                              ? 'bg-rose-500 text-white'
-                              : 'border border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          {page + 1}
-                        </button>
-                      </React.Fragment>
-                    ))}
-                </div>
-                <button
-                  onClick={() => handlePageChange(Math.min(totalPages - 1, currentPage + 1))}
-                  disabled={currentPage === totalPages - 1}
-                  className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>
             )}
+
+            {/* 푸터 - 페이지네이션 */}
+            <div className="p-4 md:p-6 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between gap-3">
+              <p className="text-sm text-gray-600">
+                총 <strong>{totalElements}</strong>건의 응원 메시지
+                {donations.length > 0 && (
+                  <span className="hidden md:inline ml-2">
+                    ({currentPage * PAGE_SIZE + 1}-{Math.min((currentPage + 1) * PAGE_SIZE, totalElements)}건 표시)
+                  </span>
+                )}
+              </p>
+              <Pagination />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </>
   );

@@ -617,12 +617,20 @@ public class DonationService {
         if (isFeatured != null) {
             donationPage = donationRepository.findByIsFeatured(isFeatured, pageable);
         }
-        // 메시지 필터가 있는 경우
+        // 메시지 있음 필터
         else if (hasMessage != null && hasMessage) {
             if (donationStatus != null) {
                 donationPage = donationRepository.findWithMessageAndStatus(donationStatus, pageable);
             } else {
                 donationPage = donationRepository.findAllWithMessage(pageable);
+            }
+        }
+        // 메시지 없음 필터
+        else if (hasMessage != null && !hasMessage) {
+            if (donationStatus != null) {
+                donationPage = donationRepository.findWithoutMessageAndStatus(donationStatus, pageable);
+            } else {
+                donationPage = donationRepository.findAllWithoutMessage(pageable);
             }
         }
         // 기간 + 상태 필터

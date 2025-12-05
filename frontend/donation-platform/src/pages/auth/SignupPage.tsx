@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Loader2, AlertCircle, CheckCircle, X, ChevronRight, ArrowLeft, Heart } from 'lucide-react';
+import { Upload, Loader2, AlertCircle, CheckCircle, X, ChevronRight, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
 import type { UserType } from '../../types';
@@ -501,9 +501,9 @@ const SignupPage: React.FC = () => {
   const renderStep1 = () => (
     <>
       <div className="text-center mb-6">
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <Heart className="text-amber-500" size={28} fill="currentColor" />
-          <span className="text-lg font-bold text-stone-800">위넥트</span>
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <img src="/WeNect_Logo.png" alt="WeNect" className="h-8 w-8 object-contain" />
+          <span className="text-xl font-bold text-stone-800 leading-none">위넥트</span>
         </div>
         <h1 className="text-xl font-bold text-stone-800 mb-1">회원가입</h1>
         <p className="text-sm text-stone-500">서비스 이용을 위해 약관에 동의해주세요</p>
