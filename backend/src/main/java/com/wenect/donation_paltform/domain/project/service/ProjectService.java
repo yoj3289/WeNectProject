@@ -894,4 +894,78 @@ public class ProjectService {
             throw new IllegalArgumentException("모금 기간은 최소 7일 이상이어야 합니다. (현재: " + daysBetween + "일)");
         }
     }
+
+    /**
+     * 특정 기관의 프로젝트 검색 (페이지네이션)
+     * - ACTIVE 상태인 프로젝트만 조회
+     * - 카테고리, 검색어, 정렬 기준 지원
+     *
+     * @param orgId 기관 ID
+     * @param category 카테고리명 (선택)
+     * @param keyword 검색 키워드 (선택)
+     * @param sortBy 정렬 기준 (latest, deadline, mostDonated)
+     * @param page 페이지 번호
+     * @param size 페이지 크기
+     * @return 프로젝트 페이지
+     */
+    @Transactional(readOnly = true)
+    public Page<ProjectResponse> searchProjectsByOrganization(Long orgId, String category, String keyword, String sortBy, int page, int size) {
+        // 1. 카테고리 ID 변환
+        Integer categoryId = null;
+        if (category != null && !category.trim().isEmpty()) {
+            categoryId = getCategoryId(category);
+        }
+
+        // 2. 해당 기관의 모든 ACTIVE 프로젝트 조회
+        List<Project> projects = projectRepository.findByOrgId(orgId).stream()
+                .filter(p -> p.getStatus() == Project.ProjectStatus.ACTIVE)
+                .collect(Collectors.toList());
+
+        // 3. 카테고리 필터 적용
+        if (categoryId != null) {
+            Integer finalCategoryId = categoryId;
+            projects = projects.stream()
+                    .filter(p -> p.getCategoryId().equals(finalCategoryId))
+                    .collect(Collectors.toList());
+        }
+
+        // 4. 검색어 필터 적용
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String searchLower = keyword.toLowerCase();
+            projects = projects.stream()
+                    .filter(p -> p.getTitle().toLowerCase().contains(searchLower))
+                    .collect(Collectors.toList());
+        }
+
+        // 5. 정렬 적용
+        Comparator<Project> comparator;
+        switch (sortBy) {
+            case "deadline":
+                comparator = Comparator.comparing(Project::getEndDate);
+                break;
+            case "mostDonated":
+                comparator = Comparator.comparing(Project::getCurrentAmount).reversed()
+                        .thenComparing(Comparator.comparing(Project::getCreatedAt).reversed());
+                break;
+            case "latest":
+            default:
+                comparator = Comparator.comparing(Project::getCreatedAt).reversed();
+                break;
+        }
+        projects.sort(comparator);
+
+        // 6. DTO 변환
+        List<ProjectResponse> responses = projects.stream()
+                .map(this::convertToProjectResponse)
+                .collect(Collectors.toList());
+
+        // 7. 페이지네이션 적용
+        int start = page * size;
+        int end = Math.min(start + size, responses.size());
+        List<ProjectResponse> pagedResponses = responses.subList(start, end);
+
+        // 8. Page 객체 생성
+        Pageable pageable = PageRequest.of(page, size);
+        return new PageImpl<>(pagedResponses, pageable, responses.size());
+    }
 }

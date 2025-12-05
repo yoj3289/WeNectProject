@@ -2,6 +2,7 @@ package com.wenect.donation_paltform.domain.organization.service;
 
 import com.wenect.donation_paltform.domain.auth.entity.User;
 import com.wenect.donation_paltform.domain.auth.repository.UserRepository;
+import com.wenect.donation_paltform.domain.organization.dto.OrganizationListResponse;
 import com.wenect.donation_paltform.domain.organization.dto.OrganizationStatsResponse;
 import com.wenect.donation_paltform.domain.organization.entity.Organization;
 import com.wenect.donation_paltform.domain.organization.entity.OrganizationDocument;
@@ -11,13 +12,19 @@ import com.wenect.donation_paltform.domain.project.entity.Project;
 import com.wenect.donation_paltform.domain.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 기관 관리 서비스
@@ -171,5 +178,100 @@ public class OrganizationService {
                 throw new RuntimeException("파일 저장 중 오류가 발생했습니다.", e);
             }
         }
+    }
+
+    /**
+     * 기관 목록 조회 (페이지네이션)
+     * - APPROVED 상태인 기관만 조회
+     * - 검색, 정렬 지원
+     *
+     * @param search 검색 키워드 (기관명)
+     * @param sortBy 정렬 기준 (latest, mostProjects, mostFunded)
+     * @param page 페이지 번호
+     * @param size 페이지 크기
+     * @return 기관 목록
+     */
+    @Transactional(readOnly = true)
+    public Page<OrganizationListResponse> getAllOrganizations(String search, String sortBy, int page, int size) {
+        // 1. APPROVED 상태인 모든 기관 조회 (User 정보 함께)
+        List<Organization> organizations = organizationRepository.findAllWithUser().stream()
+                .filter(org -> org.getApprovalStatus() == Organization.ApprovalStatus.APPROVED)
+                .collect(Collectors.toList());
+
+        // 2. 검색 필터 적용
+        if (search != null && !search.trim().isEmpty()) {
+            String searchLower = search.toLowerCase();
+            organizations = organizations.stream()
+                    .filter(org -> org.getOrgName().toLowerCase().contains(searchLower))
+                    .collect(Collectors.toList());
+        }
+
+        // 3. 모든 기관의 프로젝트를 한 번에 조회 (N+1 쿼리 방지)
+        List<Long> orgIds = organizations.stream()
+                .map(Organization::getOrgId)
+                .collect(Collectors.toList());
+
+        List<Project> allProjects = orgIds.isEmpty()
+                ? new ArrayList<>()
+                : projectRepository.findAll().stream()
+                        .filter(p -> orgIds.contains(p.getOrgId()))
+                        .collect(Collectors.toList());
+
+        // 4. 기관 ID별로 프로젝트 그룹핑
+        java.util.Map<Long, List<Project>> projectsByOrgId = allProjects.stream()
+                .collect(Collectors.groupingBy(Project::getOrgId));
+
+        // 5. OrganizationListResponse로 변환 (프로젝트 통계 포함)
+        List<OrganizationListResponse> responses = organizations.stream()
+                .<OrganizationListResponse>map(org -> {
+                    List<Project> projects = projectsByOrgId.getOrDefault(org.getOrgId(), new ArrayList<>());
+
+                    int totalProjects = projects.size();
+                    int activeProjects = (int) projects.stream()
+                            .filter(p -> p.getStatus() == Project.ProjectStatus.ACTIVE)
+                            .count();
+
+                    BigDecimal totalFunded = projects.stream()
+                            .map(Project::getCurrentAmount)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    return OrganizationListResponse.builder()
+                            .orgId(org.getOrgId())
+                            .orgName(org.getOrgName())
+                            .representative(org.getRepresentative())
+                            .description(null) // User 엔티티에 bio 필드 없음
+                            .logoUrl(null) // User 엔티티에 profileImage 필드 없음
+                            .totalProjects(totalProjects)
+                            .activeProjects(activeProjects)
+                            .totalFunded(totalFunded)
+                            .createdAt(org.getUser().getCreatedAt())
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // 4. 정렬 적용
+        Comparator<OrganizationListResponse> comparator;
+        switch (sortBy) {
+            case "mostProjects":
+                comparator = Comparator.comparing(OrganizationListResponse::getTotalProjects).reversed();
+                break;
+            case "mostFunded":
+                comparator = Comparator.comparing(OrganizationListResponse::getTotalFunded).reversed();
+                break;
+            case "latest":
+            default:
+                comparator = Comparator.comparing(OrganizationListResponse::getCreatedAt).reversed();
+                break;
+        }
+        responses.sort(comparator);
+
+        // 5. 페이지네이션 적용
+        int start = page * size;
+        int end = Math.min(start + size, responses.size());
+        List<OrganizationListResponse> pagedResponses = responses.subList(start, end);
+
+        // 6. Page 객체 생성
+        Pageable pageable = PageRequest.of(page, size);
+        return new org.springframework.data.domain.PageImpl<>(pagedResponses, pageable, responses.size());
     }
 }

@@ -1,5 +1,6 @@
 package com.wenect.donation_paltform.domain.organization.controller;
 
+import com.wenect.donation_paltform.domain.organization.dto.OrganizationListResponse;
 import com.wenect.donation_paltform.domain.organization.dto.OrganizationStatsResponse;
 import com.wenect.donation_paltform.domain.organization.entity.Organization;
 import com.wenect.donation_paltform.domain.organization.repository.OrganizationRepository;
@@ -11,6 +12,7 @@ import com.wenect.donation_paltform.global.common.PageResponse;
 import com.wenect.donation_paltform.global.util.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,6 +34,42 @@ public class OrganizationController {
     private final ProjectService projectService;
     private final JwtTokenProvider jwtTokenProvider;
     private final OrganizationRepository organizationRepository;
+
+    /**
+     * 전체 기관 목록 조회 (공개 API)
+     * GET /api/organization/list
+     *
+     * @param search 검색 키워드 (기관명)
+     * @param sortBy 정렬 기준 (latest, mostProjects, mostFunded)
+     * @param page 페이지 번호 (0부터 시작)
+     * @param size 페이지 크기
+     * @return 기관 목록
+     */
+    @GetMapping("/list")
+    public ResponseEntity<PageResponse<OrganizationListResponse>> getAllOrganizations(
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "sortBy", defaultValue = "latest") String sortBy,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "12") int size) {
+
+        try {
+            Page<OrganizationListResponse> organizations = organizationService.getAllOrganizations(search, sortBy, page, size);
+
+            PageResponse<OrganizationListResponse> pageResponse = PageResponse.of(
+                    organizations.getContent(),
+                    organizations.getNumber(),
+                    organizations.getSize(),
+                    organizations.getTotalElements(),
+                    organizations.getTotalPages()
+            );
+
+            return ResponseEntity.ok(pageResponse);
+
+        } catch (Exception e) {
+            log.error("기관 목록 조회 중 오류 발생", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 
     /**
      * 기관 통계 조회

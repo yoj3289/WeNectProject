@@ -683,6 +683,8 @@ import PostDetailPage from './pages/community/PostDetailPage';
 import EditPostPage from './pages/community/EditPostPage';
 import ProfilePage from './pages/user/ProfilePage';
 import IntroductionPage from './pages/IntroductionPage';
+import OrganizationListPage from './pages/organization/OrganizationListPage';
+import OrganizationProjectsPage from './pages/organization/OrganizationProjectsPage';
 import OrganizationDashboardPage from './pages/organization/OrganizationDashboardPage';
 import PiggyBankManagementPage from './pages/organization/PiggyBankManagementPage';
 import DashboardPage from './pages/admin/DashboardPage';
@@ -1392,6 +1394,16 @@ const AppRoutes: React.FC = () => {
                 />
               } />
               <Route path="/introduction" element={<IntroductionPage />} />
+              <Route path="/organizations" element={
+                <OrganizationListPage />
+              } />
+              <Route path="/organizations/:orgId/projects" element={
+                <OrganizationProjectsPage
+                  isLoggedIn={isLoggedIn}
+                  onProjectSelect={(project) => setSelectedProject(project)}
+                  onNavigateToLogin={() => {}}
+                />
+              } />
               <Route path="/projects" element={
                 <ProjectListPage
                   isLoggedIn={isLoggedIn}

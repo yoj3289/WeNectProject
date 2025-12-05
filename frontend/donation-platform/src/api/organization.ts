@@ -13,6 +13,31 @@ export interface PageResponse<T> {
 }
 
 /**
+ * 기관 목록 응답 타입
+ */
+export interface OrganizationListResponse {
+  id: number;
+  orgName: string;
+  representative: string;
+  description: string;
+  logoUrl: string;
+  totalProjects: number;
+  activeProjects: number;
+  totalFunded: number;
+  createdAt: string;
+}
+
+/**
+ * 기관 목록 필터 옵션
+ */
+export interface OrganizationFilters {
+  search?: string;
+  sortBy?: string;
+  page?: number;
+  size?: number;
+}
+
+/**
  * 기관 통계 응답 타입
  */
 export interface OrganizationStats {
@@ -49,7 +74,44 @@ export const getOrganizationStats = async (): Promise<OrganizationStats> => {
 };
 
 /**
- * 기관 프로젝트 목록 조회
+ * 기관 목록 조회 (공개 API)
+ * GET /api/organization/list
+ */
+export const getOrganizations = async (
+  filters: OrganizationFilters = {}
+): Promise<PageResponse<OrganizationListResponse>> => {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      params.append(key, String(value));
+    }
+  });
+
+  return apiClient.get<PageResponse<OrganizationListResponse>>(`/organization/list?${params.toString()}`);
+};
+
+/**
+ * 특정 기관의 프로젝트 목록 조회 (공개 API)
+ * GET /api/projects/by-organization/{orgId}
+ */
+export const getOrganizationProjectsById = async (
+  orgId: number,
+  filters: OrganizationProjectFilters = {}
+): Promise<PageResponse<Project>> => {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      params.append(key, String(value));
+    }
+  });
+
+  return apiClient.get<PageResponse<Project>>(`/projects/by-organization/${orgId}?${params.toString()}`);
+};
+
+/**
+ * 기관 프로젝트 목록 조회 (기관 회원 전용)
  * GET /api/organization/projects
  */
 export const getOrganizationProjects = async (
