@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, Heart, FileText, Baby, Dog, UserCircle, TreePine, GraduationCap, Loader2, AlertCircle, Users, Sparkles, TrendingUp, Clock, ArrowRight, ChevronDown, X } from 'lucide-react';
+import { Search, Heart, FileText, Baby, Dog, UserCircle, TreePine, GraduationCap, AlertCircle, Users, Sparkles, TrendingUp, Clock, ArrowRight, ChevronDown, X } from 'lucide-react';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { useProjects, useSettlementProjects, useToggleFavoriteProject, useUserFavoriteProjects, usePopularProjects } from '../../hooks/useProjects';
 import { useRecentDonations } from '../../hooks/useDonations';
@@ -313,9 +314,8 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
 
           {/* 로딩 */}
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <Loader2 className="animate-spin text-amber-600 mb-4" size={48} />
-              <p className="text-stone-500">프로젝트를 불러오는 중...</p>
+            <div className="bg-white border border-stone-200 rounded-2xl p-12">
+              <LoadingSpinner size="lg" message="프로젝트를 불러오는 중..." />
             </div>
           ) : isError ? (
             /* 에러 상태 */

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Loader2, AlertCircle, Building2, Users, TrendingUp, Clock, ChevronDown, X, Heart, FolderOpen } from 'lucide-react';
+import { Search, AlertCircle, Building2, Users, TrendingUp, Clock, ChevronDown, X, Heart, FolderOpen } from 'lucide-react';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { useOrganizations } from '../../hooks/useOrganizations';
 import Pagination from '../../components/common/Pagination';
 import type { OrganizationListResponse } from '../../api/organization';
@@ -117,9 +118,8 @@ const OrganizationListPage: React.FC = () => {
 
         {/* ========== 기관 카드 그리드 ========== */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <Loader2 className="animate-spin text-amber-600 mb-4" size={48} />
-            <p className="text-stone-500">기관 목록을 불러오는 중...</p>
+          <div className="bg-white border border-stone-200 p-12">
+            <LoadingSpinner size="lg" message="기관 목록을 불러오는 중..." />
           </div>
         ) : isError ? (
           <div className="text-center py-20">
