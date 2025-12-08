@@ -39,28 +39,6 @@ const OrganizationListPage: React.FC = () => {
   // Helpers
   const formatAmount = (amount: number): string => amount.toLocaleString('ko-KR');
 
-  // 에러 상태
-  if (isError) {
-    return (
-      <div className="bg-stone-50 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-            <AlertCircle className="w-8 h-8 text-red-500" />
-          </div>
-          <p className="text-stone-600 mb-4">
-            {(error as any)?.response?.data?.message || '기관 목록을 불러오는데 실패했습니다.'}
-          </p>
-          <button
-            onClick={() => refetch()}
-            className="bg-amber-500 text-stone-900 px-6 py-3 font-medium hover:bg-amber-400 transition-colors"
-          >
-            다시 시도
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const displayOrganizations = organizations?.content || [];
 
   return (
@@ -142,6 +120,21 @@ const OrganizationListPage: React.FC = () => {
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="animate-spin text-amber-600 mb-4" size={48} />
             <p className="text-stone-500">기관 목록을 불러오는 중...</p>
+          </div>
+        ) : isError ? (
+          <div className="text-center py-20">
+            <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-red-500" />
+            </div>
+            <p className="text-stone-600 mb-4">
+              {(error as any)?.response?.data?.message || '기관 목록을 불러오는데 실패했습니다.'}
+            </p>
+            <button
+              onClick={() => refetch()}
+              className="bg-amber-500 text-stone-900 px-6 py-3 font-medium hover:bg-amber-400 transition-colors"
+            >
+              다시 시도
+            </button>
           </div>
         ) : displayOrganizations.length === 0 ? (
           <div className="text-center py-20">

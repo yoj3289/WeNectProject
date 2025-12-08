@@ -122,28 +122,6 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
     setSearchKeyword('');
   };
 
-  // 에러 상태
-  if (isError) {
-    return (
-      <div className="bg-stone-50 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-            <AlertCircle className="w-8 h-8 text-red-500" />
-          </div>
-          <p className="text-stone-600 mb-4">
-            {(error as any)?.response?.data?.message || '프로젝트를 불러오는데 실패했습니다.'}
-          </p>
-          <button
-            onClick={() => refetch()}
-            className="bg-amber-500 text-stone-900 px-6 py-3 font-medium hover:bg-amber-400 transition-colors"
-          >
-            다시 시도
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const displayProjects = projects?.content || [];
 
   return (
@@ -335,22 +313,25 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
 
           {/* 로딩 */}
           {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, idx) => (
-                <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
-                  <div className="h-48 bg-stone-200" />
-                  <div className="p-5">
-                    <div className="h-3 bg-stone-200 rounded w-16 mb-3" />
-                    <div className="h-5 bg-stone-200 rounded w-full mb-2" />
-                    <div className="h-5 bg-stone-200 rounded w-3/4 mb-4" />
-                    <div className="h-2 bg-stone-200 rounded w-full mb-4" />
-                    <div className="flex justify-between">
-                      <div className="h-4 bg-stone-200 rounded w-24" />
-                      <div className="h-4 bg-stone-200 rounded w-16" />
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="animate-spin text-amber-600 mb-4" size={48} />
+              <p className="text-stone-500">프로젝트를 불러오는 중...</p>
+            </div>
+          ) : isError ? (
+            /* 에러 상태 */
+            <div className="text-center py-20">
+              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="w-8 h-8 text-red-500" />
+              </div>
+              <p className="text-stone-600 mb-4">
+                {(error as any)?.response?.data?.message || '프로젝트를 불러오는데 실패했습니다.'}
+              </p>
+              <button
+                onClick={() => refetch()}
+                className="bg-amber-500 text-stone-900 px-6 py-3 font-medium hover:bg-amber-400 transition-colors"
+              >
+                다시 시도
+              </button>
             </div>
           ) : displayProjects.length === 0 ? (
             /* 결과 없음 */
