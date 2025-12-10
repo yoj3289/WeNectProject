@@ -13,7 +13,7 @@ import ConfirmModal from '../../components/common/ConfirmModal';
 
 const OrganizationDashboardPage: React.FC = () => {
   // State
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'settlement' | ''>('');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   const [debouncedSearchKeyword, setDebouncedSearchKeyword] = useState<string>('');
   const [sortOption, setSortOption] = useState<string>('latest');
@@ -201,7 +201,7 @@ const OrganizationDashboardPage: React.FC = () => {
 
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => setStatusFilter(e.target.value as 'active' | 'settlement' | '')}
               className="px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 text-sm"
             >
               <option value="">전체 상태</option>
