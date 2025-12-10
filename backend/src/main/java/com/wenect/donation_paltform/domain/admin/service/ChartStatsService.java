@@ -3,7 +3,6 @@ package com.wenect.donation_paltform.domain.admin.service;
 import com.wenect.donation_paltform.domain.admin.dto.ChartStatsResponse.*;
 import com.wenect.donation_paltform.domain.auth.entity.User;
 import com.wenect.donation_paltform.domain.auth.repository.UserRepository;
-import com.wenect.donation_paltform.domain.donation.entity.Donation;
 import com.wenect.donation_paltform.domain.donation.repository.DonationRepository;
 import com.wenect.donation_paltform.domain.project.entity.Project;
 import com.wenect.donation_paltform.domain.project.repository.ProjectRepository;
@@ -19,8 +18,11 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
-import java.util.stream.Collectors;
 
+/**
+ * 차트 통계 서비스
+ * [성능 개선] findAll() -> 집계 쿼리로 변경
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -32,18 +34,15 @@ public class ChartStatsService {
 
     /**
      * 기부 추이 조회 (주간/월간)
+     * [성능 개선] 집계 쿼리 사용
      */
     public DonationTrendResponse getDonationTrend(String period) {
-        List<Donation> donations = donationRepository.findAll().stream()
-                .filter(d -> d.getStatus() == Donation.DonationStatus.COMPLETED)
-                .collect(Collectors.toList());
-
         List<DonationTrend> trendData;
 
         if ("monthly".equals(period)) {
-            trendData = getMonthlyDonationTrend(donations);
+            trendData = getMonthlyDonationTrend();
         } else {
-            trendData = getWeeklyDonationTrend(donations);
+            trendData = getWeeklyDonationTrend();
         }
 
         BigDecimal totalAmount = trendData.stream()
@@ -63,38 +62,50 @@ public class ChartStatsService {
     }
 
     /**
-     * 주간 기부 추이 (최근 8주)
+     * 주간 기부 추이 (최근 8주) - 집계 쿼리 사용
      */
-    private List<DonationTrend> getWeeklyDonationTrend(List<Donation> donations) {
-        List<DonationTrend> result = new ArrayList<>();
+    private List<DonationTrend> getWeeklyDonationTrend() {
         LocalDate today = LocalDate.now();
         LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate startDate = weekStart.minusWeeks(7);
 
+        LocalDateTime startDateTime = LocalDateTime.of(startDate, LocalTime.MIN);
+        LocalDateTime endDateTime = LocalDateTime.of(today, LocalTime.MAX);
+
+        // DB에서 일별 집계 데이터 조회
+        List<Object[]> stats = donationRepository.findDonationStatsByDateRange(startDateTime, endDateTime);
+
+        // 일별 데이터를 Map으로 변환
+        Map<String, BigDecimal> amountMap = new HashMap<>();
+        Map<String, Long> countMap = new HashMap<>();
+        for (Object[] row : stats) {
+            String dateStr = (String) row[0];
+            BigDecimal amount = row[1] != null ? new BigDecimal(row[1].toString()) : BigDecimal.ZERO;
+            Long count = ((Number) row[2]).longValue();
+            amountMap.put(dateStr, amount);
+            countMap.put(dateStr, count);
+        }
+
+        // 주간 데이터로 집계
+        List<DonationTrend> result = new ArrayList<>();
         for (int i = 7; i >= 0; i--) {
             LocalDate start = weekStart.minusWeeks(i);
             LocalDate end = start.plusDays(6);
-            LocalDateTime startDateTime = LocalDateTime.of(start, LocalTime.MIN);
-            LocalDateTime endDateTime = LocalDateTime.of(end, LocalTime.MAX);
 
-            BigDecimal amount = donations.stream()
-                    .filter(d -> d.getDonatedAt() != null &&
-                            !d.getDonatedAt().isBefore(startDateTime) &&
-                            !d.getDonatedAt().isAfter(endDateTime))
-                    .map(Donation::getAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal weekAmount = BigDecimal.ZERO;
+            Long weekCount = 0L;
 
-            Long count = donations.stream()
-                    .filter(d -> d.getDonatedAt() != null &&
-                            !d.getDonatedAt().isBefore(startDateTime) &&
-                            !d.getDonatedAt().isAfter(endDateTime))
-                    .count();
+            for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+                String dateStr = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                weekAmount = weekAmount.add(amountMap.getOrDefault(dateStr, BigDecimal.ZERO));
+                weekCount += countMap.getOrDefault(dateStr, 0L);
+            }
 
             String label = start.format(DateTimeFormatter.ofPattern("M/d"));
-
             result.add(DonationTrend.builder()
                     .label(label)
-                    .amount(amount)
-                    .count(count)
+                    .amount(weekAmount)
+                    .count(weekCount)
                     .build());
         }
 
@@ -102,38 +113,40 @@ public class ChartStatsService {
     }
 
     /**
-     * 월간 기부 추이 (최근 12개월)
+     * 월간 기부 추이 (최근 12개월) - 집계 쿼리 사용
      */
-    private List<DonationTrend> getMonthlyDonationTrend(List<Donation> donations) {
-        List<DonationTrend> result = new ArrayList<>();
+    private List<DonationTrend> getMonthlyDonationTrend() {
         LocalDate today = LocalDate.now();
+        LocalDate startMonth = today.minusMonths(11).withDayOfMonth(1);
 
+        LocalDateTime startDateTime = LocalDateTime.of(startMonth, LocalTime.MIN);
+        LocalDateTime endDateTime = LocalDateTime.of(today, LocalTime.MAX);
+
+        // DB에서 월별 집계 데이터 조회
+        List<Object[]> stats = donationRepository.findMonthlyDonationStats(startDateTime, endDateTime);
+
+        // 월별 데이터를 Map으로 변환
+        Map<String, BigDecimal> amountMap = new HashMap<>();
+        Map<String, Long> countMap = new HashMap<>();
+        for (Object[] row : stats) {
+            String monthStr = (String) row[0];
+            BigDecimal amount = row[1] != null ? new BigDecimal(row[1].toString()) : BigDecimal.ZERO;
+            Long count = ((Number) row[2]).longValue();
+            amountMap.put(monthStr, amount);
+            countMap.put(monthStr, count);
+        }
+
+        // 12개월 데이터 생성 (데이터 없는 월은 0으로)
+        List<DonationTrend> result = new ArrayList<>();
         for (int i = 11; i >= 0; i--) {
             LocalDate month = today.minusMonths(i);
-            LocalDate start = month.withDayOfMonth(1);
-            LocalDate end = month.with(TemporalAdjusters.lastDayOfMonth());
-            LocalDateTime startDateTime = LocalDateTime.of(start, LocalTime.MIN);
-            LocalDateTime endDateTime = LocalDateTime.of(end, LocalTime.MAX);
-
-            BigDecimal amount = donations.stream()
-                    .filter(d -> d.getDonatedAt() != null &&
-                            !d.getDonatedAt().isBefore(startDateTime) &&
-                            !d.getDonatedAt().isAfter(endDateTime))
-                    .map(Donation::getAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            Long count = donations.stream()
-                    .filter(d -> d.getDonatedAt() != null &&
-                            !d.getDonatedAt().isBefore(startDateTime) &&
-                            !d.getDonatedAt().isAfter(endDateTime))
-                    .count();
-
+            String monthKey = month.format(DateTimeFormatter.ofPattern("yyyy-MM"));
             String label = month.format(DateTimeFormatter.ofPattern("M월"));
 
             result.add(DonationTrend.builder()
                     .label(label)
-                    .amount(amount)
-                    .count(count)
+                    .amount(amountMap.getOrDefault(monthKey, BigDecimal.ZERO))
+                    .count(countMap.getOrDefault(monthKey, 0L))
                     .build());
         }
 
@@ -142,16 +155,15 @@ public class ChartStatsService {
 
     /**
      * 사용자 가입 추이 조회 (주간/월간)
+     * [성능 개선] 집계 쿼리 사용
      */
     public UserTrendResponse getUserTrend(String period) {
-        List<User> users = userRepository.findAll();
-
         List<UserTrend> trendData;
 
         if ("monthly".equals(period)) {
-            trendData = getMonthlyUserTrend(users);
+            trendData = getMonthlyUserTrend();
         } else {
-            trendData = getWeeklyUserTrend(users);
+            trendData = getWeeklyUserTrend();
         }
 
         Long totalIndividual = trendData.stream()
@@ -171,40 +183,55 @@ public class ChartStatsService {
     }
 
     /**
-     * 주간 사용자 가입 추이 (최근 8주)
+     * 주간 사용자 가입 추이 (최근 8주) - 집계 쿼리 사용
      */
-    private List<UserTrend> getWeeklyUserTrend(List<User> users) {
-        List<UserTrend> result = new ArrayList<>();
+    private List<UserTrend> getWeeklyUserTrend() {
         LocalDate today = LocalDate.now();
         LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate startDate = weekStart.minusWeeks(7);
 
+        LocalDateTime startDateTime = LocalDateTime.of(startDate, LocalTime.MIN);
+        LocalDateTime endDateTime = LocalDateTime.of(today, LocalTime.MAX);
+
+        // DB에서 일별/타입별 집계 데이터 조회
+        List<Object[]> stats = userRepository.findUserStatsByDateRange(startDateTime, endDateTime);
+
+        // 일별/타입별 데이터를 Map으로 변환
+        Map<String, Long> individualMap = new HashMap<>();
+        Map<String, Long> organizationMap = new HashMap<>();
+        for (Object[] row : stats) {
+            String dateStr = (String) row[0];
+            User.UserType userType = (User.UserType) row[1];
+            Long count = ((Number) row[2]).longValue();
+
+            if (userType == User.UserType.INDIVIDUAL) {
+                individualMap.put(dateStr, count);
+            } else if (userType == User.UserType.ORGANIZATION) {
+                organizationMap.put(dateStr, count);
+            }
+        }
+
+        // 주간 데이터로 집계
+        List<UserTrend> result = new ArrayList<>();
         for (int i = 7; i >= 0; i--) {
             LocalDate start = weekStart.minusWeeks(i);
             LocalDate end = start.plusDays(6);
-            LocalDateTime startDateTime = LocalDateTime.of(start, LocalTime.MIN);
-            LocalDateTime endDateTime = LocalDateTime.of(end, LocalTime.MAX);
 
-            Long individual = users.stream()
-                    .filter(u -> u.getCreatedAt() != null &&
-                            !u.getCreatedAt().isBefore(startDateTime) &&
-                            !u.getCreatedAt().isAfter(endDateTime) &&
-                            u.getUserType() == User.UserType.INDIVIDUAL)
-                    .count();
+            Long weekIndividual = 0L;
+            Long weekOrganization = 0L;
 
-            Long organization = users.stream()
-                    .filter(u -> u.getCreatedAt() != null &&
-                            !u.getCreatedAt().isBefore(startDateTime) &&
-                            !u.getCreatedAt().isAfter(endDateTime) &&
-                            u.getUserType() == User.UserType.ORGANIZATION)
-                    .count();
+            for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+                String dateStr = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                weekIndividual += individualMap.getOrDefault(dateStr, 0L);
+                weekOrganization += organizationMap.getOrDefault(dateStr, 0L);
+            }
 
             String label = start.format(DateTimeFormatter.ofPattern("M/d"));
-
             result.add(UserTrend.builder()
                     .label(label)
-                    .individual(individual)
-                    .organization(organization)
-                    .total(individual + organization)
+                    .individual(weekIndividual)
+                    .organization(weekOrganization)
+                    .total(weekIndividual + weekOrganization)
                     .build());
         }
 
@@ -212,34 +239,42 @@ public class ChartStatsService {
     }
 
     /**
-     * 월간 사용자 가입 추이 (최근 12개월)
+     * 월간 사용자 가입 추이 (최근 12개월) - 집계 쿼리 사용
      */
-    private List<UserTrend> getMonthlyUserTrend(List<User> users) {
-        List<UserTrend> result = new ArrayList<>();
+    private List<UserTrend> getMonthlyUserTrend() {
         LocalDate today = LocalDate.now();
+        LocalDate startMonth = today.minusMonths(11).withDayOfMonth(1);
 
+        LocalDateTime startDateTime = LocalDateTime.of(startMonth, LocalTime.MIN);
+        LocalDateTime endDateTime = LocalDateTime.of(today, LocalTime.MAX);
+
+        // DB에서 월별/타입별 집계 데이터 조회
+        List<Object[]> stats = userRepository.findMonthlyUserStats(startDateTime, endDateTime);
+
+        // 월별/타입별 데이터를 Map으로 변환
+        Map<String, Long> individualMap = new HashMap<>();
+        Map<String, Long> organizationMap = new HashMap<>();
+        for (Object[] row : stats) {
+            String monthStr = (String) row[0];
+            User.UserType userType = (User.UserType) row[1];
+            Long count = ((Number) row[2]).longValue();
+
+            if (userType == User.UserType.INDIVIDUAL) {
+                individualMap.put(monthStr, count);
+            } else if (userType == User.UserType.ORGANIZATION) {
+                organizationMap.put(monthStr, count);
+            }
+        }
+
+        // 12개월 데이터 생성
+        List<UserTrend> result = new ArrayList<>();
         for (int i = 11; i >= 0; i--) {
             LocalDate month = today.minusMonths(i);
-            LocalDate start = month.withDayOfMonth(1);
-            LocalDate end = month.with(TemporalAdjusters.lastDayOfMonth());
-            LocalDateTime startDateTime = LocalDateTime.of(start, LocalTime.MIN);
-            LocalDateTime endDateTime = LocalDateTime.of(end, LocalTime.MAX);
-
-            Long individual = users.stream()
-                    .filter(u -> u.getCreatedAt() != null &&
-                            !u.getCreatedAt().isBefore(startDateTime) &&
-                            !u.getCreatedAt().isAfter(endDateTime) &&
-                            u.getUserType() == User.UserType.INDIVIDUAL)
-                    .count();
-
-            Long organization = users.stream()
-                    .filter(u -> u.getCreatedAt() != null &&
-                            !u.getCreatedAt().isBefore(startDateTime) &&
-                            !u.getCreatedAt().isAfter(endDateTime) &&
-                            u.getUserType() == User.UserType.ORGANIZATION)
-                    .count();
-
+            String monthKey = month.format(DateTimeFormatter.ofPattern("yyyy-MM"));
             String label = month.format(DateTimeFormatter.ofPattern("M월"));
+
+            Long individual = individualMap.getOrDefault(monthKey, 0L);
+            Long organization = organizationMap.getOrDefault(monthKey, 0L);
 
             result.add(UserTrend.builder()
                     .label(label)
@@ -254,43 +289,33 @@ public class ChartStatsService {
 
     /**
      * 프로젝트 통계 및 추이 조회 (주간/월간)
+     * [성능 개선] 집계 쿼리 사용
      */
     public ProjectStatsResponse getProjectStats(String period) {
-        List<Project> projects = projectRepository.findAll();
+        // 상태별 프로젝트 수를 DB에서 직접 조회
+        Long ongoing = projectRepository.countByStatus(Project.ProjectStatus.ACTIVE);
+        Long completed = projectRepository.countByStatus(Project.ProjectStatus.COMPLETED);
+        Long settlementStatus = projectRepository.countByStatus(Project.ProjectStatus.SETTLEMENT);
+        Long closed = projectRepository.countByStatus(Project.ProjectStatus.CLOSED);
+        Long rejected = projectRepository.countByStatus(Project.ProjectStatus.REJECTED);
 
-        // 상태별 통계 (전체, 진행 중, 결산 중, 종료, 반려)
-        // - 진행 중: ACTIVE
-        // - 결산 중: COMPLETED, SETTLEMENT (프론트엔드 "결산 중" 탭과 동일)
-        // - 종료: CLOSED
-        // - 반려: REJECTED
-        Long ongoing = projects.stream()
-                .filter(p -> p.getStatus() == Project.ProjectStatus.ACTIVE)
-                .count();
-        Long settlement = projects.stream()
-                .filter(p -> p.getStatus() == Project.ProjectStatus.SETTLEMENT ||
-                            p.getStatus() == Project.ProjectStatus.COMPLETED)
-                .count();
-        Long closed = projects.stream()
-                .filter(p -> p.getStatus() == Project.ProjectStatus.CLOSED)
-                .count();
-        Long rejected = projects.stream()
-                .filter(p -> p.getStatus() == Project.ProjectStatus.REJECTED)
-                .count();
+        // 결산 중 = COMPLETED + SETTLEMENT
+        Long settlement = completed + settlementStatus;
 
         ProjectStats stats = ProjectStats.builder()
                 .ongoing(ongoing)
                 .settlement(settlement)
                 .closed(closed)
                 .rejected(rejected)
-                .total((long) projects.size())
+                .total(ongoing + settlement + closed + rejected)
                 .build();
 
         // 추이 데이터
         List<ProjectTrend> trendData;
         if ("monthly".equals(period)) {
-            trendData = getMonthlyProjectTrend(projects);
+            trendData = getMonthlyProjectTrend();
         } else {
-            trendData = getWeeklyProjectTrend(projects);
+            trendData = getWeeklyProjectTrend();
         }
 
         return ProjectStatsResponse.builder()
@@ -301,38 +326,48 @@ public class ChartStatsService {
     }
 
     /**
-     * 주간 프로젝트 추이 (최근 8주)
+     * 주간 프로젝트 추이 (최근 8주) - 집계 쿼리 사용
      */
-    private List<ProjectTrend> getWeeklyProjectTrend(List<Project> projects) {
-        List<ProjectTrend> result = new ArrayList<>();
+    private List<ProjectTrend> getWeeklyProjectTrend() {
         LocalDate today = LocalDate.now();
         LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate startDate = weekStart.minusWeeks(7);
 
+        LocalDateTime startDateTime = LocalDateTime.of(startDate, LocalTime.MIN);
+        LocalDateTime endDateTime = LocalDateTime.of(today, LocalTime.MAX);
+
+        // DB에서 일별 생성 통계 조회
+        List<Object[]> stats = projectRepository.findProjectStatsByDateRange(startDateTime, endDateTime);
+
+        // 일별 데이터를 Map으로 변환
+        Map<String, Long> newProjectMap = new HashMap<>();
+        for (Object[] row : stats) {
+            String dateStr = (String) row[0];
+            Long count = ((Number) row[1]).longValue();
+            newProjectMap.put(dateStr, count);
+        }
+
+        // 주간 데이터로 집계
+        List<ProjectTrend> result = new ArrayList<>();
         for (int i = 7; i >= 0; i--) {
             LocalDate start = weekStart.minusWeeks(i);
             LocalDate end = start.plusDays(6);
-            LocalDateTime startDateTime = LocalDateTime.of(start, LocalTime.MIN);
-            LocalDateTime endDateTime = LocalDateTime.of(end, LocalTime.MAX);
 
-            Long newProjects = projects.stream()
-                    .filter(p -> p.getCreatedAt() != null &&
-                            !p.getCreatedAt().isBefore(startDateTime) &&
-                            !p.getCreatedAt().isAfter(endDateTime))
-                    .count();
+            Long weekNewProjects = 0L;
+            for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+                String dateStr = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                weekNewProjects += newProjectMap.getOrDefault(dateStr, 0L);
+            }
 
-            Long completedProjects = projects.stream()
-                    .filter(p -> p.getStatus() == Project.ProjectStatus.COMPLETED &&
-                            p.getEndDate() != null &&
-                            !p.getEndDate().isBefore(start) &&
-                            !p.getEndDate().isAfter(end))
-                    .count();
+            // 완료된 프로젝트 수 (해당 주에 endDate가 있는 COMPLETED 프로젝트)
+            Long completedProjects = projectRepository.countByStatusAndEndDateBetween(
+                    com.wenect.donation_paltform.domain.project.entity.Project.ProjectStatus.COMPLETED, start, end);
 
             String label = start.format(DateTimeFormatter.ofPattern("M/d"));
-
             result.add(ProjectTrend.builder()
                     .label(label)
-                    .newProjects(newProjects)
-                    .completedProjects(completedProjects)
+                    .newProjects(weekNewProjects)
+                    .completedProjects(completedProjects != null ? completedProjects : 0L)
                     .build());
         }
 
@@ -340,38 +375,44 @@ public class ChartStatsService {
     }
 
     /**
-     * 월간 프로젝트 추이 (최근 12개월)
+     * 월간 프로젝트 추이 (최근 12개월) - 집계 쿼리 사용
      */
-    private List<ProjectTrend> getMonthlyProjectTrend(List<Project> projects) {
-        List<ProjectTrend> result = new ArrayList<>();
+    private List<ProjectTrend> getMonthlyProjectTrend() {
         LocalDate today = LocalDate.now();
+        LocalDate startMonth = today.minusMonths(11).withDayOfMonth(1);
 
+        LocalDateTime startDateTime = LocalDateTime.of(startMonth, LocalTime.MIN);
+        LocalDateTime endDateTime = LocalDateTime.of(today, LocalTime.MAX);
+
+        // DB에서 월별 생성 통계 조회
+        List<Object[]> stats = projectRepository.findMonthlyProjectStats(startDateTime, endDateTime);
+
+        // 월별 데이터를 Map으로 변환
+        Map<String, Long> newProjectMap = new HashMap<>();
+        for (Object[] row : stats) {
+            String monthStr = (String) row[0];
+            Long count = ((Number) row[1]).longValue();
+            newProjectMap.put(monthStr, count);
+        }
+
+        // 12개월 데이터 생성
+        List<ProjectTrend> result = new ArrayList<>();
         for (int i = 11; i >= 0; i--) {
             LocalDate month = today.minusMonths(i);
-            LocalDate start = month.withDayOfMonth(1);
-            LocalDate end = month.with(TemporalAdjusters.lastDayOfMonth());
-            LocalDateTime startDateTime = LocalDateTime.of(start, LocalTime.MIN);
-            LocalDateTime endDateTime = LocalDateTime.of(end, LocalTime.MAX);
+            LocalDate monthStart = month.withDayOfMonth(1);
+            LocalDate monthEnd = month.with(TemporalAdjusters.lastDayOfMonth());
 
-            Long newProjects = projects.stream()
-                    .filter(p -> p.getCreatedAt() != null &&
-                            !p.getCreatedAt().isBefore(startDateTime) &&
-                            !p.getCreatedAt().isAfter(endDateTime))
-                    .count();
-
-            Long completedProjects = projects.stream()
-                    .filter(p -> p.getStatus() == Project.ProjectStatus.COMPLETED &&
-                            p.getEndDate() != null &&
-                            !p.getEndDate().isBefore(start) &&
-                            !p.getEndDate().isAfter(end))
-                    .count();
-
+            String monthKey = month.format(DateTimeFormatter.ofPattern("yyyy-MM"));
             String label = month.format(DateTimeFormatter.ofPattern("M월"));
+
+            // 완료된 프로젝트 수 (해당 월에 endDate가 있는 COMPLETED 프로젝트)
+            Long completedProjects = projectRepository.countByStatusAndEndDateBetween(
+                    com.wenect.donation_paltform.domain.project.entity.Project.ProjectStatus.COMPLETED, monthStart, monthEnd);
 
             result.add(ProjectTrend.builder()
                     .label(label)
-                    .newProjects(newProjects)
-                    .completedProjects(completedProjects)
+                    .newProjects(newProjectMap.getOrDefault(monthKey, 0L))
+                    .completedProjects(completedProjects != null ? completedProjects : 0L)
                     .build());
         }
 

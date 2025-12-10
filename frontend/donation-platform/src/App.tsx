@@ -706,6 +706,7 @@ import TossPayFailPage from './pages/payment/TossPayFailPage';
 // Component imports
 import DonationModal from './components/donation/DonationModal';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import ScrollToTop from './components/common/ScrollToTop';
 
 // Layout imports
 import MainLayout from './layouts/MainLayout';
@@ -1155,6 +1156,7 @@ const AppRoutes: React.FC = () => {
 
   return (
     <>
+      <ScrollToTop />
       <Routes>
         {/* Auth Routes - AuthLayout 내부에서 처리 */}
         <Route path="/login" element={

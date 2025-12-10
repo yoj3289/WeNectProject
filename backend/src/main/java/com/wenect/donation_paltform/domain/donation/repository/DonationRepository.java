@@ -132,8 +132,7 @@ public interface DonationRepository extends JpaRepository<Donation, Long> {
     /**
      * Featured 상태별 기부 조회 (페이지네이션)
      */
-    @Query("SELECT d FROM Donation d WHERE d.isFeatured = :isFeatured AND d.status = 'COMPLETED' ORDER BY d.createdAt DESC")
-    Page<Donation> findByIsFeatured(@Param("isFeatured") boolean isFeatured, Pageable pageable);
+    Page<Donation> findByIsFeaturedAndStatusOrderByCreatedAtDesc(boolean isFeatured, Donation.DonationStatus status, Pageable pageable);
 
     /**
      * 기간 내 기부 조회 (페이지네이션)
@@ -154,7 +153,7 @@ public interface DonationRepository extends JpaRepository<Donation, Long> {
      * - PENDING 상태이고 생성일이 지정 시간 이전인 기부
      */
     @Modifying
-    @Query("DELETE FROM Donation d WHERE d.status = 'PENDING' AND d.createdAt < :cutoffDate")
+    @Query(value = "DELETE FROM donations WHERE status = 'PENDING' AND created_at < :cutoffDate", nativeQuery = true)
     int deleteOldPendingDonations(@Param("cutoffDate") LocalDateTime cutoffDate);
 
     // ==================== 알림용 (프로젝트별 기부자 조회) ====================
@@ -163,7 +162,51 @@ public interface DonationRepository extends JpaRepository<Donation, Long> {
      * 프로젝트에 기부한 사용자 ID 목록 조회 (중복 제거)
      * - COMPLETED 상태인 기부만 대상
      */
-    @Query("SELECT DISTINCT d.userId FROM Donation d WHERE d.projectId = :projectId AND d.status = 'COMPLETED' AND d.userId IS NOT NULL")
+    @Query(value = "SELECT DISTINCT user_id FROM donations WHERE project_id = :projectId AND status = 'COMPLETED' AND user_id IS NOT NULL", nativeQuery = true)
     List<Long> findDistinctUserIdsByProjectId(@Param("projectId") Long projectId);
+
+    // ==================== 성능 최적화: 집계 쿼리 ====================
+
+    /**
+     * 기간 내 완료된 기부 총액 조회
+     */
+    @Query(value = "SELECT COALESCE(SUM(amount), 0) FROM donations WHERE status = 'COMPLETED' AND donated_at BETWEEN :start AND :end", nativeQuery = true)
+    java.math.BigDecimal sumAmountByStatusAndDonatedAtBetween(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
+
+    /**
+     * 기간 내 완료된 기부 건수 조회
+     */
+    @Query(value = "SELECT COUNT(*) FROM donations WHERE status = 'COMPLETED' AND donated_at BETWEEN :start AND :end", nativeQuery = true)
+    Long countByStatusAndDonatedAtBetween(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
+
+    /**
+     * 주간 기부 통계 조회 (집계)
+     */
+    @Query(value = "SELECT DATE_FORMAT(donated_at, '%Y-%m-%d') as dateStr, " +
+            "COALESCE(SUM(amount), 0) as totalAmount, COUNT(*) as totalCount " +
+            "FROM donations " +
+            "WHERE status = 'COMPLETED' AND donated_at BETWEEN :start AND :end " +
+            "GROUP BY DATE_FORMAT(donated_at, '%Y-%m-%d') " +
+            "ORDER BY dateStr", nativeQuery = true)
+    List<Object[]> findDonationStatsByDateRange(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
+
+    /**
+     * 월별 기부 통계 조회 (집계)
+     */
+    @Query(value = "SELECT DATE_FORMAT(donated_at, '%Y-%m') as monthStr, " +
+            "COALESCE(SUM(amount), 0) as totalAmount, COUNT(*) as totalCount " +
+            "FROM donations " +
+            "WHERE status = 'COMPLETED' AND donated_at BETWEEN :start AND :end " +
+            "GROUP BY DATE_FORMAT(donated_at, '%Y-%m') " +
+            "ORDER BY monthStr", nativeQuery = true)
+    List<Object[]> findMonthlyDonationStats(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
 
 }

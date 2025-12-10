@@ -241,54 +241,77 @@ const NotificationPageWithAPI: React.FC = () => {
   return (
     <div className="min-h-screen bg-stone-50">
       {/* 헤더 */}
-      <div className="bg-stone-800 text-white py-8 px-6">
+      <div className="bg-stone-800 text-white py-6 sm:py-8 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <div className="flex items-center gap-3 sm:gap-4">
               <button
                 onClick={() => navigate(-1)}
                 className="p-2 hover:bg-stone-700 rounded-xl transition-colors"
               >
-                <ArrowLeft size={28} />
+                <ArrowLeft size={24} />
               </button>
-              <div className="p-3 bg-amber-500 rounded-2xl">
-                <Bell size={32} />
+              <div className="p-2 sm:p-3 bg-amber-500 rounded-xl sm:rounded-2xl">
+                <Bell size={24} className="sm:w-8 sm:h-8" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold mb-1">알림 센터</h1>
-                <p className="text-stone-400">
+                <h1 className="text-xl sm:text-3xl font-bold mb-0.5 sm:mb-1">알림 센터</h1>
+                <p className="text-stone-400 text-sm sm:text-base">
                   {unreadCount > 0 ? `${unreadCount}개의 읽지 않은 알림` : '모든 알림을 확인했습니다'}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowSettings(!showSettings)}
-                className="p-3 hover:bg-stone-700 rounded-xl transition-colors"
-              >
-                <Settings size={28} />
-              </button>
-            </div>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="p-2 sm:p-3 hover:bg-stone-700 rounded-xl transition-colors"
+            >
+              <Settings size={24} className="sm:w-7 sm:h-7" />
+            </button>
           </div>
 
           {/* 검색바 */}
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-stone-400" size={20} />
+            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-stone-400" size={18} />
             <input
               type="text"
               placeholder="알림 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-stone-700 border border-stone-600 rounded-xl text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+              className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 bg-stone-700 border border-stone-600 rounded-xl text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all text-sm sm:text-base"
             />
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-12 gap-6">
-          {/* 왼쪽 사이드바 */}
-          <div className="col-span-3 space-y-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* 모바일: 가로 스크롤 필터 */}
+        <div className="lg:hidden overflow-x-auto scrollbar-hide -mx-4 px-4 mb-4">
+          <div className="flex gap-2" style={{ width: 'max-content' }}>
+            {[
+              { id: 'all', label: '전체', count: notifications.filter(n => !n.isArchived).length },
+              { id: 'unread', label: '읽지 않음', count: unreadCount },
+              { id: 'archived', label: '보관함', count: notifications.filter(n => n.isArchived).length }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setSelectedTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${selectedTab === tab.id
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-white text-stone-700 border border-stone-200'
+                  }`}
+              >
+                <span>{tab.label}</span>
+                <span className={`text-xs ${selectedTab === tab.id ? 'text-white/80' : 'text-stone-400'}`}>
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="lg:grid lg:grid-cols-12 lg:gap-6">
+          {/* 왼쪽 사이드바 - 데스크톱에서만 표시 */}
+          <div className="hidden lg:block lg:col-span-3 space-y-4">
             {/* 탭 */}
             <div className="bg-white rounded-2xl border border-stone-200 p-4">
               <h3 className="font-bold text-sm text-stone-500 mb-3 uppercase tracking-wider">필터</h3>
@@ -374,7 +397,7 @@ const NotificationPageWithAPI: React.FC = () => {
           </div>
 
           {/* 메인 콘텐츠 */}
-          <div className="col-span-9">
+          <div className="lg:col-span-9">
             {/* 액션 바 */}
             <div className="bg-white rounded-2xl border border-stone-200 p-4 mb-6">
               <div className="flex items-center justify-between">
@@ -425,7 +448,7 @@ const NotificationPageWithAPI: React.FC = () => {
                         <span className="text-sm font-normal text-stone-500">({groupNotifications.length})</span>
                       </h4>
                     )}
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {groupNotifications.map(notification => {
                         const config = getNotificationIcon(notification.type);
                         const isSelected = selectedNotifications.has(notification.id);
@@ -433,78 +456,80 @@ const NotificationPageWithAPI: React.FC = () => {
                         return (
                           <div
                             key={notification.id}
-                            className={`bg-white rounded-2xl border-2 hover:shadow-md transition-all ${!notification.isRead ? 'border-amber-200' : 'border-stone-200'
+                            className={`bg-white rounded-xl sm:rounded-2xl border-2 hover:shadow-md transition-all overflow-hidden ${!notification.isRead ? 'border-amber-200' : 'border-stone-200'
                               } ${isSelected ? 'ring-2 ring-amber-500' : ''}`}
                           >
-                            <div className="p-6">
-                              <div className="flex gap-4">
+                            <div className="p-3 sm:p-6">
+                              <div className="flex gap-2 sm:gap-4">
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={() => toggleSelectNotification(notification.id)}
-                                  className="w-5 h-5 text-amber-500 rounded focus:ring-2 focus:ring-amber-500 cursor-pointer mt-1"
+                                  className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 rounded focus:ring-2 focus:ring-amber-500 cursor-pointer mt-1 flex-shrink-0"
                                 />
 
-                                <div className={`bg-gradient-to-br ${config.gradient} w-14 h-14 rounded-2xl flex items-center justify-center text-white flex-shrink-0 shadow-lg relative`}>
-                                  {config.icon}
+                                <div className={`bg-gradient-to-br ${config.gradient} w-9 h-9 sm:w-14 sm:h-14 rounded-lg sm:rounded-2xl flex items-center justify-center text-white flex-shrink-0 shadow-lg relative`}>
+                                  <span className="scale-[0.65] sm:scale-100">{config.icon}</span>
                                   {priority === 'high' && (
-                                    <Star size={16} className="absolute -top-1 -right-1 text-yellow-400 fill-yellow-400" />
+                                    <Star size={10} className="absolute -top-1 -right-1 text-yellow-400 fill-yellow-400 sm:w-4 sm:h-4" />
                                   )}
                                 </div>
 
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between mb-2">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <h4 className={`font-bold text-lg ${!notification.isRead ? 'text-stone-900' : 'text-stone-700'}`}>
-                                        {notification.title}
-                                      </h4>
-                                      {!notification.isRead && (
-                                        <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">
-                                          NEW
-                                        </span>
-                                      )}
-                                      <span className={`px-2 py-0.5 ${config.bgColor} ${config.textColor} text-xs font-bold rounded-lg`}>
-                                        {config.label}
+                                <div className="flex-1 min-w-0 overflow-hidden">
+                                  {/* 제목과 배지 */}
+                                  <div className="flex items-start gap-1.5 sm:gap-2 flex-wrap mb-1 sm:mb-2">
+                                    <h4 className={`font-bold text-sm sm:text-lg truncate max-w-[180px] sm:max-w-none ${!notification.isRead ? 'text-stone-900' : 'text-stone-700'}`}>
+                                      {notification.title}
+                                    </h4>
+                                    {!notification.isRead && (
+                                      <span className="px-1.5 sm:px-2 py-0.5 bg-amber-500 text-white text-[10px] sm:text-xs font-bold rounded-full flex-shrink-0">
+                                        NEW
                                       </span>
-                                      {priority === 'high' && (
-                                        <span className="px-2 py-0.5 bg-yellow-100 text-yellow-600 text-xs font-bold rounded-lg">
-                                          중요
-                                        </span>
-                                      )}
-                                    </div>
+                                    )}
+                                    <span className={`px-1.5 sm:px-2 py-0.5 ${config.bgColor} ${config.textColor} text-[10px] sm:text-xs font-bold rounded sm:rounded-lg flex-shrink-0`}>
+                                      {config.label}
+                                    </span>
+                                    {priority === 'high' && (
+                                      <span className="hidden sm:inline-block px-2 py-0.5 bg-yellow-100 text-yellow-600 text-xs font-bold rounded-lg">
+                                        중요
+                                      </span>
+                                    )}
                                   </div>
 
-                                  <p className="text-stone-600 mb-4 leading-relaxed">
+                                  {/* 메시지 - 모바일에서 2줄 제한 */}
+                                  <p className="text-stone-600 mb-2 sm:mb-4 leading-snug sm:leading-relaxed text-xs sm:text-base line-clamp-2 sm:line-clamp-none">
                                     {notification.message}
                                   </p>
 
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-sm text-stone-500 font-medium">
+                                  {/* 하단 액션 영역 */}
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-[10px] sm:text-sm text-stone-500 font-medium whitespace-nowrap">
                                       {getTimeAgo(notification.timestamp)}
                                     </span>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-1 sm:gap-2 flex-shrink-0">
                                       {notification.link && (
                                         <button
                                           onClick={() => handleNotificationClick(notification)}
-                                          className="px-3 py-1.5 text-xs bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors font-medium flex items-center gap-1"
+                                          className="p-1 sm:px-3 sm:py-1.5 text-xs bg-amber-50 text-amber-600 rounded sm:rounded-lg hover:bg-amber-100 transition-colors font-medium flex items-center gap-1"
                                         >
                                           <ExternalLink size={12} />
-                                          바로가기
+                                          <span className="hidden sm:inline">바로가기</span>
                                         </button>
                                       )}
                                       {!notification.isRead && (
                                         <button
                                           onClick={() => handleMarkAsRead(notification.id)}
-                                          className="px-3 py-1.5 text-xs bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors font-medium"
+                                          className="px-1.5 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs bg-amber-50 text-amber-600 rounded sm:rounded-lg hover:bg-amber-100 transition-colors font-medium"
                                         >
-                                          읽음 표시
+                                          <span className="sm:hidden">읽음</span>
+                                          <span className="hidden sm:inline">읽음 표시</span>
                                         </button>
                                       )}
                                       <button
                                         onClick={() => handleDelete(notification.id)}
-                                        className="p-1.5 hover:bg-stone-100 rounded-lg transition-colors"
+                                        className="p-1 sm:p-1.5 hover:bg-stone-100 rounded sm:rounded-lg transition-colors"
                                       >
-                                        <Trash2 size={16} className="text-stone-500" />
+                                        <Trash2 size={14} className="sm:w-4 sm:h-4 text-stone-500" />
                                       </button>
                                     </div>
                                   </div>

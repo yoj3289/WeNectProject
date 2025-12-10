@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 관심 프로젝트 서비스
@@ -89,5 +91,21 @@ public class FavoriteProjectService {
         return projectIds.stream()
                 .limit(limit)
                 .toList();
+    }
+
+    /**
+     * [성능 개선] 여러 프로젝트의 관심 등록 수를 한 번에 조회 (N+1 문제 해결)
+     * @param projectIds 프로젝트 ID 목록
+     * @return Map<프로젝트ID, 관심등록수>
+     */
+    public Map<Long, Long> getFavoriteCountMap(List<Long> projectIds) {
+        if (projectIds == null || projectIds.isEmpty()) {
+            return Map.of();
+        }
+        return favoriteProjectRepository.countByProjectIdIn(projectIds).stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
     }
 }

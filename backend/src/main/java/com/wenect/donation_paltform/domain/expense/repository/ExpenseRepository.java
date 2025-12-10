@@ -35,6 +35,11 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     /**
      * 프로젝트 ID로 승인된 지출 총액 계산
      */
-    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.projectId = :projectId AND e.status = 'APPROVED'")
+    @Query(value = "SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE project_id = :projectId AND status = 'APPROVED'", nativeQuery = true)
     BigDecimal sumApprovedAmountByProjectId(@Param("projectId") Long projectId);
+
+    /**
+     * 상태별 지출 건수 조회 (성능 최적화)
+     */
+    Long countByStatus(Expense.ExpenseStatus status);
 }

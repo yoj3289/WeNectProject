@@ -39,7 +39,7 @@ public class ProjectStatusScheduler {
         LocalDate today = LocalDate.now();
 
         // 최적화: 만료된 ACTIVE 프로젝트만 조회 (DB에서 필터링)
-        List<Project> expiredProjects = projectRepository.findExpiredActiveProjects(today);
+        List<Project> expiredProjects = projectRepository.findByStatusAndEndDateBefore(Project.ProjectStatus.ACTIVE, today);
 
         log.info("만료된 프로젝트: {}개", expiredProjects.size());
 
