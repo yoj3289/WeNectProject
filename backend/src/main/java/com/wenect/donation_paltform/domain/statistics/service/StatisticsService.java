@@ -4,7 +4,6 @@ import com.wenect.donation_paltform.domain.project.repository.ProjectRepository;
 import com.wenect.donation_paltform.domain.statistics.dto.StatisticsSummaryResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,9 +24,7 @@ public class StatisticsService {
     /**
      * 전체 통계 요약 조회
      * [성능 개선] 단일 집계 쿼리로 모든 통계를 한 번에 조회
-     * [성능 개선] 캐싱 적용 - 5분간 캐시 유지
      */
-    @Cacheable(value = "statisticsSummary")
     public StatisticsSummaryResponse getStatisticsSummary() {
         log.info("통계 요약 조회 시작");
 
