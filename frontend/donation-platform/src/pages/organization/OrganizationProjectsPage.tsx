@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Search, Heart, Baby, Dog, UserCircle, TreePine, GraduationCap, Loader2, AlertCircle, Sparkles, X, ArrowLeft, Building2, FolderOpen, TrendingUp } from 'lucide-react';
+import { Search, Heart, Baby, Dog, UserCircle, TreePine, GraduationCap, Loader2, AlertCircle, Sparkles, X, ArrowLeft, Building2, FolderOpen, TrendingUp, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useOrganizations, useOrganizationProjects } from '../../hooks/useOrganizations';
 import { useToggleFavoriteProject, useUserFavoriteProjects } from '../../hooks/useProjects';
 import type { Project } from '../../types';
 import Pagination from '../../components/common/Pagination';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 interface OrganizationProjectsPageProps {
   isLoggedIn: boolean;
@@ -34,6 +35,7 @@ const OrganizationProjectsPage: React.FC<OrganizationProjectsPageProps> = ({
   const organizationId = orgId ? parseInt(orgId) : 0;
 
   // State
+  const [activeTab, setActiveTab] = useState<'active' | 'settlement'>('active');
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [sortOption, setSortOption] = useState<string>('latest');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
@@ -51,10 +53,10 @@ const OrganizationProjectsPage: React.FC<OrganizationProjectsPageProps> = ({
     return () => clearTimeout(timer);
   }, [searchKeyword]);
 
-  // 필터/정렬 변경 시 페이지 초기화
+  // 필터/정렬/탭 변경 시 페이지 초기화
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory, sortOption]);
+  }, [selectedCategory, sortOption, activeTab]);
 
   // API 호출 - 기관 정보
   const { data: organizationsData } = useOrganizations({
@@ -66,6 +68,7 @@ const OrganizationProjectsPage: React.FC<OrganizationProjectsPageProps> = ({
 
   // API 호출 - 기관 프로젝트 목록
   const { data: projects, isLoading, isError, error, refetch } = useOrganizationProjects(organizationId, {
+    status: activeTab,
     category: selectedCategory === '전체' ? undefined : selectedCategory,
     search: debouncedSearchKeyword.trim() || undefined,
     sortBy: sortOption,
@@ -187,6 +190,48 @@ const OrganizationProjectsPage: React.FC<OrganizationProjectsPageProps> = ({
 
       {/* ========== 메인 컨텐츠 ========== */}
       <div className="max-w-7xl mx-auto px-4 py-12">
+        {/* ========== 탭 메뉴 ========== */}
+        <div className="mb-8 border-b border-stone-200">
+          <div className="flex gap-4">
+            <button
+              onClick={() => setActiveTab('active')}
+              className={`flex items-center gap-2 px-4 py-3 font-medium transition-all border-b-2 -mb-px ${
+                activeTab === 'active'
+                  ? 'text-amber-600 border-amber-600'
+                  : 'text-stone-500 border-transparent hover:text-stone-700'
+              }`}
+            >
+              <Heart size={18} />
+              진행 중인 프로젝트
+              {currentOrganization && (
+                <span className={`ml-1 px-2 py-0.5 text-xs rounded-full ${
+                  activeTab === 'active' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-600'
+                }`}>
+                  {currentOrganization.activeProjects}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('settlement')}
+              className={`flex items-center gap-2 px-4 py-3 font-medium transition-all border-b-2 -mb-px ${
+                activeTab === 'settlement'
+                  ? 'text-amber-600 border-amber-600'
+                  : 'text-stone-500 border-transparent hover:text-stone-700'
+              }`}
+            >
+              <CheckCircle size={18} />
+              결산/종료된 프로젝트
+              {currentOrganization && (
+                <span className={`ml-1 px-2 py-0.5 text-xs rounded-full ${
+                  activeTab === 'settlement' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-600'
+                }`}>
+                  {currentOrganization.settlementProjects}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
         {/* ========== 검색 및 필터 ========== */}
         <div className="mb-8">
           {/* 검색창 */}
@@ -246,7 +291,7 @@ const OrganizationProjectsPage: React.FC<OrganizationProjectsPageProps> = ({
               className="border border-stone-300 bg-white px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
             >
               <option value="latest">최신순</option>
-              <option value="deadline">마감임박순</option>
+              {activeTab === 'active' && <option value="deadline">마감임박순</option>}
               <option value="mostDonated">모금액 많은 순</option>
             </select>
           </div>
@@ -254,9 +299,11 @@ const OrganizationProjectsPage: React.FC<OrganizationProjectsPageProps> = ({
 
         {/* ========== 프로젝트 카드 그리드 ========== */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <Loader2 className="animate-spin text-amber-600 mb-4" size={48} />
-            <p className="text-stone-500">프로젝트를 불러오는 중...</p>
+          <div className="bg-white border border-stone-200 rounded-xl py-12">
+            <LoadingSpinner
+              size="md"
+              message={activeTab === 'active' ? '진행 중인 프로젝트를 불러오는 중...' : '결산/종료된 프로젝트를 불러오는 중...'}
+            />
           </div>
         ) : displayProjects.length === 0 ? (
           <div className="text-center py-20">

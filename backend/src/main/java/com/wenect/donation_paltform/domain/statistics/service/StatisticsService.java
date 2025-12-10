@@ -1,6 +1,5 @@
 package com.wenect.donation_paltform.domain.statistics.service;
 
-import com.wenect.donation_paltform.domain.project.entity.Project;
 import com.wenect.donation_paltform.domain.project.repository.ProjectRepository;
 import com.wenect.donation_paltform.domain.statistics.dto.StatisticsSummaryResponse;
 import lombok.RequiredArgsConstructor;
@@ -9,10 +8,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 /**
  * 통계 서비스
+ * [성능 개선] findAll() -> 집계 쿼리로 변경
  */
 @Slf4j
 @Service
@@ -24,44 +23,73 @@ public class StatisticsService {
 
     /**
      * 전체 통계 요약 조회
+     * [성능 개선] 단일 집계 쿼리로 모든 통계를 한 번에 조회
      */
     public StatisticsSummaryResponse getStatisticsSummary() {
         log.info("통계 요약 조회 시작");
 
-        // 모든 프로젝트 조회
-        List<Project> allProjects = projectRepository.findAll();
+        try {
+            // DB에서 단일 쿼리로 모든 통계 조회
+            Object[] rawResult = projectRepository.getStatisticsSummary();
 
-        // 활성 프로젝트 수 (ACTIVE 상태)
-        long activeProjects = allProjects.stream()
-                .filter(p -> p.getStatus() == Project.ProjectStatus.ACTIVE)
-                .count();
+            if (rawResult == null || rawResult.length == 0) {
+                log.warn("통계 쿼리 결과가 null이거나 비어있음");
+                return StatisticsSummaryResponse.builder()
+                        .totalProjects(0L)
+                        .totalDonors(0L)
+                        .totalDonationAmount(BigDecimal.ZERO)
+                        .activeProjects(0L)
+                        .completedProjects(0L)
+                        .build();
+            }
 
-        // 완료된 프로젝트 수 (COMPLETED 상태)
-        long completedProjects = allProjects.stream()
-                .filter(p -> p.getStatus() == Project.ProjectStatus.COMPLETED)
-                .count();
+            // Native query 결과가 Object[] 안에 Object[]로 래핑되어 있음
+            Object[] stats;
+            if (rawResult[0] instanceof Object[]) {
+                stats = (Object[]) rawResult[0];
+            } else {
+                stats = rawResult;
+            }
 
-        // 총 기부자 수 (모든 프로젝트의 donorCount 합계)
-        long totalDonors = allProjects.stream()
-                .mapToLong(p -> p.getDonorCount() != null ? p.getDonorCount() : 0)
-                .sum();
+            log.info("통계 쿼리 결과 - 길이: {}, 값: {}", stats.length, java.util.Arrays.toString(stats));
 
-        // 총 기부 금액 (모든 프로젝트의 currentAmount 합계)
-        BigDecimal totalDonationAmount = allProjects.stream()
-                .map(p -> p.getCurrentAmount() != null ? p.getCurrentAmount() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            if (stats.length < 4) {
+                log.warn("통계 쿼리 결과가 불완전함 - length: {}", stats.length);
+                return StatisticsSummaryResponse.builder()
+                        .totalProjects(0L)
+                        .totalDonors(0L)
+                        .totalDonationAmount(BigDecimal.ZERO)
+                        .activeProjects(0L)
+                        .completedProjects(0L)
+                        .build();
+            }
 
-        StatisticsSummaryResponse response = StatisticsSummaryResponse.builder()
-                .totalProjects(activeProjects) // 홈페이지에서는 활성 프로젝트만 표시
-                .totalDonors(totalDonors)
-                .totalDonationAmount(totalDonationAmount)
-                .activeProjects(activeProjects)
-                .completedProjects(completedProjects)
-                .build();
+            long activeProjects = stats[0] != null ? ((Number) stats[0]).longValue() : 0L;
+            long completedProjects = stats[1] != null ? ((Number) stats[1]).longValue() : 0L;
+            long totalDonors = stats[2] != null ? ((Number) stats[2]).longValue() : 0L;
+            BigDecimal totalDonationAmount = stats[3] != null ? new BigDecimal(stats[3].toString()) : BigDecimal.ZERO;
 
-        log.info("통계 요약 조회 완료 - 활성: {}, 완료: {}, 기부자: {}, 총액: {}",
-                activeProjects, completedProjects, totalDonors, totalDonationAmount);
+            StatisticsSummaryResponse response = StatisticsSummaryResponse.builder()
+                    .totalProjects(activeProjects) // 홈페이지에서는 활성 프로젝트만 표시
+                    .totalDonors(totalDonors)
+                    .totalDonationAmount(totalDonationAmount)
+                    .activeProjects(activeProjects)
+                    .completedProjects(completedProjects)
+                    .build();
 
-        return response;
+            log.info("통계 요약 조회 완료 - 활성: {}, 완료: {}, 기부자: {}, 총액: {}",
+                    activeProjects, completedProjects, totalDonors, totalDonationAmount);
+
+            return response;
+        } catch (Exception e) {
+            log.error("통계 요약 조회 중 오류: {}", e.getMessage(), e);
+            return StatisticsSummaryResponse.builder()
+                    .totalProjects(0L)
+                    .totalDonors(0L)
+                    .totalDonationAmount(BigDecimal.ZERO)
+                    .activeProjects(0L)
+                    .completedProjects(0L)
+                    .build();
+        }
     }
 }

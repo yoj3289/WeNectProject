@@ -60,7 +60,7 @@ public class DeadlineNotificationScheduler {
      * 특정 마감일에 해당하는 프로젝트의 알림 발송
      */
     private void sendNotificationsForDate(LocalDate endDate, int daysLeft) {
-        List<Project> projects = projectRepository.findActiveProjectsByEndDate(endDate);
+        List<Project> projects = projectRepository.findByStatusAndEndDate(Project.ProjectStatus.ACTIVE, endDate);
 
         if (projects.isEmpty()) {
             log.info("마감 {}일 전 프로젝트 없음 (endDate: {})", daysLeft, endDate);

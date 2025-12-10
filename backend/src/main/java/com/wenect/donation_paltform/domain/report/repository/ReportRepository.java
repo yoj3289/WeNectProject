@@ -56,7 +56,7 @@ public interface ReportRepository extends JpaRepository<Report, Long>, JpaSpecif
     long countByReportedItemIdAndReportTypeAndIsDeletedFalse(Long reportedItemId, ReportType reportType);
 
     // 대기 중인 신고 개수
-    @Query("SELECT COUNT(r) FROM Report r WHERE r.status = 'PENDING' AND r.isDeleted = false")
+    @Query(value = "SELECT COUNT(*) FROM reports WHERE status = 'PENDING' AND is_deleted = false", nativeQuery = true)
     long countPendingReports();
 
     // 오늘 접수된 신고 개수

@@ -39,7 +39,7 @@ public interface PiggyBankRepository extends JpaRepository<PiggyBank, Long> {
     /**
      * 전체 저금통 잔액 합계
      */
-    @Query("SELECT SUM(p.balance) FROM PiggyBank p WHERE p.status = 'ACTIVE'")
+    @Query(value = "SELECT SUM(balance) FROM piggy_banks WHERE status = 'ACTIVE'", nativeQuery = true)
     BigDecimal sumTotalBalance();
 
     /**

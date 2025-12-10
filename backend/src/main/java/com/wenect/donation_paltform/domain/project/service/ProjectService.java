@@ -31,6 +31,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -239,6 +240,7 @@ public class ProjectService {
 
     /**
      * 프로젝트 검색 (카테고리, 키워드, 정렬)
+     * [성능 개선] N+1 문제 해결 - 이미지/관심등록수 배치 조회
      */
     @Transactional(readOnly = true)
     public List<ProjectResponse> searchProjects(String category, String keyword, String sortBy) {
@@ -268,6 +270,17 @@ public class ProjectService {
             projects = projectRepository.findByStatus(Project.ProjectStatus.ACTIVE);
         }
 
+        // [성능 개선] 프로젝트 ID 목록 추출
+        List<Long> projectIds = projects.stream()
+                .map(Project::getProjectId)
+                .collect(Collectors.toList());
+
+        // [성능 개선] 관심 등록 수 배치 조회 (mostFavorited/leastFavorited 정렬 시에만)
+        Map<Long, Long> favoriteCountMap = null;
+        if ("mostFavorited".equals(sortBy) || "leastFavorited".equals(sortBy)) {
+            favoriteCountMap = favoriteProjectService.getFavoriteCountMap(projectIds);
+        }
+
         // 정렬
         if ("deadline".equals(sortBy)) {
             // 마감임박순 (endDate 오름차순)
@@ -293,22 +306,24 @@ public class ProjectService {
                     })
                     .collect(Collectors.toList());
         } else if ("mostFavorited".equals(sortBy)) {
-            // 가장 관심을 많이 받은 프로젝트 순 (favoriteCount 내림차순, 동점이면 최신순)
+            // [성능 개선] 캐시된 관심등록수 사용
+            final Map<Long, Long> countMap = favoriteCountMap;
             projects = projects.stream()
                     .sorted((p1, p2) -> {
-                        Long count1 = favoriteProjectService.getFavoriteCount(p1.getProjectId());
-                        Long count2 = favoriteProjectService.getFavoriteCount(p2.getProjectId());
+                        Long count1 = countMap.getOrDefault(p1.getProjectId(), 0L);
+                        Long count2 = countMap.getOrDefault(p2.getProjectId(), 0L);
                         int countCompare = count2.compareTo(count1);
                         if (countCompare != 0) return countCompare;
                         return p2.getCreatedAt().compareTo(p1.getCreatedAt()); // 동점이면 최신순
                     })
                     .collect(Collectors.toList());
         } else if ("leastFavorited".equals(sortBy)) {
-            // 가장 관심을 적게 받은 프로젝트 순 (favoriteCount 오름차순, 동점이면 최신순)
+            // [성능 개선] 캐시된 관심등록수 사용
+            final Map<Long, Long> countMap = favoriteCountMap;
             projects = projects.stream()
                     .sorted((p1, p2) -> {
-                        Long count1 = favoriteProjectService.getFavoriteCount(p1.getProjectId());
-                        Long count2 = favoriteProjectService.getFavoriteCount(p2.getProjectId());
+                        Long count1 = countMap.getOrDefault(p1.getProjectId(), 0L);
+                        Long count2 = countMap.getOrDefault(p2.getProjectId(), 0L);
                         int countCompare = count1.compareTo(count2);
                         if (countCompare != 0) return countCompare;
                         return p2.getCreatedAt().compareTo(p1.getCreatedAt()); // 동점이면 최신순
@@ -321,14 +336,21 @@ public class ProjectService {
                     .collect(Collectors.toList());
         }
 
-        // DTO 변환
+        // [성능 개선] 이미지 배치 조회 (N+1 -> 1+1 쿼리)
+        List<Long> sortedProjectIds = projects.stream()
+                .map(Project::getProjectId)
+                .collect(Collectors.toList());
+
+        Map<Long, List<String>> imageMap = projectImageRepository.findByProjectIdIn(sortedProjectIds).stream()
+                .collect(Collectors.groupingBy(
+                        ProjectImage::getProjectId,
+                        Collectors.mapping(ProjectImage::getFilePath, Collectors.toList())
+                ));
+
+        // DTO 변환 (캐시된 이미지 사용)
         return projects.stream()
                 .map(project -> {
-                    List<String> imageUrls = projectImageRepository.findByProjectIdOrderByDisplayOrder(project.getProjectId())
-                            .stream()
-                            .map(ProjectImage::getFilePath)
-                            .collect(Collectors.toList());
-
+                    List<String> imageUrls = imageMap.getOrDefault(project.getProjectId(), List.of());
                     String categoryName = getCategoryName(project.getCategoryId());
                     return ProjectResponse.from(project, categoryName, imageUrls);
                 })
@@ -342,6 +364,7 @@ public class ProjectService {
      * @param sortBy 정렬 기준 (latest, deadline, mostDonated, leastDonated, mostFavorited, leastFavorited)
      * @param page 페이지 번호 (0부터 시작)
      * @param size 페이지 크기
+     * [성능 개선] N+1 문제 해결 - 이미지 배치 조회
      */
     @Transactional(readOnly = true)
     public Page<ProjectResponse> searchProjectsPaged(String category, String keyword, String sortBy, int page, int size) {
@@ -376,12 +399,13 @@ public class ProjectService {
             return handleFavoriteSorting(projectPage, sortBy, page, size);
         }
 
-        // DTO 변환
-        return projectPage.map(this::convertToProjectResponse);
+        // [성능 개선] 이미지 배치 조회 (N+1 -> 1 쿼리)
+        return convertPageToProjectResponses(projectPage);
     }
 
     /**
      * 정산 프로젝트 검색 (페이지네이션 버전)
+     * [성능 개선] N+1 문제 해결 - 이미지 배치 조회
      */
     @Transactional(readOnly = true)
     public Page<ProjectResponse> searchSettlementProjectsPaged(String category, String keyword, String sortBy, int page, int size) {
@@ -395,17 +419,62 @@ public class ProjectService {
 
         Page<Project> projectPage;
 
+        List<Project.ProjectStatus> settlementStatuses = List.of(
+                Project.ProjectStatus.COMPLETED,
+                Project.ProjectStatus.SETTLEMENT,
+                Project.ProjectStatus.CLOSED
+        );
+
         if (categoryId != null && keyword != null && !keyword.trim().isEmpty()) {
-            projectPage = projectRepository.findSettlementProjectsByCategoryIdAndTitleContaining(categoryId, keyword, pageable);
+            projectPage = projectRepository.findByStatusInAndCategoryIdAndTitleContainingIgnoreCase(settlementStatuses, categoryId, keyword, pageable);
         } else if (categoryId != null) {
-            projectPage = projectRepository.findSettlementProjectsByCategoryId(categoryId, pageable);
+            projectPage = projectRepository.findByStatusInAndCategoryId(settlementStatuses, categoryId, pageable);
         } else if (keyword != null && !keyword.trim().isEmpty()) {
-            projectPage = projectRepository.findSettlementProjectsByTitleContaining(keyword, pageable);
+            projectPage = projectRepository.findByStatusInAndTitleContainingIgnoreCase(settlementStatuses, keyword, pageable);
         } else {
-            projectPage = projectRepository.findSettlementProjects(pageable);
+            projectPage = projectRepository.findByStatusIn(settlementStatuses, pageable);
         }
 
-        return projectPage.map(this::convertToProjectResponseWithSettlement);
+        return convertPageToProjectResponsesWithSettlement(projectPage);
+    }
+
+    /**
+     * [성능 개선] Page<Project>를 Page<ProjectResponse>로 변환 (이미지/정산정보 배치 조회)
+     */
+    private Page<ProjectResponse> convertPageToProjectResponsesWithSettlement(Page<Project> projectPage) {
+        List<Project> projects = projectPage.getContent();
+
+        // 이미지 배치 조회
+        List<Long> projectIds = projects.stream()
+                .map(Project::getProjectId)
+                .collect(Collectors.toList());
+
+        Map<Long, List<String>> imageMap = projectImageRepository.findByProjectIdIn(projectIds).stream()
+                .collect(Collectors.groupingBy(
+                        ProjectImage::getProjectId,
+                        Collectors.mapping(ProjectImage::getFilePath, Collectors.toList())
+                ));
+
+        // DTO 변환 및 Settlement 정보 추가
+        List<ProjectResponse> responses = projects.stream()
+                .map(project -> {
+                    List<String> imageUrls = imageMap.getOrDefault(project.getProjectId(), List.of());
+                    String categoryName = getCategoryName(project.getCategoryId());
+                    ProjectResponse response = ProjectResponse.from(project, categoryName, imageUrls);
+
+                    // COMPLETED 상태인 경우 Settlement 정보 추가
+                    if (project.getStatus() == Project.ProjectStatus.COMPLETED) {
+                        settlementRepository.findFirstByProjectIdOrderByRequestedAtDesc(project.getProjectId())
+                                .ifPresent(settlement -> {
+                                    response.setSettlementId(settlement.getSettlementId());
+                                    response.setSettlementStatus(settlement.getStatus().name());
+                                });
+                    }
+                    return response;
+                })
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, projectPage.getPageable(), projectPage.getTotalElements());
     }
 
     /**
@@ -430,28 +499,50 @@ public class ProjectService {
 
     /**
      * 관심 수 정렬 처리 (DB에서 직접 정렬 불가하여 메모리에서 처리)
+     * [성능 개선] N+1 문제 해결 - 관심등록수/이미지 배치 조회
      */
     private Page<ProjectResponse> handleFavoriteSorting(Page<Project> projectPage, String sortBy, int page, int size) {
         List<Project> allProjects = projectPage.getContent();
 
+        // [성능 개선] 관심 등록 수 배치 조회
+        List<Long> projectIds = allProjects.stream()
+                .map(Project::getProjectId)
+                .collect(Collectors.toList());
+        Map<Long, Long> favoriteCountMap = favoriteProjectService.getFavoriteCountMap(projectIds);
+
+        // 관심 등록 수로 정렬 (캐시된 데이터 사용)
         Comparator<Project> comparator = (p1, p2) -> {
-            Long count1 = favoriteProjectService.getFavoriteCount(p1.getProjectId());
-            Long count2 = favoriteProjectService.getFavoriteCount(p2.getProjectId());
+            Long count1 = favoriteCountMap.getOrDefault(p1.getProjectId(), 0L);
+            Long count2 = favoriteCountMap.getOrDefault(p2.getProjectId(), 0L);
             int countCompare = "mostFavorited".equals(sortBy) ? count2.compareTo(count1) : count1.compareTo(count2);
             if (countCompare != 0) return countCompare;
             return p2.getCreatedAt().compareTo(p1.getCreatedAt());
         };
 
-        List<ProjectResponse> sortedList = allProjects.stream()
+        List<Project> sortedProjects = allProjects.stream()
                 .sorted(comparator)
-                .map(this::convertToProjectResponse)
+                .collect(Collectors.toList());
+
+        // [성능 개선] 이미지 배치 조회
+        Map<Long, List<String>> imageMap = projectImageRepository.findByProjectIdIn(projectIds).stream()
+                .collect(Collectors.groupingBy(
+                        ProjectImage::getProjectId,
+                        Collectors.mapping(ProjectImage::getFilePath, Collectors.toList())
+                ));
+
+        List<ProjectResponse> sortedList = sortedProjects.stream()
+                .map(project -> {
+                    List<String> imageUrls = imageMap.getOrDefault(project.getProjectId(), List.of());
+                    String categoryName = getCategoryName(project.getCategoryId());
+                    return ProjectResponse.from(project, categoryName, imageUrls);
+                })
                 .collect(Collectors.toList());
 
         return new PageImpl<>(sortedList, PageRequest.of(page, size), projectPage.getTotalElements());
     }
 
     /**
-     * Project 엔티티를 ProjectResponse로 변환
+     * Project 엔티티를 ProjectResponse로 변환 (단일 프로젝트용, 이미지 개별 조회)
      */
     private ProjectResponse convertToProjectResponse(Project project) {
         List<String> imageUrls = projectImageRepository.findByProjectIdOrderByDisplayOrder(project.getProjectId())
@@ -464,21 +555,32 @@ public class ProjectService {
     }
 
     /**
-     * Project 엔티티를 ProjectResponse로 변환 (Settlement 정보 포함)
+     * [성능 개선] Page<Project>를 Page<ProjectResponse>로 변환 (이미지 배치 조회)
      */
-    private ProjectResponse convertToProjectResponseWithSettlement(Project project) {
-        ProjectResponse response = convertToProjectResponse(project);
+    private Page<ProjectResponse> convertPageToProjectResponses(Page<Project> projectPage) {
+        List<Project> projects = projectPage.getContent();
 
-        // COMPLETED 상태인 경우 Settlement 정보 추가
-        if (project.getStatus() == Project.ProjectStatus.COMPLETED) {
-            settlementRepository.findFirstByProjectIdOrderByRequestedAtDesc(project.getProjectId())
-                    .ifPresent(settlement -> {
-                        response.setSettlementId(settlement.getSettlementId());
-                        response.setSettlementStatus(settlement.getStatus().name());
-                    });
-        }
+        // 이미지 배치 조회
+        List<Long> projectIds = projects.stream()
+                .map(Project::getProjectId)
+                .collect(Collectors.toList());
 
-        return response;
+        Map<Long, List<String>> imageMap = projectImageRepository.findByProjectIdIn(projectIds).stream()
+                .collect(Collectors.groupingBy(
+                        ProjectImage::getProjectId,
+                        Collectors.mapping(ProjectImage::getFilePath, Collectors.toList())
+                ));
+
+        // DTO 변환
+        List<ProjectResponse> responses = projects.stream()
+                .map(project -> {
+                    List<String> imageUrls = imageMap.getOrDefault(project.getProjectId(), List.of());
+                    String categoryName = getCategoryName(project.getCategoryId());
+                    return ProjectResponse.from(project, categoryName, imageUrls);
+                })
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, projectPage.getPageable(), projectPage.getTotalElements());
     }
 
     /**
@@ -486,17 +588,26 @@ public class ProjectService {
      * - ACTIVE 상태의 프로젝트만 대상
      * - 관심 등록 수가 많은 순으로 정렬
      * - 관심 등록 수가 같으면 최신순 (created_at 내림차순)
+     * [성능 개선] N+1 문제 해결 - 관심등록수/이미지 배치 조회
      */
     @Transactional(readOnly = true)
     public List<ProjectResponse> getPopularProjects(int limit) {
         // 1. ACTIVE 상태의 프로젝트 조회
         List<Project> projects = projectRepository.findByStatus(Project.ProjectStatus.ACTIVE);
 
-        // 2. 관심 등록 수로 정렬 및 limit 적용
+        // [성능 개선] 프로젝트 ID 목록 추출
+        List<Long> projectIds = projects.stream()
+                .map(Project::getProjectId)
+                .collect(Collectors.toList());
+
+        // [성능 개선] 관심 등록 수 배치 조회 (N+1 -> 1 쿼리)
+        Map<Long, Long> favoriteCountMap = favoriteProjectService.getFavoriteCountMap(projectIds);
+
+        // 2. 관심 등록 수로 정렬 및 limit 적용 (캐시된 데이터 사용)
         List<Project> sortedProjects = projects.stream()
                 .sorted((p1, p2) -> {
-                    Long count1 = favoriteProjectService.getFavoriteCount(p1.getProjectId());
-                    Long count2 = favoriteProjectService.getFavoriteCount(p2.getProjectId());
+                    Long count1 = favoriteCountMap.getOrDefault(p1.getProjectId(), 0L);
+                    Long count2 = favoriteCountMap.getOrDefault(p2.getProjectId(), 0L);
                     int countCompare = count2.compareTo(count1); // 내림차순
                     if (countCompare != 0) return countCompare;
                     return p2.getCreatedAt().compareTo(p1.getCreatedAt()); // 동점이면 최신순
@@ -504,14 +615,21 @@ public class ProjectService {
                 .limit(limit)
                 .collect(Collectors.toList());
 
-        // 3. DTO 변환
+        // [성능 개선] 이미지 배치 조회 (N+1 -> 1 쿼리)
+        List<Long> sortedProjectIds = sortedProjects.stream()
+                .map(Project::getProjectId)
+                .collect(Collectors.toList());
+
+        Map<Long, List<String>> imageMap = projectImageRepository.findByProjectIdIn(sortedProjectIds).stream()
+                .collect(Collectors.groupingBy(
+                        ProjectImage::getProjectId,
+                        Collectors.mapping(ProjectImage::getFilePath, Collectors.toList())
+                ));
+
+        // 3. DTO 변환 (캐시된 이미지 사용)
         return sortedProjects.stream()
                 .map(project -> {
-                    List<String> imageUrls = projectImageRepository.findByProjectIdOrderByDisplayOrder(project.getProjectId())
-                            .stream()
-                            .map(ProjectImage::getFilePath)
-                            .collect(Collectors.toList());
-
+                    List<String> imageUrls = imageMap.getOrDefault(project.getProjectId(), List.of());
                     String categoryName = getCategoryName(project.getCategoryId());
                     return ProjectResponse.from(project, categoryName, imageUrls);
                 })
@@ -522,20 +640,34 @@ public class ProjectService {
      * 모금액 순 프로젝트 조회 (current_amount 기준 정렬)
      * - 모금액이 0원인 프로젝트는 제외
      * - 모금액이 같으면 생성일(created_at) 기준 오름차순 (먼저 생성된 것부터)
+     * [성능 개선] N+1 문제 해결 - 이미지 배치 조회
      */
     @Transactional(readOnly = true)
     public List<ProjectResponse> getTopFundedProjects(int limit) {
         // ACTIVE 상태이면서 모금액이 0원보다 큰 프로젝트를 모금액 내림차순, 생성일 오름차순으로 조회
-        List<Project> projects = projectRepository.findTopByCurrentAmountDesc();
+        List<Project> projects = projectRepository.findByStatusAndCurrentAmountGreaterThanOrderByCurrentAmountDescCreatedAtAsc(
+                Project.ProjectStatus.ACTIVE, java.math.BigDecimal.ZERO);
 
-        return projects.stream()
-                .limit(limit) // Stream에서 limit 적용
+        // limit 적용
+        List<Project> limitedProjects = projects.stream()
+                .limit(limit)
+                .collect(Collectors.toList());
+
+        // [성능 개선] 이미지 배치 조회 (N+1 -> 1 쿼리)
+        List<Long> projectIds = limitedProjects.stream()
+                .map(Project::getProjectId)
+                .collect(Collectors.toList());
+
+        Map<Long, List<String>> imageMap = projectImageRepository.findByProjectIdIn(projectIds).stream()
+                .collect(Collectors.groupingBy(
+                        ProjectImage::getProjectId,
+                        Collectors.mapping(ProjectImage::getFilePath, Collectors.toList())
+                ));
+
+        // DTO 변환 (캐시된 이미지 사용)
+        return limitedProjects.stream()
                 .map(project -> {
-                    List<String> imageUrls = projectImageRepository.findByProjectIdOrderByDisplayOrder(project.getProjectId())
-                            .stream()
-                            .map(ProjectImage::getFilePath)
-                            .collect(Collectors.toList());
-
+                    List<String> imageUrls = imageMap.getOrDefault(project.getProjectId(), List.of());
                     String categoryName = getCategoryName(project.getCategoryId());
                     return ProjectResponse.from(project, categoryName, imageUrls);
                 })
@@ -925,17 +1057,31 @@ public class ProjectService {
      * @param size 페이지 크기
      * @return 프로젝트 페이지
      */
+    /**
+     * 특정 기관의 프로젝트 목록 조회
+     * @param status "active": 진행중 프로젝트, "settlement": 결산/종료 프로젝트
+     */
     @Transactional(readOnly = true)
-    public Page<ProjectResponse> searchProjectsByOrganization(Long orgId, String category, String keyword, String sortBy, int page, int size) {
+    public Page<ProjectResponse> searchProjectsByOrganization(Long orgId, String status, String category, String keyword, String sortBy, int page, int size) {
         // 1. 카테고리 ID 변환
         Integer categoryId = null;
         if (category != null && !category.trim().isEmpty()) {
             categoryId = getCategoryId(category);
         }
 
-        // 2. 해당 기관의 모든 ACTIVE 프로젝트 조회
+        // 2. 해당 기관의 프로젝트 조회 (status에 따라 필터링)
         List<Project> projects = projectRepository.findByOrgId(orgId).stream()
-                .filter(p -> p.getStatus() == Project.ProjectStatus.ACTIVE)
+                .filter(p -> {
+                    if ("settlement".equals(status)) {
+                        // 결산/종료: COMPLETED, SETTLEMENT, CLOSED 상태
+                        return p.getStatus() == Project.ProjectStatus.COMPLETED
+                                || p.getStatus() == Project.ProjectStatus.SETTLEMENT
+                                || p.getStatus() == Project.ProjectStatus.CLOSED;
+                    } else {
+                        // 진행중: ACTIVE 상태 (기본값)
+                        return p.getStatus() == Project.ProjectStatus.ACTIVE;
+                    }
+                })
                 .collect(Collectors.toList());
 
         // 3. 카테고리 필터 적용
@@ -979,7 +1125,9 @@ public class ProjectService {
         // 7. 페이지네이션 적용
         int start = page * size;
         int end = Math.min(start + size, responses.size());
-        List<ProjectResponse> pagedResponses = responses.subList(start, end);
+        List<ProjectResponse> pagedResponses = start < responses.size()
+                ? responses.subList(start, end)
+                : List.of();
 
         // 8. Page 객체 생성
         Pageable pageable = PageRequest.of(page, size);

@@ -54,7 +54,7 @@ export interface OrganizationStats {
  * 프로젝트 필터 옵션
  */
 export interface OrganizationProjectFilters {
-  status?: string;
+  status?: 'active' | 'settlement';  // active: 진행중, settlement: 결산/종료
   category?: string;
   search?: string;
   sortBy?: string;

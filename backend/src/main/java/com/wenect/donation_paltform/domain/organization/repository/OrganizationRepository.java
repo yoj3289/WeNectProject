@@ -22,4 +22,8 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
 
     // 승인 상태별 기관 개수 조회
     Long countByApprovalStatus(Organization.ApprovalStatus approvalStatus);
+
+    // [성능 개선] User ID 목록으로 Organization 배치 조회 (N+1 문제 해결)
+    @Query("SELECT o FROM Organization o WHERE o.user.userId IN :userIds")
+    List<Organization> findByUserIdIn(@org.springframework.data.repository.query.Param("userIds") List<Long> userIds);
 }

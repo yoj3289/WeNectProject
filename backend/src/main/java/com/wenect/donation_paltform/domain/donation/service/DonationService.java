@@ -615,7 +615,7 @@ public class DonationService {
 
         // Featured 필터가 있는 경우
         if (isFeatured != null) {
-            donationPage = donationRepository.findByIsFeatured(isFeatured, pageable);
+            donationPage = donationRepository.findByIsFeaturedAndStatusOrderByCreatedAtDesc(isFeatured, Donation.DonationStatus.COMPLETED, pageable);
         }
         // 메시지 있음 필터
         else if (hasMessage != null && hasMessage) {

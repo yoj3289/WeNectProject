@@ -57,4 +57,13 @@ public interface FavoriteProjectRepository extends JpaRepository<FavoriteProject
      */
     @Query("SELECT f.user.userId FROM FavoriteProject f WHERE f.project.projectId = :projectId")
     List<Long> findUserIdsByProjectId(@Param("projectId") Long projectId);
+
+    /**
+     * [성능 개선] 여러 프로젝트의 관심 등록 수를 한 번에 조회 (N+1 문제 해결)
+     * @return Object[0]: projectId, Object[1]: count
+     */
+    @Query("SELECT f.project.projectId, COUNT(f) FROM FavoriteProject f " +
+            "WHERE f.project.projectId IN :projectIds " +
+            "GROUP BY f.project.projectId")
+    List<Object[]> countByProjectIdIn(@Param("projectIds") List<Long> projectIds);
 }

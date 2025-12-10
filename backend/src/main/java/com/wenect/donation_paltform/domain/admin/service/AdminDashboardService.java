@@ -12,6 +12,7 @@ import com.wenect.donation_paltform.domain.project.repository.ProjectRepository;
 import com.wenect.donation_paltform.domain.settlement.entity.Settlement;
 import com.wenect.donation_paltform.domain.settlement.repository.SettlementRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,29 +39,20 @@ public class AdminDashboardService {
 
     /**
      * 대시보드 통계 조회
+     * [성능 개선] findAll() -> 집계 쿼리로 변경
      */
     public DashboardStatsResponse getDashboardStats() {
-        // 1. 오늘 기부 금액
+        // 1. 오늘 기부 금액 (집계 쿼리 사용)
         LocalDateTime todayStart = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
         LocalDateTime todayEnd = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
-        BigDecimal todayDonation = donationRepository.findAll().stream()
-                .filter(d -> d.getDonatedAt() != null &&
-                        d.getDonatedAt().isAfter(todayStart) &&
-                        d.getDonatedAt().isBefore(todayEnd) &&
-                        d.getStatus() == Donation.DonationStatus.COMPLETED)
-                .map(Donation::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal todayDonation = donationRepository.sumAmountByStatusAndDonatedAtBetween(todayStart, todayEnd);
+        if (todayDonation == null) todayDonation = BigDecimal.ZERO;
 
-        // 2. 어제 기부 금액
+        // 2. 어제 기부 금액 (집계 쿼리 사용)
         LocalDateTime yesterdayStart = LocalDateTime.of(LocalDate.now().minusDays(1), LocalTime.MIN);
         LocalDateTime yesterdayEnd = LocalDateTime.of(LocalDate.now().minusDays(1), LocalTime.MAX);
-        BigDecimal yesterdayDonation = donationRepository.findAll().stream()
-                .filter(d -> d.getDonatedAt() != null &&
-                        d.getDonatedAt().isAfter(yesterdayStart) &&
-                        d.getDonatedAt().isBefore(yesterdayEnd) &&
-                        d.getStatus() == Donation.DonationStatus.COMPLETED)
-                .map(Donation::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal yesterdayDonation = donationRepository.sumAmountByStatusAndDonatedAtBetween(yesterdayStart, yesterdayEnd);
+        if (yesterdayDonation == null) yesterdayDonation = BigDecimal.ZERO;
 
         // 3. 전일 대비 증감률 계산
         Double donationChange = 0.0;
@@ -73,22 +65,18 @@ public class AdminDashboardService {
             donationChange = 100.0; // 어제 0원, 오늘 있으면 100% 증가
         }
 
-        // 4. 이번주 신규 회원 (월요일 00:00 ~ 현재)
+        // 4. 이번주 신규 회원 (집계 쿼리 사용)
         LocalDateTime thisWeekStart = LocalDateTime.of(
                 LocalDate.now().with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)),
                 LocalTime.MIN
         );
-        Long newUsersThisWeek = userRepository.findAll().stream()
-                .filter(u -> u.getCreatedAt().isAfter(thisWeekStart))
-                .count();
+        LocalDateTime now = LocalDateTime.now();
+        Long newUsersThisWeek = userRepository.countByCreatedAtBetween(thisWeekStart, now);
 
-        // 5. 지난주 신규 회원 (지난주 월요일 ~ 일요일)
+        // 5. 지난주 신규 회원 (집계 쿼리 사용)
         LocalDateTime lastWeekStart = thisWeekStart.minusWeeks(1);
         LocalDateTime lastWeekEnd = thisWeekStart.minusSeconds(1);
-        Long newUsersLastWeek = userRepository.findAll().stream()
-                .filter(u -> u.getCreatedAt().isAfter(lastWeekStart) &&
-                        u.getCreatedAt().isBefore(lastWeekEnd))
-                .count();
+        Long newUsersLastWeek = userRepository.countByCreatedAtBetween(lastWeekStart, lastWeekEnd);
 
         // 6. 지난주 대비 증감률 계산
         Double userChange = 0.0;
@@ -98,15 +86,15 @@ public class AdminDashboardService {
             userChange = 100.0;
         }
 
-        // 7. 지출 승인 대기 건수 (PENDING 상태)
-        Long pendingExpenses = expenseRepository.findByStatusOrderByCreatedAtDesc(
+        // 7. 지출 승인 대기 건수 (count 쿼리 사용)
+        Long pendingExpenses = expenseRepository.countByStatus(
                 com.wenect.donation_paltform.domain.expense.entity.Expense.ExpenseStatus.PENDING
-        ).stream().count();
+        );
 
-        // 8. 기관 승인 대기 건수 (PENDING 상태)
+        // 8. 기관 승인 대기 건수 (이미 count 쿼리 사용 중)
         Long pendingApprovals = organizationRepository.countByApprovalStatus(Organization.ApprovalStatus.PENDING);
 
-        // 9. 정산 승인 대기 건수 (PENDING 상태)
+        // 9. 정산 승인 대기 건수 (이미 count 쿼리 사용 중)
         Long pendingSettlements = settlementRepository.countByStatus(Settlement.SettlementStatus.PENDING);
 
         return DashboardStatsResponse.builder()
@@ -122,20 +110,26 @@ public class AdminDashboardService {
 
     /**
      * 카테고리별 프로젝트 분포 조회
+     * [성능 개선] findAll() -> 집계 쿼리로 변경
      */
     public List<CategoryDistributionResponse> getCategoryDistribution() {
-        List<Project> allProjects = projectRepository.findAll();
-        long totalCount = allProjects.size();
+        // 카테고리별 프로젝트 수를 DB에서 직접 집계
+        List<Object[]> categoryStats = projectRepository.countByCategoryId();
+
+        if (categoryStats.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 총 프로젝트 수 계산
+        long totalCount = categoryStats.stream()
+                .mapToLong(row -> ((Number) row[1]).longValue())
+                .sum();
 
         if (totalCount == 0) {
             return Collections.emptyList();
         }
 
-        // 카테고리별 프로젝트 수 집계 (categoryId 기준)
-        Map<Integer, Long> categoryCount = allProjects.stream()
-                .collect(Collectors.groupingBy(Project::getCategoryId, Collectors.counting()));
-
-        // 카테고리 ID별 색상 매핑 (1: Child Welfare, 2: Elder Care, 3: Disability Support, 4: Animal Protection, 5: Environment, 6: Education)
+        // 카테고리 ID별 색상 매핑
         Map<Integer, String> categoryColors = new HashMap<>();
         categoryColors.put(1, "#FF6B6B");  // Child Welfare
         categoryColors.put(2, "#4ECDC4");  // Elder Care
@@ -153,11 +147,12 @@ public class AdminDashboardService {
         categoryNames.put(5, "환경");
         categoryNames.put(6, "교육");
 
-        return categoryCount.entrySet().stream()
-                .map(entry -> {
-                    Integer categoryId = entry.getKey();
-                    Long count = entry.getValue();
-                    Double percent = (double) count / totalCount * 100;
+        final long finalTotalCount = totalCount;
+        return categoryStats.stream()
+                .map(row -> {
+                    Integer categoryId = ((Number) row[0]).intValue();
+                    Long count = ((Number) row[1]).longValue();
+                    Double percent = (double) count / finalTotalCount * 100;
 
                     return CategoryDistributionResponse.builder()
                             .name(categoryNames.getOrDefault(categoryId, "기타"))

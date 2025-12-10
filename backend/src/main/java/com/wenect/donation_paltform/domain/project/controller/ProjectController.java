@@ -150,6 +150,7 @@ public class ProjectController {
      * GET /api/projects/by-organization/{orgId}
      *
      * @param orgId 기관 ID
+     * @param status 프로젝트 상태 (active/settlement, 기본값: active) - active: 진행중, settlement: 결산/종료
      * @param category 카테고리 (선택)
      * @param search 검색 키워드 (선택)
      * @param sortBy 정렬 기준 (latest/deadline/mostDonated, 기본값: latest)
@@ -160,6 +161,7 @@ public class ProjectController {
     @GetMapping("/by-organization/{orgId}")
     public ResponseEntity<PageResponse<ProjectResponse>> getProjectsByOrganization(
             @PathVariable("orgId") Long orgId,
+            @RequestParam(value = "status", defaultValue = "active") String status,
             @RequestParam(value = "category", required = false) String category,
             @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "sortBy", defaultValue = "latest") String sortBy,
@@ -167,7 +169,7 @@ public class ProjectController {
             @RequestParam(value = "size", defaultValue = "12") int size) {
 
         try {
-            Page<ProjectResponse> projectPage = projectService.searchProjectsByOrganization(orgId, category, search, sortBy, page, size);
+            Page<ProjectResponse> projectPage = projectService.searchProjectsByOrganization(orgId, status, category, search, sortBy, page, size);
             PageResponse<ProjectResponse> pageResponse = PageResponse.<ProjectResponse>builder()
                     .content(projectPage.getContent())
                     .currentPage(projectPage.getNumber())

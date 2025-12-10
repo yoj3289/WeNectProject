@@ -7,6 +7,7 @@ import { usePopularProjects, useTopFundedProjects } from '../hooks/useProjects';
 import { useRecentDonations, useFeaturedMessages } from '../hooks/useDonations';
 import { useStatisticsSummary } from '../hooks/useStatistics';
 import { formatAmount, calculatePercentage } from '../utils/formatters';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 
 interface HomePageProps {
   isLoggedIn: boolean;
@@ -411,14 +412,11 @@ const HomePage: React.FC<HomePageProps> = ({
           </div>
 
           {popularLoading ? (
-            <div className="flex gap-5 overflow-hidden">
-              {[...Array(4)].map((_, idx) => (
-                <div key={idx} className="w-[280px] flex-shrink-0 animate-pulse">
-                  <div className="aspect-[4/3] bg-stone-200 rounded-xl mb-4" />
-                  <div className="h-4 bg-stone-200 rounded w-20 mb-2" />
-                  <div className="h-5 bg-stone-200 rounded w-full" />
-                </div>
-              ))}
+            <div className="bg-white rounded-xl border border-stone-200 py-12">
+              <LoadingSpinner
+                size="md"
+                message="주목받는 프로젝트를 불러오는 중..."
+              />
             </div>
           ) : popularProjects && popularProjects.length > 0 ? (
             <div className="relative group">
@@ -535,22 +533,11 @@ const HomePage: React.FC<HomePageProps> = ({
           </div>
 
           {topFundedLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="row-span-2 bg-stone-100 rounded-2xl overflow-hidden animate-pulse">
-                <div className="h-56 bg-stone-200" />
-                <div className="p-6">
-                  <div className="h-5 bg-stone-200 rounded w-3/4 mb-3" />
-                  <div className="h-4 bg-stone-200 rounded w-1/2" />
-                </div>
-              </div>
-              <div className="bg-stone-100 rounded-xl overflow-hidden animate-pulse">
-                <div className="h-32 bg-stone-200" />
-                <div className="p-4"><div className="h-4 bg-stone-200 rounded" /></div>
-              </div>
-              <div className="bg-stone-100 rounded-xl overflow-hidden animate-pulse">
-                <div className="h-32 bg-stone-200" />
-                <div className="p-4"><div className="h-4 bg-stone-200 rounded" /></div>
-              </div>
+            <div className="bg-stone-50 rounded-xl border border-stone-200 py-12">
+              <LoadingSpinner
+                size="md"
+                message="후원 TOP 프로젝트를 불러오는 중..."
+              />
             </div>
           ) : topFundedProjects && topFundedProjects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
