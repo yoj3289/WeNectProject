@@ -126,10 +126,15 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
   const { data: favoriteProjectIds = [], isLoading: isFavoriteIdsLoading } = useUserFavoriteProjects(isLoggedIn);
   const { data: allProjectsData, isLoading: isProjectsLoading } = useProjects({});
+  const { data: allSettlementProjectsData, isLoading: isSettlementProjectsLoading } = useSettlementProjects({});
+
+  // ACTIVE + 결산 중(COMPLETED, SETTLEMENT, CLOSED) 모든 프로젝트에서 관심 프로젝트 필터링
   const favoriteProjects = React.useMemo(() => {
-    if (!allProjectsData?.content) return [];
-    return allProjectsData.content.filter((p: Project) => favoriteProjectIds.includes(p.id));
-  }, [allProjectsData, favoriteProjectIds]);
+    const activeProjects = allProjectsData?.content || [];
+    const settlementProjects = allSettlementProjectsData?.content || [];
+    const allProjects = [...activeProjects, ...settlementProjects];
+    return allProjects.filter((p: Project) => favoriteProjectIds.includes(p.id));
+  }, [allProjectsData, allSettlementProjectsData, favoriteProjectIds]);
 
   const toggleFavoriteMutation = useToggleFavoriteProject();
 
@@ -586,7 +591,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     <Heart className="text-amber-600" size={22} />
                   </div>
                   <p className="text-xl md:text-2xl font-light text-white mb-1">
-                    {isFavoriteIdsLoading || isProjectsLoading ? (
+                    {isFavoriteIdsLoading || isProjectsLoading || isSettlementProjectsLoading ? (
                       <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                     ) : (
                       `${favoriteProjects.length}개`
@@ -776,7 +781,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                   </button>
                 </div>
 
-                {isFavoriteIdsLoading || isProjectsLoading ? (
+                {isFavoriteIdsLoading || isProjectsLoading || isSettlementProjectsLoading ? (
                   <div className="flex justify-center py-12">
                     <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
                   </div>
@@ -1130,7 +1135,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
       return new Set(settlementProjectsData.content.map((p: Project) => p.id));
     }, [settlementProjectsData]);
 
-    const isLoading = isFavoriteIdsLoading || isProjectsLoading || isSettlementLoading;
+    const isLoading = isFavoriteIdsLoading || isProjectsLoading || isSettlementProjectsLoading || isSettlementLoading;
 
     const filteredFavoriteProjects = React.useMemo(() => {
       let projects = [...favoriteProjects];
