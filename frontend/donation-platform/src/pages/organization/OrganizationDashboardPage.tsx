@@ -6,6 +6,7 @@ import { useUpdateProject } from '../../hooks/useProjects';
 import { getCategoryLabel } from '../../types';
 import type { Project } from '../../types';
 import Pagination from '../../components/common/Pagination';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { SettlementRequestModal } from '../../components/settlement/SettlementRequestModal';
 import EditProjectModal from '../../components/project/EditProjectModal';
 import { getProjectStatusLabel, getProjectStatusBadgeStyle, canEditProject } from '../../utils/projectStatus';
@@ -109,24 +110,30 @@ const OrganizationDashboardPage: React.FC = () => {
                 프로젝트 <span className="font-medium">관리</span>
               </h1>
             </div>
-            <Link
-              to="/projects/create"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 text-stone-900 rounded-xl font-medium hover:bg-amber-400 transition-colors"
-            >
-              <Plus size={18} />
-              새 프로젝트 등록
-            </Link>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Link
+                to="/organization/statistics"
+                className="inline-flex items-center gap-2 px-4 sm:px-6 py-3 bg-white/10 border border-white/20 text-white rounded-xl font-medium hover:bg-white/20 transition-colors"
+              >
+                <BarChart3 size={18} />
+                <span className="hidden sm:inline">프로젝트 통계</span>
+                <span className="sm:hidden">통계</span>
+              </Link>
+              <Link
+                to="/projects/create"
+                className="inline-flex items-center gap-2 px-4 sm:px-6 py-3 bg-amber-500 text-stone-900 rounded-xl font-medium hover:bg-amber-400 transition-colors"
+              >
+                <Plus size={18} />
+                <span className="hidden sm:inline">새 프로젝트 등록</span>
+                <span className="sm:hidden">등록</span>
+              </Link>
+            </div>
           </div>
 
           {/* 통계 카드 */}
           {isLoadingStats ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 mt-6 sm:mt-8">
-              {[...Array(5)].map((_, idx) => (
-                <div key={idx} className="bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-white/20 animate-pulse">
-                  <div className="h-3 sm:h-4 bg-white/20 rounded w-16 sm:w-20 mb-2 sm:mb-3"></div>
-                  <div className="h-6 sm:h-8 bg-white/20 rounded w-12 sm:w-16"></div>
-                </div>
-              ))}
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 mt-6 sm:mt-8 border border-white/20">
+              <LoadingSpinner size="md" message="통계를 불러오는 중..." />
             </div>
           ) : isErrorStats ? (
             <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 mt-6 sm:mt-8">
@@ -244,21 +251,8 @@ const OrganizationDashboardPage: React.FC = () => {
 
         {/* 프로젝트 목록 */}
         {isLoadingProjects ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[...Array(6)].map((_, idx) => (
-              <div key={idx} className="bg-white rounded-2xl overflow-hidden animate-pulse shadow-md">
-                <div className="h-40 bg-stone-200"></div>
-                <div className="p-5">
-                  <div className="h-4 bg-stone-200 rounded w-20 mb-3"></div>
-                  <div className="h-6 bg-stone-200 rounded w-full mb-4"></div>
-                  <div className="h-2 bg-stone-200 rounded w-full mb-4"></div>
-                  <div className="flex gap-2">
-                    <div className="h-10 bg-stone-200 rounded flex-1"></div>
-                    <div className="h-10 bg-stone-200 rounded flex-1"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="bg-white rounded-2xl shadow-md p-12">
+            <LoadingSpinner size="lg" message="프로젝트 목록을 불러오는 중..." />
           </div>
         ) : isErrorProjects ? (
           <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
@@ -632,11 +626,13 @@ const OrganizationDashboardPage: React.FC = () => {
               setShowEditModal(false);
               setSelectedProject(null);
             }}
-            onSubmit={async (title, description) => {
+            onSubmit={async (title, description, budgetPlan, budgetPlanChangeReason) => {
               await updateProjectMutation.mutateAsync({
                 projectId: selectedProject.id,
                 title,
                 description,
+                budgetPlan,
+                budgetPlanChangeReason,
               });
               refetch();
             }}

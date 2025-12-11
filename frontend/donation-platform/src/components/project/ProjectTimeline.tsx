@@ -109,12 +109,24 @@ const ProjectTimeline: React.FC<ProjectTimelineProps> = ({ project, expenses = [
       }
 
       // 5. 프로젝트 종료 (CLOSED 상태)
+      // 프로젝트 종료는 모든 지출 승인 이후에 표시되어야 함
       if (project.status?.toLowerCase() === 'closed') {
+        // 가장 늦은 지출 승인 날짜 찾기
+        const latestExpenseDate = approvedExpenses.length > 0
+          ? Math.max(...approvedExpenses.map(e => new Date(e.approvedAt || e.expenseDate).getTime()))
+          : null;
+
+        const closedBaseDate = settlement?.completedDate || endDate;
+        // 프로젝트 종료 날짜는 기본 날짜와 가장 늦은 지출 승인 날짜 중 더 늦은 날짜 사용
+        const closedDate = latestExpenseDate
+          ? new Date(Math.max(new Date(closedBaseDate).getTime(), latestExpenseDate + 1)).toISOString().split('T')[0]
+          : closedBaseDate;
+
         events.push({
           id: 'closed',
           type: 'closed',
           title: '프로젝트 종료',
-          date: settlement?.completedDate || endDate,
+          date: closedDate,
           description: '프로젝트가 성공적으로 완료되었습니다',
           icon: <CheckCircle size={20} />,
           color: 'bg-gray-600',

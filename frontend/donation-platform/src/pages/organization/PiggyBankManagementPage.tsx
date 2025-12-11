@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Wallet, TrendingDown, Calendar, FileText, Download, AlertCircle, Eye, X, ArrowUpDown, Tag, Receipt, XCircle, Clock, Loader2, Building2, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { usePiggyBankByProject, usePiggyBankDetail } from '../../hooks/usePiggyBanks';
+import { useCloseProjectSettlement, useProject } from '../../hooks/useProjects';
 import { WithdrawalModal } from '../../components/piggybank/WithdrawalModal';
-import { SettlementRequestModal } from '../../components/settlement/SettlementRequestModal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import type { Expense } from '../../types';
 
 /**
@@ -13,19 +14,22 @@ import type { Expense } from '../../types';
  * - 인출 내역 확인
  * - 카테고리별 통계
  * - 인출 요청
- * - 정산 요청
+ * - 프로젝트 종료 (저금통 잔액 0원 시)
  */
 const PiggyBankManagementPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
 
   const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
-  const [isSettlementModalOpen, setIsSettlementModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [sortField, setSortField] = useState<'date' | 'amount'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
   const [isDownloading, setIsDownloading] = useState(false);
+  const [showCloseProjectModal, setShowCloseProjectModal] = useState(false);
+
+  // API: 프로젝트 정보 조회 (상태 확인용)
+  const { data: project, isLoading: isLoadingProject } = useProject(Number(projectId));
 
   // API: projectId로 먼저 저금통 조회하여 piggyId를 얻음
   const {
@@ -42,7 +46,10 @@ const PiggyBankManagementPage: React.FC = () => {
     refetch
   } = usePiggyBankDetail(basicPiggyBank?.piggyId ?? null);
 
-  const isLoading = isLoadingBasic || isLoadingDetail;
+  // 프로젝트 종료 mutation
+  const closeProjectMutation = useCloseProjectSettlement();
+
+  const isLoading = isLoadingBasic || isLoadingDetail || isLoadingProject;
   const isError = isErrorBasic || isErrorDetail;
 
   const formatAmount = (amount: number): string => {
@@ -168,8 +175,26 @@ const PiggyBankManagementPage: React.FC = () => {
     );
   }
 
-  const canWithdraw = piggyBank.status === 'ACTIVE' && piggyBank.balance > 0;
-  const canRequestSettlement = piggyBank.status === 'ACTIVE' && piggyBank.balance === 0;
+  // 프로젝트 상태 확인
+  const isProjectClosed = project?.status?.toUpperCase() === 'CLOSED';
+
+  const canWithdraw = piggyBank.status === 'ACTIVE' && piggyBank.balance > 0 && !isProjectClosed;
+  // 잔액이 0이 되면 저금통 상태가 자동으로 WITHDRAWN으로 변경됨
+  // 프로젝트가 이미 CLOSED 상태면 종료 버튼 대신 종료됨 상태 표시
+  const canCloseProject = piggyBank.status === 'WITHDRAWN' && piggyBank.balance === 0 && !isProjectClosed;
+
+  // 프로젝트 종료 핸들러
+  const handleCloseProject = async () => {
+    try {
+      await closeProjectMutation.mutateAsync(Number(projectId));
+      setShowCloseProjectModal(false);
+      toast.success('프로젝트가 성공적으로 종료되었습니다.');
+      navigate('/organization/dashboard');
+    } catch (error: any) {
+      setShowCloseProjectModal(false);
+      toast.error(error.message || '프로젝트 종료에 실패했습니다.');
+    }
+  };
 
   return (
     <div className="bg-stone-50 min-h-screen">
@@ -199,21 +224,30 @@ const PiggyBankManagementPage: React.FC = () => {
             </div>
 
             <div className="flex gap-2 ml-auto sm:ml-0">
-              {canWithdraw && (
-                <button
-                  onClick={() => setIsWithdrawalModalOpen(true)}
-                  className="px-3 sm:px-4 py-2 bg-amber-500 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium hover:bg-amber-600 transition-colors"
-                >
-                  지출 등록
-                </button>
-              )}
-              {canRequestSettlement && (
-                <button
-                  onClick={() => setIsSettlementModalOpen(true)}
-                  className="px-3 sm:px-4 py-2 bg-green-500 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium hover:bg-green-600 transition-colors"
-                >
-                  정산 요청
-                </button>
+              {isProjectClosed ? (
+                <span className="px-3 sm:px-4 py-2 bg-green-500 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium flex items-center gap-1.5">
+                  <CheckCircle size={14} className="sm:w-4 sm:h-4" />
+                  종료됨
+                </span>
+              ) : (
+                <>
+                  {canWithdraw && (
+                    <button
+                      onClick={() => setIsWithdrawalModalOpen(true)}
+                      className="px-3 sm:px-4 py-2 bg-amber-500 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium hover:bg-amber-600 transition-colors"
+                    >
+                      지출 등록
+                    </button>
+                  )}
+                  {canCloseProject && (
+                    <button
+                      onClick={() => setShowCloseProjectModal(true)}
+                      className="px-3 sm:px-4 py-2 bg-green-500 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium hover:bg-green-600 transition-colors"
+                    >
+                      프로젝트 종료
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -265,7 +299,7 @@ const PiggyBankManagementPage: React.FC = () => {
               {formatAmount(piggyBank.balance)}원
             </p>
             <p className="text-[10px] sm:text-xs text-stone-500 hidden sm:block">
-              {piggyBank.balance === 0 ? '정산 요청 가능' : '인출 가능'}
+              {isProjectClosed ? '프로젝트 종료됨' : canCloseProject ? '프로젝트 종료 가능' : canWithdraw ? '인출 가능' : '인출 완료'}
             </p>
           </div>
         </div>
@@ -502,23 +536,37 @@ const PiggyBankManagementPage: React.FC = () => {
         </div>
 
         {/* 저금통 상태 안내 */}
-        {piggyBank.balance === 0 && (
+        {isProjectClosed ? (
           <div className="mt-6 bg-green-50/50 border border-green-200 rounded-2xl p-4">
             <div className="flex items-start gap-3">
-              <AlertCircle className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
+              <CheckCircle className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
               <div className="flex-1">
                 <h3 className="font-medium text-green-800 mb-1">
-                  정산 요청이 가능합니다
+                  프로젝트가 종료되었습니다
                 </h3>
                 <p className="text-sm text-green-700">
-                  저금통 잔액이 모두 사용되었습니다. 정산 요청을 통해 프로젝트를 종료할 수 있습니다.
+                  이 프로젝트의 결산이 완료되었습니다. 지출 내역을 확인할 수 있습니다.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : canCloseProject && (
+          <div className="mt-6 bg-green-50/50 border border-green-200 rounded-2xl p-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
+              <div className="flex-1">
+                <h3 className="font-medium text-green-800 mb-1">
+                  프로젝트 종료가 가능합니다
+                </h3>
+                <p className="text-sm text-green-700">
+                  저금통 잔액이 모두 사용되었습니다. 프로젝트를 종료하여 결산을 완료하세요.
                 </p>
               </div>
               <button
-                onClick={() => setIsSettlementModalOpen(true)}
+                onClick={() => setShowCloseProjectModal(true)}
                 className="px-4 py-2 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition-colors"
               >
-                정산 요청하기
+                프로젝트 종료
               </button>
             </div>
           </div>
@@ -760,19 +808,18 @@ const PiggyBankManagementPage: React.FC = () => {
         />
       )}
 
-      {/* 정산 요청 모달 */}
-      {isSettlementModalOpen && (
-        <SettlementRequestModal
-          onClose={() => setIsSettlementModalOpen(false)}
-          onSuccess={() => {
-            setIsSettlementModalOpen(false);
-            refetch();
-          }}
-          projectId={piggyBank.projectId}
-          projectTitle={piggyBank.projectTitle}
-          totalAmount={piggyBank.totalAmount}
-        />
-      )}
+      {/* 프로젝트 종료 확인 모달 */}
+      <ConfirmModal
+        isOpen={showCloseProjectModal}
+        title="프로젝트 종료"
+        message={`프로젝트를 종료하시겠습니까?
+종료 후에는 더 이상 지출을 등록할 수 없습니다.`}
+        confirmText="종료"
+        cancelText="취소"
+        onConfirm={handleCloseProject}
+        onCancel={() => setShowCloseProjectModal(false)}
+        isLoading={closeProjectMutation.isPending}
+      />
     </div>
   );
 };

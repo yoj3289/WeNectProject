@@ -662,7 +662,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     onClick={() => setSelectedMenu('statistics')}
                     className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
                   >
-                    <span>{userType === 'organization' ? '프로젝트별 기부 통계' : '통계'}</span>
+                    <span>나의 기부 통계</span>
                     <ChevronRight size={16} className="text-stone-400 group-hover:text-amber-500" />
                   </button>
                 </div>
@@ -1399,7 +1399,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
       )}
       {selectedMenu === 'favorite-projects' && <FavoriteProjectsPage />}
       {selectedMenu === 'statistics' && (
-        <StatisticsPage onBack={() => setSelectedMenu('main')} userType={userType} />
+        <StatisticsPage onBack={() => setSelectedMenu('main')} />
       )}
       {showPasswordModal && <PasswordChangeModal />}
       {showDeleteAccountModal && <DeleteAccountModal />}

@@ -8,8 +8,57 @@ export function useStatisticsSummary() {
   return useQuery({
     queryKey: ['statistics-summary'],
     queryFn: statisticsApi.getStatisticsSummary,
-    // 5분간 캐시 유지
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ==================== 기관 통계 훅 ====================
+
+/**
+ * 기관 전체 통계 요약 조회
+ */
+export function useOrganizationSummary() {
+  return useQuery({
+    queryKey: ['organization-statistics-summary'],
+    queryFn: statisticsApi.getOrganizationSummary,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+/**
+ * 기관 프로젝트 통계 목록 조회
+ */
+export function useOrganizationProjectStatistics() {
+  return useQuery({
+    queryKey: ['organization-project-statistics'],
+    queryFn: statisticsApi.getOrganizationProjectStatistics,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+/**
+ * 기관 프로젝트 기부 트렌드 조회
+ */
+export function useOrganizationDonationTrends(
+  projectId?: number,
+  period: 'weekly' | 'monthly' | 'yearly' = 'monthly'
+) {
+  return useQuery({
+    queryKey: ['organization-donation-trends', projectId, period],
+    queryFn: () => statisticsApi.getOrganizationDonationTrends(projectId, period),
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+/**
+ * 특정 프로젝트 상세 통계 조회
+ */
+export function useOrganizationProjectDetailStatistics(projectId: number | null) {
+  return useQuery({
+    queryKey: ['organization-project-detail-statistics', projectId],
+    queryFn: () => statisticsApi.getOrganizationProjectDetailStatistics(projectId!),
+    enabled: !!projectId,
+    staleTime: 2 * 60 * 1000,
   });
 }
 

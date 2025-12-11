@@ -372,7 +372,21 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
               {/* 참여 정보 */}
               <div className="p-6 space-y-4">
                 {/* 저금통 정보 */}
-                {settlement && (
+                {project.status.toUpperCase() === 'CLOSED' ? (
+                  <div className="p-4 bg-green-50 border border-green-100 rounded-xl text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <CheckCircle size={20} className="text-green-600" />
+                    </div>
+                    <p className="text-lg font-medium text-green-700">
+                      프로젝트가 종료되었습니다
+                    </p>
+                    {settlement && (
+                      <p className="text-xs text-green-600 mt-2">
+                        총 사용액: {formatAmount(settlement.usedAmount)}원
+                      </p>
+                    )}
+                  </div>
+                ) : settlement && (
                   <div className="p-4 bg-green-50 border border-green-100 rounded-xl">
                     <p className="text-sm text-green-700 font-medium mb-1 flex items-center gap-2">
                       <Wallet size={16} />

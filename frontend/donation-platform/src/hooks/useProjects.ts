@@ -53,6 +53,20 @@ export function useSettlementProjects(filters: projectsApi.ProjectFilters = {}) 
 }
 
 /**
+ * 종료된 프로젝트 목록 조회
+ * CLOSED 상태의 프로젝트만
+ */
+export function useClosedProjects(filters: projectsApi.ProjectFilters = {}) {
+  return useQuery({
+    queryKey: ['closed-projects', filters],
+    queryFn: () => projectsApi.getClosedProjects(filters),
+    staleTime: 5 * 60 * 1000, // 5분간 캐시
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+  });
+}
+
+/**
  * 프로젝트 상세 조회
  */
 export function useProject(id: number) {
@@ -120,20 +134,47 @@ export function useCreateProject() {
 }
 
 /**
- * 프로젝트 수정 (제목, 소개만 수정 가능)
+ * 프로젝트 수정
+ * - 제목/소개: ACTIVE, COMPLETED 상태에서 수정 가능
+ * - 사용계획: COMPLETED 상태에서만 수정 가능 (변경 사유 필수)
  */
 export function useUpdateProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ projectId, title, description }: { projectId: number; title: string; description: string }) =>
-      projectsApi.updateProject(projectId, { title, description }),
+    mutationFn: ({
+      projectId,
+      title,
+      description,
+      budgetPlan,
+      budgetPlanChangeReason,
+    }: {
+      projectId: number;
+      title: string;
+      description: string;
+      budgetPlan?: string;
+      budgetPlanChangeReason?: string;
+    }) => projectsApi.updateProject(projectId, { title, description, budgetPlan, budgetPlanChangeReason }),
     onSuccess: (_, variables) => {
       // 프로젝트 목록 및 상세 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       queryClient.invalidateQueries({ queryKey: ['project', variables.projectId] });
       queryClient.invalidateQueries({ queryKey: ['settlement-projects'] });
+      queryClient.invalidateQueries({ queryKey: ['closed-projects'] });
+      queryClient.invalidateQueries({ queryKey: ['budget-plan-history', variables.projectId] });
     },
+  });
+}
+
+/**
+ * 프로젝트 사용계획 변경 이력 조회
+ */
+export function useBudgetPlanHistory(projectId: number, enabled: boolean = true) {
+  return useQuery({
+    queryKey: ['budget-plan-history', projectId],
+    queryFn: () => projectsApi.getBudgetPlanHistory(projectId),
+    enabled: enabled && !!projectId,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -208,5 +249,26 @@ export function useUserFavoriteProjects(enabled: boolean = true) {
     queryFn: () => projectsApi.getUserFavoriteProjects(),
     enabled, // 로그인 상태에서만 실행
     retry: false, // 인증 실패 시 재시도 안함
+  });
+}
+
+/**
+ * 프로젝트 결산 완료 (프로젝트 종료)
+ * 저금통 잔액이 0원일 때만 가능
+ */
+export function useCloseProjectSettlement() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (projectId: number) => projectsApi.closeProjectSettlement(projectId),
+    onSuccess: (_, projectId) => {
+      // 프로젝트 관련 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['settlement-projects'] });
+      // 저금통 관련 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: ['piggyBank'] });
+      queryClient.invalidateQueries({ queryKey: ['piggyBanks'] });
+    },
   });
 }

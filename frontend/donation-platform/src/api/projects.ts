@@ -154,11 +154,56 @@ export const createProject = async (data: CreateProjectRequest | FormData): Prom
 };
 
 /**
- * 프로젝트 수정 (제목, 소개만 수정 가능)
+ * 종료된 프로젝트 목록 조회
+ * CLOSED 상태의 프로젝트만
  */
-export const updateProject = async (projectId: number, data: { title: string; description: string }): Promise<Project> => {
+export const getClosedProjects = async (
+  filters: ProjectFilters = {}
+): Promise<PageResponse<Project>> => {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      params.append(key, String(value));
+    }
+  });
+
+  return apiClient.get<PageResponse<Project>>(`/projects/closed?${params.toString()}`);
+};
+
+/**
+ * 프로젝트 수정
+ * - 제목/소개: ACTIVE, COMPLETED 상태에서 수정 가능
+ * - 사용계획: COMPLETED 상태에서만 수정 가능 (변경 사유 필수)
+ */
+export const updateProject = async (
+  projectId: number,
+  data: {
+    title: string;
+    description: string;
+    budgetPlan?: string;
+    budgetPlanChangeReason?: string;
+  }
+): Promise<Project> => {
   const response = await apiClient.patch<{ data: Project; message: string; success: boolean }>(`/projects/${projectId}`, data);
   return response.data;
+};
+
+/**
+ * 프로젝트 사용계획 변경 이력 조회
+ */
+export interface BudgetPlanHistoryResponse {
+  historyId: number;
+  projectId: number;
+  previousPlan: string;
+  newPlan: string;
+  changeReason: string;
+  changedAt: string;
+  projectStatus: string;
+}
+
+export const getBudgetPlanHistory = async (projectId: number): Promise<BudgetPlanHistoryResponse[]> => {
+  return apiClient.get<BudgetPlanHistoryResponse[]>(`/projects/${projectId}/budget-plan-history`);
 };
 
 /**

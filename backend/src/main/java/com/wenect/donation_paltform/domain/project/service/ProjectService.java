@@ -4,10 +4,12 @@ import com.wenect.donation_paltform.domain.project.dto.CreateProjectRequest;
 import com.wenect.donation_paltform.domain.project.dto.ProjectDetailResponse;
 import com.wenect.donation_paltform.domain.project.dto.ProjectResponse;
 import com.wenect.donation_paltform.domain.organization.entity.Organization;
+import com.wenect.donation_paltform.domain.project.entity.BudgetPlanHistory;
 import com.wenect.donation_paltform.domain.project.entity.Project;
 import com.wenect.donation_paltform.domain.project.entity.ProjectDocument;
 import com.wenect.donation_paltform.domain.project.entity.ProjectImage;
 import com.wenect.donation_paltform.domain.organization.repository.OrganizationRepository;
+import com.wenect.donation_paltform.domain.project.repository.BudgetPlanHistoryRepository;
 import com.wenect.donation_paltform.domain.project.repository.ProjectDocumentRepository;
 import com.wenect.donation_paltform.domain.project.repository.ProjectImageRepository;
 import com.wenect.donation_paltform.domain.project.repository.ProjectRepository;
@@ -43,6 +45,7 @@ public class ProjectService {
     private final ProjectImageRepository projectImageRepository;
     private final ProjectDocumentRepository projectDocumentRepository;
     private final OrganizationRepository organizationRepository;
+    private final BudgetPlanHistoryRepository budgetPlanHistoryRepository;
     private final com.wenect.donation_paltform.global.service.RemoteFileStorageService fileStorageService;
     private final com.wenect.donation_paltform.domain.favorite.service.FavoriteProjectService favoriteProjectService;
     private final DonationOptionService donationOptionService;
@@ -433,6 +436,38 @@ public class ProjectService {
             projectPage = projectRepository.findByStatusInAndTitleContainingIgnoreCase(settlementStatuses, keyword, pageable);
         } else {
             projectPage = projectRepository.findByStatusIn(settlementStatuses, pageable);
+        }
+
+        return convertPageToProjectResponsesWithSettlement(projectPage);
+    }
+
+    /**
+     * 종료된 프로젝트 검색 (CLOSED 상태만)
+     * [성능 개선] N+1 문제 해결 - 이미지 배치 조회
+     */
+    @Transactional(readOnly = true)
+    public Page<ProjectResponse> searchClosedProjectsPaged(String category, String keyword, String sortBy, int page, int size) {
+        Integer categoryId = null;
+        if (category != null && !category.trim().isEmpty()) {
+            categoryId = getCategoryId(category);
+        }
+
+        Sort sort = getSortBySortBy(sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Project> projectPage;
+
+        if (categoryId != null && keyword != null && !keyword.trim().isEmpty()) {
+            projectPage = projectRepository.findByStatusAndCategoryIdAndTitleContainingIgnoreCase(
+                    Project.ProjectStatus.CLOSED, categoryId, keyword, pageable);
+        } else if (categoryId != null) {
+            projectPage = projectRepository.findByStatusAndCategoryId(
+                    Project.ProjectStatus.CLOSED, categoryId, pageable);
+        } else if (keyword != null && !keyword.trim().isEmpty()) {
+            projectPage = projectRepository.findByStatusAndTitleContainingIgnoreCase(
+                    Project.ProjectStatus.CLOSED, keyword, pageable);
+        } else {
+            projectPage = projectRepository.findByStatus(Project.ProjectStatus.CLOSED, pageable);
         }
 
         return convertPageToProjectResponsesWithSettlement(projectPage);
@@ -967,8 +1002,10 @@ public class ProjectService {
     }
 
     /**
-     * 프로젝트 수정 (제목, 소개만 수정 가능)
-     * - CLOSED, CANCELLED, REJECTED 상태는 수정 불가
+     * 프로젝트 수정
+     * - 제목/소개: ACTIVE, COMPLETED 상태에서 수정 가능
+     * - 사용계획: COMPLETED 상태에서만 수정 가능 (변경 사유 필수, 이력 저장)
+     * - SETTLEMENT, CLOSED, CANCELLED, REJECTED 상태는 수정 불가
      */
     @Transactional
     public ProjectResponse updateProject(Long userId, Long projectId, com.wenect.donation_paltform.domain.project.dto.UpdateProjectRequest request) {
@@ -986,14 +1023,15 @@ public class ProjectService {
             throw new IllegalArgumentException("프로젝트를 수정할 권한이 없습니다");
         }
 
-        // 3. 상태 확인 (CLOSED, CANCELLED, REJECTED는 수정 불가)
-        if (project.getStatus() == Project.ProjectStatus.CLOSED ||
+        // 3. 상태 확인 (SETTLEMENT, CLOSED, CANCELLED, REJECTED는 수정 불가)
+        if (project.getStatus() == Project.ProjectStatus.SETTLEMENT ||
+            project.getStatus() == Project.ProjectStatus.CLOSED ||
             project.getStatus() == Project.ProjectStatus.CANCELLED ||
             project.getStatus() == Project.ProjectStatus.REJECTED) {
-            throw new IllegalStateException("종료되거나 취소/반려된 프로젝트는 수정할 수 없습니다");
+            throw new IllegalStateException("정산 요청 후에는 프로젝트를 수정할 수 없습니다");
         }
 
-        // 4. 제목과 소개만 수정
+        // 4. 제목, 소개 수정 (ACTIVE, COMPLETED 상태에서 가능)
         if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
             project.setTitle(request.getTitle());
         }
@@ -1001,7 +1039,41 @@ public class ProjectService {
             project.setDescription(request.getDescription());
         }
 
-        // 5. 저장
+        // 5. 기부금 사용계획 수정 (COMPLETED 상태에서만 가능, 변경 사유 필수)
+        if (request.getBudgetPlan() != null) {
+            if (project.getStatus() == Project.ProjectStatus.ACTIVE) {
+                throw new IllegalStateException("진행 중인 프로젝트의 사용계획은 수정할 수 없습니다. 모금 완료 후 수정 가능합니다.");
+            }
+
+            // COMPLETED 상태: 변경 사유 필수
+            if (project.getStatus() == Project.ProjectStatus.COMPLETED) {
+                String changeReason = request.getBudgetPlanChangeReason();
+                if (changeReason == null || changeReason.trim().isEmpty()) {
+                    throw new IllegalArgumentException("사용계획 변경 시 변경 사유를 입력해주세요.");
+                }
+
+                // 기존 계획과 다른 경우에만 이력 저장
+                String previousPlan = project.getBudgetPlan();
+                if (!request.getBudgetPlan().equals(previousPlan)) {
+                    // 변경 이력 저장
+                    BudgetPlanHistory history = BudgetPlanHistory.builder()
+                            .projectId(projectId)
+                            .previousPlan(previousPlan)
+                            .newPlan(request.getBudgetPlan())
+                            .changeReason(changeReason)
+                            .changedBy(userId)
+                            .projectStatus(project.getStatus().name())
+                            .build();
+                    budgetPlanHistoryRepository.save(history);
+
+                    log.info("사용계획 변경 이력 저장 - projectId: {}, reason: {}", projectId, changeReason);
+                }
+
+                project.setBudgetPlan(request.getBudgetPlan());
+            }
+        }
+
+        // 6. 저장
         Project updatedProject = projectRepository.save(project);
 
         // 6. 이미지 조회 및 DTO 변환
@@ -1014,6 +1086,17 @@ public class ProjectService {
 
         log.info("프로젝트 수정 완료 - projectId: {}", projectId);
         return ProjectResponse.from(updatedProject, categoryName, imageUrls);
+    }
+
+    /**
+     * 프로젝트 사용계획 변경 이력 조회
+     */
+    @Transactional(readOnly = true)
+    public List<com.wenect.donation_paltform.domain.project.dto.BudgetPlanHistoryResponse> getBudgetPlanHistory(Long projectId) {
+        return budgetPlanHistoryRepository.findByProjectIdOrderByChangedAtDesc(projectId)
+                .stream()
+                .map(com.wenect.donation_paltform.domain.project.dto.BudgetPlanHistoryResponse::from)
+                .collect(Collectors.toList());
     }
 
     /**

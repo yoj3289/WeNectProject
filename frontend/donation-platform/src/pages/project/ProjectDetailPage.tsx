@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight, Trash2, FileText, Download, Calendar, Building2, Clock, Flag } from 'lucide-react';
+import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight, Trash2, FileText, Download, Calendar, Building2, Clock, Flag, History } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import toast from 'react-hot-toast';
-import { useProjectDetail, useToggleFavoriteProject, useUserFavoriteProjects, useDeleteProject } from '../../hooks/useProjects';
+import { useProjectDetail, useToggleFavoriteProject, useUserFavoriteProjects, useDeleteProject, useBudgetPlanHistory } from '../../hooks/useProjects';
 import { useDonors } from '../../hooks/useDonations';
 import { useExpenses, useSettlementSummary } from '../../hooks/useExpenses';
 import type { TabType, Project } from '../../types';
@@ -82,6 +82,9 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
   // API: 프로젝트 삭제
   const deleteProjectMutation = useDeleteProject();
+
+  // API: 사용계획 변경 이력 조회 (투명성을 위해 항상 조회)
+  const { data: budgetPlanHistory = [], isLoading: isLoadingHistory } = useBudgetPlanHistory(projectId);
 
   // 실제 서버에서 가져온 관심 프로젝트 목록을 Set으로 변환
   const actualFavoriteIds = new Set(Array.isArray(userFavorites) ? userFavorites : []);
@@ -297,6 +300,105 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     <Download size={16} />
                     <span className="hidden sm:inline">다운로드</span>
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* 기부금 운영 안내 */}
+            <div className="bg-stone-50 rounded-2xl p-4 sm:p-5 border border-stone-200">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-stone-200 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <AlertCircle size={16} className="text-stone-600" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-stone-800 mb-2">기부금 운영 안내</h4>
+                  <ul className="text-sm text-stone-600 space-y-1.5">
+                    <li className="flex items-start gap-2">
+                      <span className="text-stone-400 mt-1">•</span>
+                      <span>목표 금액 미달성 시에도 모금된 금액으로 사업을 진행합니다.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-stone-400 mt-1">•</span>
+                      <span>목표 금액 초과 달성 시 환불 없이 전액 사업에 사용됩니다.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-stone-400 mt-1">•</span>
+                      <span>상황에 따라 기부금 사용계획이 변경될 수 있습니다.</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* 사용계획 변경 이력 - 이력이 있는 경우에만 표시 */}
+            {budgetPlanHistory.length > 0 && (
+              <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
+                <div className="bg-stone-50 px-4 sm:px-6 py-4 border-b border-stone-200">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                      <History size={18} className="text-amber-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-base sm:text-lg text-stone-800">사용계획 변경 이력</h4>
+                      <p className="text-xs sm:text-sm text-stone-500">기부금 사용계획 변경 내역을 확인하세요</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="divide-y divide-stone-100">
+                  {isLoadingHistory ? (
+                    <div className="p-6 text-center">
+                      <Loader2 className="w-6 h-6 text-amber-500 animate-spin mx-auto mb-2" />
+                      <p className="text-sm text-stone-500">변경 이력을 불러오는 중...</p>
+                    </div>
+                  ) : (
+                    budgetPlanHistory.map((history, index) => (
+                      <div key={history.historyId} className="p-4 sm:p-6">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="px-2.5 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+                            {index === 0 ? '최근 변경' : `변경 ${budgetPlanHistory.length - index}`}
+                          </span>
+                          <span className="text-xs sm:text-sm text-stone-500">
+                            {new Date(history.changedAt).toLocaleDateString('ko-KR', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+
+                        {/* 변경 사유 */}
+                        <div className="bg-amber-50/50 rounded-xl p-3 sm:p-4 mb-4 border border-amber-100">
+                          <p className="text-xs text-amber-600 font-medium mb-1">변경 사유</p>
+                          <p className="text-sm text-stone-700">{history.changeReason}</p>
+                        </div>
+
+                        {/* 변경 전/후 비교 */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                          <div className="bg-red-50/50 rounded-xl p-3 sm:p-4 border border-red-100">
+                            <p className="text-xs text-red-600 font-medium mb-2 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                              변경 전
+                            </p>
+                            <p className="text-sm text-stone-600 whitespace-pre-wrap line-clamp-4">
+                              {history.previousPlan || '(내용 없음)'}
+                            </p>
+                          </div>
+                          <div className="bg-green-50/50 rounded-xl p-3 sm:p-4 border border-green-100">
+                            <p className="text-xs text-green-600 font-medium mb-2 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+                              변경 후
+                            </p>
+                            <p className="text-sm text-stone-600 whitespace-pre-wrap line-clamp-4">
+                              {history.newPlan || '(내용 없음)'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -735,12 +837,21 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
                 {/* 결산 단계 저금통 정보 */}
                 {isSettlementPhase && settlement && (
-                  <div className="p-4 bg-green-50 border border-green-100 rounded-xl">
-                    <p className="text-sm text-green-700 font-medium mb-1">저금통 잔액</p>
-                    <p className="text-xl font-medium text-green-600">
-                      {formatAmount(settlement.remainingAmount)}원
-                    </p>
-                  </div>
+                  project.status?.toLowerCase() === 'closed' ? (
+                    <div className="p-4 bg-stone-100 border border-stone-200 rounded-xl">
+                      <p className="text-sm text-stone-500 font-medium mb-1">저금통 잔액</p>
+                      <p className="text-lg font-medium text-stone-500">
+                        프로젝트가 종료되었습니다
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-green-50 border border-green-100 rounded-xl">
+                      <p className="text-sm text-green-700 font-medium mb-1">저금통 잔액</p>
+                      <p className="text-xl font-medium text-green-600">
+                        {formatAmount(settlement.remainingAmount)}원
+                      </p>
+                    </div>
+                  )
                 )}
               </div>
 

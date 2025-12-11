@@ -234,6 +234,36 @@ public class ProjectController {
     }
 
     /**
+     * 종료된 프로젝트 목록 조회
+     * - CLOSED 상태의 프로젝트만 조회
+     * - 카테고리 필터링, 검색, 정렬, 페이지네이션 지원
+     *
+     * @param category 카테고리 (선택)
+     * @param search 검색 키워드 (선택)
+     * @param sortBy 정렬 기준 (선택, latest/deadline/mostDonated/leastDonated/mostFavorited/leastFavorited, 기본값: latest)
+     * @param page 페이지 번호 (0부터 시작, 기본값: 0)
+     * @param size 페이지 크기 (기본값: 12)
+     */
+    @GetMapping("/closed")
+    public ResponseEntity<PageResponse<ProjectResponse>> getClosedProjects(
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "sortBy", defaultValue = "latest") String sortBy,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "12") int size) {
+
+        Page<ProjectResponse> projectPage = projectService.searchClosedProjectsPaged(category, search, sortBy, page, size);
+        PageResponse<ProjectResponse> pageResponse = PageResponse.<ProjectResponse>builder()
+                .content(projectPage.getContent())
+                .currentPage(projectPage.getNumber())
+                .totalPages(projectPage.getTotalPages())
+                .totalElements(projectPage.getTotalElements())
+                .size(projectPage.getSize())
+                .build();
+        return ResponseEntity.ok(pageResponse);
+    }
+
+    /**
      * 프로젝트 기부자 목록 조회
      */
     @GetMapping("/{id}/donors")
@@ -259,7 +289,20 @@ public class ProjectController {
     }
 
     /**
-     * 프로젝트 수정 (제목, 소개만 수정 가능)
+     * 프로젝트 사용계획 변경 이력 조회
+     */
+    @GetMapping("/{id}/budget-plan-history")
+    public ResponseEntity<List<com.wenect.donation_paltform.domain.project.dto.BudgetPlanHistoryResponse>> getBudgetPlanHistory(
+            @PathVariable("id") Long id) {
+        List<com.wenect.donation_paltform.domain.project.dto.BudgetPlanHistoryResponse> history =
+                projectService.getBudgetPlanHistory(id);
+        return ResponseEntity.ok(history);
+    }
+
+    /**
+     * 프로젝트 수정
+     * - 제목/소개: ACTIVE, COMPLETED 상태에서 수정 가능
+     * - 사용계획: COMPLETED 상태에서만 수정 가능 (변경 사유 필수)
      * PATCH /api/projects/{id}
      */
     @PatchMapping("/{id}")

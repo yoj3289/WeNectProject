@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, FileEdit, Lock, Calendar, Target, Tag, Building2 } from 'lucide-react';
+import { X, FileEdit, Lock, Calendar, Target, Tag, Building2, ClipboardList, AlertTriangle, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Project } from '../../types';
 import { getCategoryLabel } from '../../types';
@@ -8,12 +8,13 @@ import RichTextEditor from '../editor/RichTextEditor';
 interface EditProjectModalProps {
   project: Project;
   onClose: () => void;
-  onSubmit: (title: string, description: string) => Promise<void>;
+  onSubmit: (title: string, description: string, budgetPlan?: string, budgetPlanChangeReason?: string) => Promise<void>;
 }
 
 /**
  * 프로젝트 수정 모달
- * - 제목과 소개만 수정 가능
+ * - 제목, 소개: ACTIVE, COMPLETED 상태에서 수정 가능
+ * - 기부금 사용계획: COMPLETED 상태에서만 수정 가능 (변경 사유 필수)
  * - 목표 금액, 기간, 카테고리 등 핵심 정보는 수정 불가
  */
 const EditProjectModal: React.FC<EditProjectModalProps> = ({
@@ -23,9 +24,17 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
 }) => {
   const [title, setTitle] = useState(project.title);
   const [description, setDescription] = useState(project.description || '');
+  const [budgetPlan, setBudgetPlan] = useState(project.budgetPlan || '');
+  const [budgetPlanChangeReason, setBudgetPlanChangeReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const maxTitleLength = 200;
+
+  // 상태 확인
+  const isActive = project.status?.toUpperCase() === 'ACTIVE';
+  const isCompleted = project.status?.toUpperCase() === 'COMPLETED';
+  const canEditBudgetPlan = isCompleted;
+  const budgetPlanChanged = budgetPlan !== (project.budgetPlan || '');
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -43,9 +52,19 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
       return;
     }
 
+    // COMPLETED 상태에서 사용계획 변경 시 사유 필수
+    if (isCompleted && budgetPlanChanged && !budgetPlanChangeReason.trim()) {
+      toast.error('사용계획 변경 사유를 입력해주세요.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await onSubmit(title, description);
+      // 사용계획 변경이 없으면 budgetPlan을 undefined로 전달하여 기존 값 유지
+      const submitBudgetPlan = canEditBudgetPlan && budgetPlanChanged ? budgetPlan : undefined;
+      const submitChangeReason = canEditBudgetPlan && budgetPlanChanged ? budgetPlanChangeReason : undefined;
+
+      await onSubmit(title, description, submitBudgetPlan, submitChangeReason);
       toast.success('프로젝트가 수정되었습니다.');
       onClose();
     } catch (error: any) {
@@ -90,7 +109,9 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
               </div>
               <div>
                 <h2 className="text-lg font-medium text-white">프로젝트 수정</h2>
-                <p className="text-sm text-stone-400">제목과 소개 내용을 수정합니다</p>
+                <p className="text-sm text-stone-400">
+                  {isCompleted ? '제목, 소개, 사용계획을 수정합니다' : '제목, 소개를 수정합니다'}
+                </p>
               </div>
             </div>
             <button
@@ -184,6 +205,76 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
                 이미지 삽입, 폰트 변경, 텍스트 스타일링 등 모든 기능을 사용할 수 있습니다.
               </p>
             </div>
+
+            {/* 기부금 사용계획 - 상태에 따라 다르게 표시 */}
+            {isActive && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <Info size={18} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-800">사용계획 수정 안내</p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      진행 중인 프로젝트의 사용계획은 기부자의 신뢰를 위해 수정할 수 없습니다.
+                      모금 완료 후 실제 모금액에 맞게 수정할 수 있습니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isCompleted && (
+              <div className="space-y-4">
+                {/* 사용계획 변경 안내 */}
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle size={18} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-800">사용계획 변경 시 주의사항</p>
+                      <p className="text-sm text-amber-700 mt-1">
+                        사용계획 변경 시 변경 사유를 반드시 입력해야 하며, 변경 이력이 기부자에게 공개됩니다.
+                        정산 요청 후에는 수정이 불가합니다.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 기부금 사용계획 입력 */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <ClipboardList size={16} className="text-amber-600" />
+                    <label className="text-sm font-medium text-stone-700">
+                      기부금 사용계획
+                    </label>
+                  </div>
+                  <textarea
+                    value={budgetPlan}
+                    onChange={(e) => setBudgetPlan(e.target.value)}
+                    placeholder="기부금을 어떻게 사용할 계획인지 작성해주세요."
+                    rows={5}
+                    className="w-full px-4 py-3.5 bg-white border border-stone-200 rounded-xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all resize-none"
+                  />
+                </div>
+
+                {/* 변경 사유 입력 - 사용계획이 변경된 경우에만 표시 */}
+                {budgetPlanChanged && (
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">
+                      변경 사유 <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      value={budgetPlanChangeReason}
+                      onChange={(e) => setBudgetPlanChangeReason(e.target.value)}
+                      placeholder="사용계획 변경 사유를 작성해주세요. (예: 목표 금액 미달성으로 인한 계획 조정)"
+                      rows={3}
+                      className="w-full px-4 py-3.5 bg-white border border-stone-200 rounded-xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all resize-none"
+                    />
+                    <p className="text-xs text-stone-500 mt-2">
+                      변경 사유는 기부자에게 공개됩니다.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -198,7 +289,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
             </button>
             <button
               onClick={handleSubmit}
-              disabled={isSubmitting || !title.trim() || !description.trim()}
+              disabled={isSubmitting || !title.trim() || !description.trim() || (isCompleted && budgetPlanChanged && !budgetPlanChangeReason.trim())}
               className="flex-1 px-6 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 disabled:bg-stone-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >
               {isSubmitting ? (

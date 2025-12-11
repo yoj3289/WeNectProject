@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, Heart, FileText, Baby, Dog, UserCircle, TreePine, GraduationCap, AlertCircle, Users, Sparkles, TrendingUp, Clock, ArrowRight, ChevronDown, X } from 'lucide-react';
+import { Search, Heart, FileText, Baby, Dog, UserCircle, TreePine, GraduationCap, AlertCircle, Users, Sparkles, TrendingUp, Clock, CheckCircle2, ArrowRight, ChevronDown, X } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import toast from 'react-hot-toast';
-import { useProjects, useSettlementProjects, useToggleFavoriteProject, useUserFavoriteProjects, usePopularProjects } from '../../hooks/useProjects';
+import { useProjects, useSettlementProjects, useClosedProjects, useToggleFavoriteProject, useUserFavoriteProjects, usePopularProjects } from '../../hooks/useProjects';
 import { useRecentDonations } from '../../hooks/useDonations';
 import type { Project } from '../../types';
 import { getCategoryLabel } from '../../types';
@@ -37,7 +37,7 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
   const sortByParam = searchParams.get('sortBy');
 
   // State
-  const [activeTab, setActiveTab] = useState<'active' | 'settlement'>('active');
+  const [activeTab, setActiveTab] = useState<'active' | 'settlement' | 'closed'>('active');
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [sortOption, setSortOption] = useState<string>('latest');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
@@ -89,11 +89,19 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
     size: pageSize,
   });
 
-  const projects = activeTab === 'active' ? activeProjects : settlementProjects;
-  const isLoading = activeTab === 'active' ? isActiveLoading : isSettlementLoading;
-  const isError = activeTab === 'active' ? isActiveError : isSettlementError;
-  const error = activeTab === 'active' ? activeError : settlementError;
-  const refetch = activeTab === 'active' ? refetchActive : refetchSettlement;
+  const { data: closedProjects, isLoading: isClosedLoading, isError: isClosedError, error: closedError, refetch: refetchClosed } = useClosedProjects({
+    category: selectedCategory === '전체' ? undefined : selectedCategory,
+    search: debouncedSearchKeyword.trim() || undefined,
+    sortBy: sortOption,
+    page: currentPage - 1,
+    size: pageSize,
+  });
+
+  const projects = activeTab === 'active' ? activeProjects : activeTab === 'settlement' ? settlementProjects : closedProjects;
+  const isLoading = activeTab === 'active' ? isActiveLoading : activeTab === 'settlement' ? isSettlementLoading : isClosedLoading;
+  const isError = activeTab === 'active' ? isActiveError : activeTab === 'settlement' ? isSettlementError : isClosedError;
+  const error = activeTab === 'active' ? activeError : activeTab === 'settlement' ? settlementError : closedError;
+  const refetch = activeTab === 'active' ? refetchActive : activeTab === 'settlement' ? refetchSettlement : refetchClosed;
 
   const toggleFavoriteMutation = useToggleFavoriteProject();
   const { data: userFavorites } = useUserFavoriteProjects(isLoggedIn);
@@ -265,6 +273,17 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
             >
               <Clock size={16} />
               결산 중
+            </button>
+            <button
+              onClick={() => setActiveTab('closed')}
+              className={`flex items-center gap-2 px-6 py-2.5 text-sm font-medium transition-all ${
+                activeTab === 'closed'
+                  ? 'bg-white text-amber-600 shadow-sm'
+                  : 'text-stone-500 hover:text-stone-700'
+              }`}
+            >
+              <CheckCircle2 size={16} />
+              종료
             </button>
           </div>
 
