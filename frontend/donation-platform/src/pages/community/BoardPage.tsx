@@ -518,7 +518,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
                     <div className="hidden md:flex justify-center text-sm text-stone-500">{post.commentCount || 0}</div>
 
                     {/* 조회 */}
-                    <div className="hidden md:flex justify-center text-sm text-stone-500">{postViews.get(post.id) || post.views}</div>
+                    <div className="hidden md:flex justify-center text-sm text-stone-500">{post.views}</div>
                   </div>
                 );
               })}
@@ -568,7 +568,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
                 <span>{selectedPost.date}</span>
                 <span className="flex items-center gap-1">
                   <Eye size={14} />
-                  {postViews.get(selectedPost.id) || selectedPost.views}
+                  {selectedPost.views}
                 </span>
               </div>
             </div>

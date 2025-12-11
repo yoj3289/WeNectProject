@@ -227,7 +227,7 @@ const AppRoutes: React.FC = () => {
 
   // Community states
   const [uploadedImageFiles, setUploadedImageFiles] = useState<File[]>([]);
-  const [postViews, setPostViews] = useState<Map<number, number>>(new Map([[1, 234], [2, 89], [3, 156]]));
+  const [postViews, setPostViews] = useState<Map<number, number>>(new Map());
   const [viewedPostIds, setViewedPostIds] = useState<Set<number>>(new Set());
 
   // Admin states

@@ -87,6 +87,7 @@ export function useLikePost() {
     mutationFn: communityApi.likePost,
     onSuccess: (_, postId) => {
       queryClient.invalidateQueries({ queryKey: ['post', postId] });
+      queryClient.invalidateQueries({ queryKey: ['posts'] }); // 목록의 좋아요 수도 업데이트
     },
   });
 }
