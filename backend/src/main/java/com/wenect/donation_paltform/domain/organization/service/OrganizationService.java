@@ -269,7 +269,11 @@ public class OrganizationService {
         // 5. 페이지네이션 적용
         int start = page * size;
         int end = Math.min(start + size, responses.size());
-        List<OrganizationListResponse> pagedResponses = responses.subList(start, end);
+
+        // start가 전체 크기보다 크면 빈 리스트 반환
+        List<OrganizationListResponse> pagedResponses = start >= responses.size()
+            ? new ArrayList<>()
+            : responses.subList(start, end);
 
         // 6. Page 객체 생성
         Pageable pageable = PageRequest.of(page, size);

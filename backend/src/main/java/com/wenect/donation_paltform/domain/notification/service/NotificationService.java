@@ -6,6 +6,8 @@ import com.wenect.donation_paltform.domain.notification.dto.NotificationResponse
 import com.wenect.donation_paltform.domain.notification.dto.UnreadCountResponse;
 import com.wenect.donation_paltform.domain.notification.entity.Notification;
 import com.wenect.donation_paltform.domain.notification.repository.NotificationRepository;
+import com.wenect.donation_paltform.domain.user.dto.NotificationSettingsDto;
+import com.wenect.donation_paltform.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,54 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final ObjectMapper objectMapper;
+    private final UserService userService;
+
+    /**
+     * 알림 설정 유형
+     */
+    public enum NotificationCategory {
+        DONATION,    // 기부 관련
+        COMMENT,     // 댓글 관련
+        PROJECT,     // 프로젝트 관련
+        SETTLEMENT,  // 정산 관련
+        DEADLINE,    // 마감 임박
+        SYSTEM       // 시스템 (항상 발송)
+    }
+
+    /**
+     * 사용자의 알림 설정을 확인하여 해당 카테고리 알림이 활성화되어 있는지 확인
+     */
+    private boolean isNotificationEnabled(Long userId, NotificationCategory category) {
+        // 시스템 알림은 항상 활성화
+        if (category == NotificationCategory.SYSTEM) {
+            return true;
+        }
+
+        try {
+            NotificationSettingsDto settings = userService.getNotificationSettings(userId);
+            if (settings == null) {
+                return true; // 설정이 없으면 기본적으로 활성화
+            }
+
+            NotificationSettingsDto.NotificationChannels channels = switch (category) {
+                case DONATION -> settings.getDonation();
+                case COMMENT -> settings.getComment();
+                case PROJECT -> settings.getProject();
+                case SETTLEMENT -> settings.getSettlement();
+                case DEADLINE -> settings.getDeadline();
+                default -> null;
+            };
+
+            if (channels == null || channels.getEnabled() == null) {
+                return true; // 설정이 없으면 기본적으로 활성화
+            }
+
+            return channels.getEnabled();
+        } catch (Exception e) {
+            log.warn("알림 설정 조회 실패 - userId: {}, category: {}, 기본값(true) 사용", userId, category, e);
+            return true; // 오류 시 기본적으로 활성화
+        }
+    }
 
     /**
      * 알림 생성
@@ -140,6 +190,12 @@ public class NotificationService {
      */
     @Transactional
     public void createDonationNotification(Long userId, String projectName, Long projectId, Long amount) {
+        // 알림 설정 확인
+        if (!isNotificationEnabled(userId, NotificationCategory.DONATION)) {
+            log.debug("기부 알림 비활성화 - userId: {}", userId);
+            return;
+        }
+
         String title = "기부가 완료되었습니다";
         String message = String.format("%s 프로젝트에 %,d원 기부가 완료되었습니다. 감사합니다!",
                 projectName, amount);
@@ -159,6 +215,12 @@ public class NotificationService {
      */
     @Transactional
     public void createGoalAchievedNotification(Long userId, String projectName, Long projectId) {
+        // 알림 설정 확인
+        if (!isNotificationEnabled(userId, NotificationCategory.PROJECT)) {
+            log.debug("프로젝트 알림 비활성화 - userId: {}", userId);
+            return;
+        }
+
         String title = "목표 금액 달성!";
         String message = String.format("%s 프로젝트가 목표 금액을 달성했습니다!", projectName);
         String link = "/projects/" + projectId;
@@ -215,6 +277,12 @@ public class NotificationService {
      */
     @Transactional
     public void createSettlementRequestNotification(Long userId, String projectName, Long settlementId) {
+        // 알림 설정 확인
+        if (!isNotificationEnabled(userId, NotificationCategory.SETTLEMENT)) {
+            log.debug("정산 알림 비활성화 - userId: {}", userId);
+            return;
+        }
+
         String title = "정산 요청 접수";
         String message = String.format("'%s' 프로젝트의 정산 요청이 접수되었습니다.", projectName);
         String link = "/organization/settlements";
@@ -233,6 +301,12 @@ public class NotificationService {
      */
     @Transactional
     public void createSettlementApprovalNotification(Long userId, String projectName, Long settlementId) {
+        // 알림 설정 확인
+        if (!isNotificationEnabled(userId, NotificationCategory.SETTLEMENT)) {
+            log.debug("정산 알림 비활성화 - userId: {}", userId);
+            return;
+        }
+
         String title = "정산 승인 완료";
         String message = String.format("'%s' 프로젝트의 정산이 승인되었습니다. 저금통에서 출금을 진행해주세요.", projectName);
         String link = "/organization/projects";
@@ -251,6 +325,12 @@ public class NotificationService {
      */
     @Transactional
     public void createSettlementRejectionNotification(Long userId, String projectName, Long settlementId, String reason) {
+        // 알림 설정 확인
+        if (!isNotificationEnabled(userId, NotificationCategory.SETTLEMENT)) {
+            log.debug("정산 알림 비활성화 - userId: {}", userId);
+            return;
+        }
+
         String title = "정산 반려";
         String message = String.format("'%s' 프로젝트의 정산이 반려되었습니다. 사유: %s", projectName, reason);
         String link = "/organization/settlements";
@@ -272,6 +352,12 @@ public class NotificationService {
      */
     @Transactional
     public void createExpenseRequestNotification(Long userId, String description, Long expenseId) {
+        // 알림 설정 확인
+        if (!isNotificationEnabled(userId, NotificationCategory.SETTLEMENT)) {
+            log.debug("정산 알림 비활성화 - userId: {}", userId);
+            return;
+        }
+
         String title = "지출 요청 접수";
         String message = String.format("'%s' 지출 요청이 접수되었습니다.", description);
         String link = "/organization/expenses";
@@ -290,6 +376,12 @@ public class NotificationService {
      */
     @Transactional
     public void createExpenseApprovalNotification(Long userId, String description, Long expenseId) {
+        // 알림 설정 확인
+        if (!isNotificationEnabled(userId, NotificationCategory.SETTLEMENT)) {
+            log.debug("정산 알림 비활성화 - userId: {}", userId);
+            return;
+        }
+
         String title = "지출 승인 완료";
         String message = String.format("'%s' 지출이 승인되었습니다. 저금통에서 출금이 완료되었습니다.", description);
         String link = "/organization/expenses";
@@ -308,6 +400,12 @@ public class NotificationService {
      */
     @Transactional
     public void createExpenseRejectionNotification(Long userId, String description, Long expenseId, String reason) {
+        // 알림 설정 확인
+        if (!isNotificationEnabled(userId, NotificationCategory.SETTLEMENT)) {
+            log.debug("정산 알림 비활성화 - userId: {}", userId);
+            return;
+        }
+
         String title = "지출 반려";
         String message = String.format("'%s' 지출이 반려되었습니다. 사유: %s", description, reason);
         String link = "/organization/expenses";
@@ -329,6 +427,12 @@ public class NotificationService {
      */
     @Transactional
     public void createDonationCancelledNotification(Long userId, String projectName, Long projectId, Long amount) {
+        // 알림 설정 확인
+        if (!isNotificationEnabled(userId, NotificationCategory.DONATION)) {
+            log.debug("기부 알림 비활성화 - userId: {}", userId);
+            return;
+        }
+
         String title = "기부 취소";
         String message = String.format("'%s' 프로젝트에 %,d원 기부가 취소되었습니다.", projectName, amount);
         String link = "/projects/" + projectId;
@@ -347,6 +451,12 @@ public class NotificationService {
      */
     @Transactional
     public void createDonationFailedNotification(Long userId, String projectName, Long projectId, Long amount) {
+        // 알림 설정 확인
+        if (!isNotificationEnabled(userId, NotificationCategory.DONATION)) {
+            log.debug("기부 알림 비활성화 - userId: {}", userId);
+            return;
+        }
+
         String title = "기부 실패";
         String message = String.format("'%s' 프로젝트에 %,d원 기부가 실패하였습니다. 다시 시도해주세요.", projectName, amount);
         String link = "/projects/" + projectId;
@@ -367,6 +477,12 @@ public class NotificationService {
      */
     @Transactional
     public void createSettlementCompletedNotification(Long userId, String projectName, Long projectId) {
+        // 알림 설정 확인 (기부자에게 보내는 알림이므로 DONATION 카테고리)
+        if (!isNotificationEnabled(userId, NotificationCategory.DONATION)) {
+            log.debug("기부 알림 비활성화 - userId: {}", userId);
+            return;
+        }
+
         String title = "프로젝트 정산 완료";
         String message = String.format("후원하신 '%s' 프로젝트의 정산이 완료되었습니다. 소중한 후원 감사드립니다!", projectName);
         String link = "/projects/" + projectId;
@@ -387,6 +503,12 @@ public class NotificationService {
      */
     @Transactional
     public void createDeadlineSoonNotification(Long userId, String projectName, Long projectId, int daysLeft) {
+        // 알림 설정 확인
+        if (!isNotificationEnabled(userId, NotificationCategory.DEADLINE)) {
+            log.debug("마감 임박 알림 비활성화 - userId: {}", userId);
+            return;
+        }
+
         String title = "프로젝트 마감 임박";
         String message;
         if (daysLeft == 0) {

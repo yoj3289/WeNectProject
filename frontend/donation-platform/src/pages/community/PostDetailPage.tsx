@@ -422,7 +422,7 @@ const PostDetailPage: React.FC<PostDetailPageProps> = ({
     );
   }
 
-  const currentViews = postViews.get(post.id) || post.views;
+  const currentViews = post.views;
   const extendedPost = post as ExtendedPost;
   const config = categoryConfig[post.type];
   const CategoryIcon = config.icon;

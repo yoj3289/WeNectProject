@@ -60,6 +60,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll() // 헬스체크 허용
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/organization/list").permitAll() // 기관 목록 조회는 인증 불필요
                         .requestMatchers("/api/organization/reapply").permitAll() // 재심사 요청은 인증 불필요
                         .requestMatchers("/api/test/**").permitAll() // 테스트 API 허용
                         .requestMatchers("/api/projects/**").permitAll()

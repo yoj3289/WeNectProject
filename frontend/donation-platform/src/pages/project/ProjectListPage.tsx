@@ -35,9 +35,16 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
 }) => {
   const [searchParams] = useSearchParams();
   const sortByParam = searchParams.get('sortBy');
+  const statusParam = searchParams.get('status');
 
   // State
+<<<<<<< HEAD
   const [activeTab, setActiveTab] = useState<'active' | 'settlement' | 'closed'>('active');
+=======
+  const [activeTab, setActiveTab] = useState<'active' | 'settlement'>(
+    statusParam === 'settlement' ? 'settlement' : 'active'
+  );
+>>>>>>> 2357c1a426b64d5e849e92eaebc5b25717487d70
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [sortOption, setSortOption] = useState<string>('latest');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
@@ -55,6 +62,15 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
     const newSortOption = sortByParam || 'latest';
     setSortOption(newSortOption);
   }, [sortByParam]);
+
+  // URL status 파라미터로 탭 변경
+  useEffect(() => {
+    if (statusParam === 'settlement') {
+      setActiveTab('settlement');
+    } else if (statusParam === 'active' || !statusParam) {
+      setActiveTab('active');
+    }
+  }, [statusParam]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

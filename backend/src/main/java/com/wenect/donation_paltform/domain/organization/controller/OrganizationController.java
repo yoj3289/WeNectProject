@@ -58,9 +58,9 @@ public class OrganizationController {
             PageResponse<OrganizationListResponse> pageResponse = PageResponse.of(
                     organizations.getContent(),
                     organizations.getNumber(),
-                    organizations.getSize(),
+                    organizations.getTotalPages(),
                     organizations.getTotalElements(),
-                    organizations.getTotalPages()
+                    organizations.getSize()
             );
 
             return ResponseEntity.ok(pageResponse);

@@ -665,12 +665,12 @@ const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* 하단 CTA */}
-      <section className="py-16 md:py-20 px-4 bg-amber-500 text-center">
+      <section className="py-8 sm:py-10 px-4 bg-amber-500 text-center">
         <div className="max-w-2xl mx-auto">
-          <h2 className="text-2xl md:text-3xl text-stone-900 font-light mb-4">
+          <h2 className="text-2xl md:text-3xl text-stone-900 font-light mb-3">
             오늘, <span className="font-medium">당신의 이야기</span>를 시작하세요
           </h2>
-          <p className="text-stone-700 mb-8">
+          <p className="text-stone-700 mb-5">
             작은 나눔이 모여 큰 변화를 만듭니다
           </p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
