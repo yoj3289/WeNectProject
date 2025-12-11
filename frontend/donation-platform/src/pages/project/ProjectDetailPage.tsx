@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight, Trash2, FileText, Download, Calendar, Building2, Clock, Flag, History } from 'lucide-react';
+import { Heart, Users, Share2, Baby, Dog, UserCircle, TreePine, GraduationCap, Accessibility, Eye, EyeOff, Loader2, AlertCircle, ChevronLeft, ChevronRight, Trash2, FileText, Download, Calendar, Building2, Clock, Flag } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { useProjectDetail, useToggleFavoriteProject, useUserFavoriteProjects, useDeleteProject, useBudgetPlanHistory } from '../../hooks/useProjects';
@@ -13,6 +13,7 @@ import SettlementSummaryTab from '../../components/project/SettlementSummaryTab'
 import ExpenseListTab from '../../components/project/ExpenseListTab';
 import ReceiptViewer from '../../components/project/ReceiptViewer';
 import ProjectTimeline from '../../components/project/ProjectTimeline';
+import BudgetPlanHistoryTimeline from '../../components/project/BudgetPlanHistoryTimeline';
 import { useAuthStore } from '../../stores/authStore';
 import { sanitizeHTML } from '../../utils/sanitize';
 import ReportModal from '../../components/common/ReportModal';
@@ -54,6 +55,36 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     itemType: ReportType;
     itemTitle?: string;
   }>({ isOpen: false, itemId: 0, itemType: 'PROJECT' });
+
+  // 탭 스크롤 상태
+  const tabContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  // 탭 스크롤 상태 업데이트
+  const updateScrollState = useCallback(() => {
+    const container = tabContainerRef.current;
+    if (container) {
+      const { scrollLeft, scrollWidth, clientWidth } = container;
+      setCanScrollLeft(scrollLeft > 5);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
+    }
+  }, []);
+
+  useEffect(() => {
+    const container = tabContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', updateScrollState);
+      // 초기 상태 확인
+      updateScrollState();
+      // 리사이즈 시 다시 확인
+      window.addEventListener('resize', updateScrollState);
+      return () => {
+        container.removeEventListener('scroll', updateScrollState);
+        window.removeEventListener('resize', updateScrollState);
+      };
+    }
+  }, [updateScrollState]);
 
   // API: 프로젝트 상세 정보 조회
   const { data: project, isLoading: isLoadingProject, isError: isErrorProject, error: projectError } = useProjectDetail(projectId);
@@ -305,102 +336,25 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
             )}
 
             {/* 기부금 운영 안내 */}
-            <div className="bg-stone-50 rounded-2xl p-4 sm:p-5 border border-stone-200">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-stone-200 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <AlertCircle size={16} className="text-stone-600" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-stone-800 mb-2">기부금 운영 안내</h4>
-                  <ul className="text-sm text-stone-600 space-y-1.5">
-                    <li className="flex items-start gap-2">
-                      <span className="text-stone-400 mt-1">•</span>
-                      <span>목표 금액 미달성 시에도 모금된 금액으로 사업을 진행합니다.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-stone-400 mt-1">•</span>
-                      <span>목표 금액 초과 달성 시 환불 없이 전액 사업에 사용됩니다.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-stone-400 mt-1">•</span>
-                      <span>상황에 따라 기부금 사용계획이 변경될 수 있습니다.</span>
-                    </li>
-                  </ul>
-                </div>
+            <div className="bg-stone-50 rounded-2xl p-3 sm:p-5 border border-stone-200">
+              <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+                <AlertCircle size={14} className="text-stone-500 flex-shrink-0 sm:w-4 sm:h-4" />
+                <h4 className="font-medium text-stone-700 text-xs sm:text-base">기부금 운영 안내</h4>
               </div>
+              <ul className="text-[11px] sm:text-sm text-stone-600 space-y-0.5 sm:space-y-1.5">
+                <li>목표 금액 미달성 시에도 모금된 금액으로 사업을 진행합니다.</li>
+                <li>목표 금액 초과 달성 시 환불 없이 전액 사업에 사용됩니다.</li>
+                <li>상황에 따라 기부금 사용계획이 변경될 수 있습니다.</li>
+              </ul>
             </div>
 
             {/* 사용계획 변경 이력 - 이력이 있는 경우에만 표시 */}
             {budgetPlanHistory.length > 0 && (
-              <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
-                <div className="bg-stone-50 px-4 sm:px-6 py-4 border-b border-stone-200">
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                      <History size={18} className="text-amber-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-base sm:text-lg text-stone-800">사용계획 변경 이력</h4>
-                      <p className="text-xs sm:text-sm text-stone-500">기부금 사용계획 변경 내역을 확인하세요</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="divide-y divide-stone-100">
-                  {isLoadingHistory ? (
-                    <div className="p-6 text-center">
-                      <Loader2 className="w-6 h-6 text-amber-500 animate-spin mx-auto mb-2" />
-                      <p className="text-sm text-stone-500">변경 이력을 불러오는 중...</p>
-                    </div>
-                  ) : (
-                    budgetPlanHistory.map((history, index) => (
-                      <div key={history.historyId} className="p-4 sm:p-6">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="px-2.5 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
-                            {index === 0 ? '최근 변경' : `변경 ${budgetPlanHistory.length - index}`}
-                          </span>
-                          <span className="text-xs sm:text-sm text-stone-500">
-                            {new Date(history.changedAt).toLocaleDateString('ko-KR', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </span>
-                        </div>
-
-                        {/* 변경 사유 */}
-                        <div className="bg-amber-50/50 rounded-xl p-3 sm:p-4 mb-4 border border-amber-100">
-                          <p className="text-xs text-amber-600 font-medium mb-1">변경 사유</p>
-                          <p className="text-sm text-stone-700">{history.changeReason}</p>
-                        </div>
-
-                        {/* 변경 전/후 비교 */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                          <div className="bg-red-50/50 rounded-xl p-3 sm:p-4 border border-red-100">
-                            <p className="text-xs text-red-600 font-medium mb-2 flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
-                              변경 전
-                            </p>
-                            <p className="text-sm text-stone-600 whitespace-pre-wrap line-clamp-4">
-                              {history.previousPlan || '(내용 없음)'}
-                            </p>
-                          </div>
-                          <div className="bg-green-50/50 rounded-xl p-3 sm:p-4 border border-green-100">
-                            <p className="text-xs text-green-600 font-medium mb-2 flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-                              변경 후
-                            </p>
-                            <p className="text-sm text-stone-600 whitespace-pre-wrap line-clamp-4">
-                              {history.newPlan || '(내용 없음)'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+              <BudgetPlanHistoryTimeline
+                history={budgetPlanHistory}
+                isLoading={isLoadingHistory}
+                originalPlan={project.budgetPlan || ''}
+              />
             )}
           </div>
         );
@@ -757,7 +711,16 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
             <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
               {/* 탭 네비게이션 */}
               <div className="relative">
-                <div className="flex border-b border-stone-100 bg-stone-50 overflow-x-auto scrollbar-hide">
+                {/* 왼쪽 스크롤 힌트 */}
+                {canScrollLeft && (
+                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-stone-50 via-stone-50/80 to-transparent pointer-events-none sm:hidden flex items-center justify-start pl-1 z-10">
+                    <ChevronLeft size={16} className="text-stone-400" />
+                  </div>
+                )}
+                <div
+                  ref={tabContainerRef}
+                  className="flex border-b border-stone-100 bg-stone-50 overflow-x-auto scrollbar-hide"
+                >
                   {[
                     { id: 'intro', label: '프로젝트 소개' },
                     { id: 'budget', label: '기부금 사용계획' },
@@ -768,7 +731,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id as TabType)}
-                      className={`flex-shrink-0 px-4 py-3.5 font-medium transition-all text-sm whitespace-nowrap ${activeTab === tab.id
+                      className={`flex-shrink-0 px-3 sm:px-4 py-3 sm:py-3.5 font-medium transition-all text-xs sm:text-sm whitespace-nowrap ${activeTab === tab.id
                           ? 'text-amber-600 bg-white border-b-2 border-amber-500 -mb-px'
                           : 'text-stone-500 hover:text-stone-700 hover:bg-stone-100'
                         }`}
@@ -777,12 +740,16 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     </button>
                   ))}
                 </div>
-                {/* 스크롤 힌트 - 오른쪽 그라데이션 */}
-                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-stone-50 to-transparent pointer-events-none md:hidden" />
+                {/* 오른쪽 스크롤 힌트 */}
+                {canScrollRight && (
+                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-stone-50 via-stone-50/80 to-transparent pointer-events-none sm:hidden flex items-center justify-end pr-1 z-10">
+                    <ChevronRight size={16} className="text-stone-400" />
+                  </div>
+                )}
               </div>
 
               {/* 탭 컨텐츠 */}
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {renderTabContent()}
               </div>
             </div>

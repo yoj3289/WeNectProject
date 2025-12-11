@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { X, FileEdit, Lock, Calendar, Target, Tag, Building2, ClipboardList, AlertTriangle, Info } from 'lucide-react';
+import { X, FileEdit, Lock, Calendar, Target, Tag, Building2, ClipboardList, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Project } from '../../types';
 import { getCategoryLabel } from '../../types';
 import RichTextEditor from '../editor/RichTextEditor';
+import { useSettlementsByProject } from '../../hooks/useSettlements';
 
 interface EditProjectModalProps {
   project: Project;
@@ -30,10 +31,21 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
 
   const maxTitleLength = 200;
 
-  // 상태 확인
-  const isActive = project.status?.toUpperCase() === 'ACTIVE';
+  // 프로젝트의 정산 요청 목록 조회
+  const { data: settlements = [], isLoading: isLoadingSettlements } = useSettlementsByProject(project.id);
+
+  // 정산 요청 대기 중인지 확인 (PENDING 상태인 정산 요청이 있는지)
+  const hasPendingSettlement = settlements.some(s => s.status === 'PENDING');
+
+  // 모금 비율 계산 (100% 정확히 달성한 경우는 수정 불가)
+  const fundingPercentage = project.targetAmount > 0
+    ? (project.currentAmount / project.targetAmount) * 100
+    : 0;
+  const isExactly100Percent = fundingPercentage === 100;
+
+  // 상태 확인 - 사용계획 수정은 COMPLETED 상태 + 정산 요청 대기 중이 아닐 때 + 100% 정확히 달성이 아닐 때만 가능
   const isCompleted = project.status?.toUpperCase() === 'COMPLETED';
-  const canEditBudgetPlan = isCompleted;
+  const canEditBudgetPlan = isCompleted && !hasPendingSettlement && !isLoadingSettlements && !isExactly100Percent;
   const budgetPlanChanged = budgetPlan !== (project.budgetPlan || '');
 
   const handleSubmit = async () => {
@@ -110,7 +122,9 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
               <div>
                 <h2 className="text-lg font-medium text-white">프로젝트 수정</h2>
                 <p className="text-sm text-stone-400">
-                  {isCompleted ? '제목, 소개, 사용계획을 수정합니다' : '제목, 소개를 수정합니다'}
+                  {canEditBudgetPlan
+                    ? '제목, 소개, 사용계획을 수정합니다'
+                    : '제목, 소개를 수정합니다'}
                 </p>
               </div>
             </div>
@@ -206,23 +220,40 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
               </p>
             </div>
 
-            {/* 기부금 사용계획 - 상태에 따라 다르게 표시 */}
-            {isActive && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            {/* 정산 요청 대기 중 안내 */}
+            {isCompleted && hasPendingSettlement && (
+              <div className="bg-stone-100 border border-stone-300 rounded-xl p-4">
                 <div className="flex items-start gap-3">
-                  <Info size={18} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                  <Lock size={18} className="text-stone-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-blue-800">사용계획 수정 안내</p>
-                    <p className="text-sm text-blue-700 mt-1">
-                      진행 중인 프로젝트의 사용계획은 기부자의 신뢰를 위해 수정할 수 없습니다.
-                      모금 완료 후 실제 모금액에 맞게 수정할 수 있습니다.
+                    <p className="text-sm font-medium text-stone-700">사용계획 수정 불가</p>
+                    <p className="text-sm text-stone-600 mt-1">
+                      정산 요청이 대기 중이므로 사용계획을 수정할 수 없습니다.
+                      정산 요청이 반려되면 다시 수정할 수 있습니다.
                     </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {isCompleted && (
+            {/* 100% 정확히 달성 시 안내 */}
+            {isCompleted && !hasPendingSettlement && isExactly100Percent && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <Lock size={18} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-green-700">사용계획 수정 불가</p>
+                    <p className="text-sm text-green-600 mt-1">
+                      목표 금액을 100% 달성한 프로젝트는 사용계획 변경이 필요하지 않습니다.
+                      기존 계획대로 정산을 진행해주세요.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 기부금 사용계획 - COMPLETED 상태 + 정산 요청 대기 중 아닐 때만 수정 가능 */}
+            {canEditBudgetPlan && (
               <div className="space-y-4">
                 {/* 사용계획 변경 안내 */}
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">

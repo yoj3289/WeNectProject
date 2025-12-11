@@ -11,6 +11,7 @@ import com.wenect.donation_paltform.domain.project.dto.DonorResponseDto;
 import com.wenect.donation_paltform.global.common.PageResponse;
 import com.wenect.donation_paltform.domain.project.dto.ProjectDetailResponse;
 import com.wenect.donation_paltform.domain.project.dto.ProjectResponse;
+import com.wenect.donation_paltform.domain.project.dto.BudgetPlanHistoryResponse;
 import com.wenect.donation_paltform.domain.project.service.DonationOptionService;
 import com.wenect.donation_paltform.domain.project.service.ProjectService;
 import com.wenect.donation_paltform.global.util.JwtTokenProvider;
@@ -107,7 +108,7 @@ public class ProjectController {
     /**
      * 프로젝트 상세 조회
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<ProjectDetailResponse> getProject(@PathVariable("id") Long id) {
         try {
             ProjectDetailResponse response = projectService.getProjectDetail(id);
@@ -292,10 +293,9 @@ public class ProjectController {
      * 프로젝트 사용계획 변경 이력 조회
      */
     @GetMapping("/{id}/budget-plan-history")
-    public ResponseEntity<List<com.wenect.donation_paltform.domain.project.dto.BudgetPlanHistoryResponse>> getBudgetPlanHistory(
+    public ResponseEntity<List<BudgetPlanHistoryResponse>> getBudgetPlanHistory(
             @PathVariable("id") Long id) {
-        List<com.wenect.donation_paltform.domain.project.dto.BudgetPlanHistoryResponse> history =
-                projectService.getBudgetPlanHistory(id);
+        List<BudgetPlanHistoryResponse> history = projectService.getBudgetPlanHistory(id);
         return ResponseEntity.ok(history);
     }
 

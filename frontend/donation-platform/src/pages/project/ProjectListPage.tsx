@@ -38,13 +38,9 @@ const ProjectListPage: React.FC<ProjectListPageProps> = ({
   const statusParam = searchParams.get('status');
 
   // State
-<<<<<<< HEAD
-  const [activeTab, setActiveTab] = useState<'active' | 'settlement' | 'closed'>('active');
-=======
-  const [activeTab, setActiveTab] = useState<'active' | 'settlement'>(
-    statusParam === 'settlement' ? 'settlement' : 'active'
+  const [activeTab, setActiveTab] = useState<'active' | 'settlement' | 'closed'>(
+    statusParam === 'settlement' ? 'settlement' : statusParam === 'closed' ? 'closed' : 'active'
   );
->>>>>>> 2357c1a426b64d5e849e92eaebc5b25717487d70
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [sortOption, setSortOption] = useState<string>('latest');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
