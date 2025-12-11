@@ -388,7 +388,6 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({
       // 제출 성공 시 임시 저장 데이터 삭제
       clearDraft();
 
-      toast.success('프로젝트 등록이 완료되었습니다! 관리자 승인 후 게시됩니다.');
       onSubmit();
     } catch (error: any) {
       console.error('프로젝트 등록 실패:', error);
