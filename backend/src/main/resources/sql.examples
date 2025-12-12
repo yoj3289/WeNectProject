@@ -647,3 +647,20 @@ CREATE INDEX IF NOT EXISTS IDX_donations_featured ON donations (is_featured, sta
 UPDATE notifications
 SET link = REPLACE(link, '/project/', '/projects/')
 WHERE link LIKE '/project/%';
+
+
+-- ========================================
+-- 11. 활동 로그 추가
+-- ========================================
+CREATE TABLE activity_logs (
+    log_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    activity_type VARCHAR(50) NOT NULL,
+    details TEXT,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_activity_log_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_created_at (created_at),
+    INDEX idx_activity_type (activity_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -48,6 +48,8 @@ public class DonationService {
     private final ProjectRepository projectRepository;
     private final NotificationService notificationService;
     private final PiggyBankRepository piggyBankRepository;
+    private final com.wenect.donation_paltform.domain.activitylog.service.ActivityLogService activityLogService;
+    private final com.wenect.donation_paltform.domain.auth.repository.UserRepository userRepository;
 
     /**
      * 기부 내역 생성 (결제 준비 단계)
@@ -128,6 +130,23 @@ public class DonationService {
             // 알림 생성 실패는 기부 승인 프로세스에 영향을 주지 않음
             log.error("알림 생성 실패 - userId: {}, projectId: {}",
                     donation.getUserId(), project.getProjectId(), e);
+        }
+
+        // 기부 완료 활동 로그 기록
+        try {
+            com.wenect.donation_paltform.domain.auth.entity.User user = userRepository.findById(donation.getUserId())
+                    .orElse(null);
+            if (user != null) {
+                activityLogService.logDonation(
+                        user,
+                        project.getTitle(),
+                        donation.getAmount().longValue(),
+                        null // IP 주소는 결제 승인 시점에는 알 수 없음
+                );
+            }
+        } catch (Exception e) {
+            // 로그 기록 실패해도 기부 승인은 정상 처리
+            log.error("기부 완료 활동 로그 기록 실패 - userId: {}", donation.getUserId(), e);
         }
 
         log.info("기부 승인 완료 - donationId: {}, amount: {}", donation.getDonationId(), donation.getAmount());

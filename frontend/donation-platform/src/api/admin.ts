@@ -100,6 +100,15 @@ export interface UserStatisticsResponse {
   participatedProjects: number;
 }
 
+export interface ActivityLogResponse {
+  logId: number;
+  activityType: string;
+  action: string;
+  details: string;
+  ipAddress: string;
+  timestamp: string;
+}
+
 export interface OrganizationDocument {
   docId: number;
   fileName: string;
@@ -220,6 +229,13 @@ export const updateUserStatus = async (
  */
 export const getUserStatistics = async (userId: number): Promise<{ data: UserStatisticsResponse }> => {
   return apiClient.get<{ data: UserStatisticsResponse }>(`/admin/users/${userId}/statistics`);
+};
+
+/**
+ * 사용자별 활동 로그 조회
+ */
+export const getUserActivityLogs = async (userId: number): Promise<{ data: ActivityLogResponse[] }> => {
+  return apiClient.get<{ data: ActivityLogResponse[] }>(`/admin/users/${userId}/activity-logs`);
 };
 
 // ==================== 정산 응답 타입 ====================

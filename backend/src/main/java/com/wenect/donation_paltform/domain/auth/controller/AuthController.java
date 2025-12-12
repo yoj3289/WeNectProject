@@ -78,11 +78,34 @@ public class AuthController {
     // 로그인 API 추가
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponseDto>> login(
-            @Valid @RequestBody LoginRequestDto dto) {
-        LoginResponseDto responseDto = authService.login(dto);
+            @Valid @RequestBody LoginRequestDto dto,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String ipAddress = getClientIp(request);
+        LoginResponseDto responseDto = authService.login(dto, ipAddress);
         ApiResponse<LoginResponseDto> response = ApiResponse.success(responseDto, "로그인 성공");
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 클라이언트 IP 주소 추출 (프록시 고려)
+     */
+    private String getClientIp(jakarta.servlet.http.HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        // X-Forwarded-For에 여러 IP가 있을 경우 첫 번째 IP만 사용
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+        return ip;
     }
 
     // 로그아웃 API

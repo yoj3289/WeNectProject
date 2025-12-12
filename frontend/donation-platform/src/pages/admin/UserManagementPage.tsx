@@ -3,7 +3,7 @@ import { Search, Eye, Edit, Trash2, X, Heart, FileText, Clock, Settings, Shield,
 import toast from 'react-hot-toast';
 import type { AdminDashboardProps } from '../../types/admin';
 import { useAdminUsers } from '../../hooks/useAdmin';
-import type { AdminUserResponse, UserStatisticsResponse } from '../../api/admin';
+import type { AdminUserResponse, UserStatisticsResponse, ActivityLogResponse } from '../../api/admin';
 import * as adminApi from '../../api/admin';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
@@ -65,6 +65,8 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
   const [currentPage, setCurrentPage] = useState(0);
   const [userStats, setUserStats] = useState<UserStatisticsResponse | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [activityLogs, setActivityLogs] = useState<ActivityLogResponse[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
 
   // 필터 변경 시 페이지를 0으로 리셋
   React.useEffect(() => {
@@ -90,6 +92,26 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
 
     fetchUserStatistics();
   }, [showUserModal, selectedUser]);
+
+  // 활동 로그 모달이 열릴 때 활동 로그 데이터 로드
+  useEffect(() => {
+    const fetchActivityLogs = async () => {
+      if (showActivityLog && selectedUser) {
+        setLoadingLogs(true);
+        try {
+          const response = await adminApi.getUserActivityLogs((selectedUser as any).id);
+          setActivityLogs(response.data);
+        } catch (error) {
+          console.error('Failed to fetch activity logs:', error);
+          setActivityLogs([]);
+        } finally {
+          setLoadingLogs(false);
+        }
+      }
+    };
+
+    fetchActivityLogs();
+  }, [showActivityLog, selectedUser]);
 
   // ConfirmModal 상태
   const [confirmModal, setConfirmModal] = useState<{
@@ -142,17 +164,6 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
   const pageSize = 20;
   const startIndex = currentPage * pageSize + 1;
   const endIndex = Math.min((currentPage + 1) * pageSize, totalElements);
-
-  const activityLogs: ActivityLog[] = [
-    { id: 1, userId: 1, action: '로그인', details: '정상 로그인', timestamp: '2024-03-16 14:30', ipAddress: '192.168.1.100' },
-    { id: 2, userId: 1, action: '기부 완료', details: '소외계층 아동 급식 지원 - 100,000원', timestamp: '2024-03-15 14:35', ipAddress: '192.168.1.100' },
-    { id: 3, userId: 1, action: '댓글 작성', details: '유기동물 보호소 운영비 프로젝트', timestamp: '2024-03-14 16:20', ipAddress: '192.168.1.100' },
-    { id: 4, userId: 1, action: '프로젝트 관심등록', details: '독거노인 생활 지원', timestamp: '2024-03-13 09:15', ipAddress: '192.168.1.100' },
-    { id: 5, userId: 2, action: '로그인', details: '정상 로그인', timestamp: '2024-03-15 09:20', ipAddress: '192.168.1.105' },
-    { id: 6, userId: 2, action: '기부 완료', details: '청소년 진로 멘토링 - 50,000원', timestamp: '2024-03-14 10:15', ipAddress: '192.168.1.105' },
-    { id: 7, userId: 3, action: '프로젝트 승인', details: '장애인 재활 프로그램 승인', timestamp: '2024-03-16 16:45', ipAddress: '192.168.1.200' },
-    { id: 8, userId: 3, action: '로그인', details: '정상 로그인', timestamp: '2024-03-16 16:40', ipAddress: '192.168.1.200' },
-  ];
 
   const roleHistory: RoleChangeHistory[] = [
     { id: 1, userId: 3, previousRole: 'user', newRole: 'organization_admin', changedBy: '최관리', reason: '기관 관리자 권한 부여', timestamp: '2024-02-15 10:30' },
@@ -334,24 +345,32 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
               </button>
             </div>
             <div className="p-6">
-              <div className="space-y-3">
-                {activityLogs.filter(log => log.userId === (selectedUser as User).id).length > 0 ? (
-                  activityLogs.filter(log => log.userId === (selectedUser as User).id).map((log) => (
-                    <div key={log.id} className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className="font-semibold text-gray-800">{log.action}</p>
-                          <p className="text-sm text-gray-600 mt-1">{log.details}</p>
-                          <p className="text-xs text-gray-500 mt-2">IP: {log.ipAddress}</p>
+              {loadingLogs ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activityLogs.length > 0 ? (
+                    activityLogs.map((log) => (
+                      <div key={log.logId} className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-800">{log.action}</p>
+                            <p className="text-sm text-gray-600 mt-1">{log.details}</p>
+                            {log.ipAddress && (
+                              <p className="text-xs text-gray-500 mt-2">IP: {log.ipAddress}</p>
+                            )}
+                          </div>
+                          <span className="text-xs text-gray-500">{log.timestamp}</span>
                         </div>
-                        <span className="text-xs text-gray-500">{log.timestamp}</span>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-center text-gray-500 py-8">활동 로그가 없습니다.</p>
-                )}
-              </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-gray-500 py-8">활동 로그가 없습니다.</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -703,12 +722,12 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
                         >
                           <Eye size={18} />
                         </button>
-                        <button
+                        {/* <button
                           className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
                           title="수정"
                         >
                           <Edit size={18} />
-                        </button>
+                        </button> */}
                         <button
                           className="p-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200"
                           title="삭제"

@@ -28,6 +28,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
     private final UserDeletionLogRepository userDeletionLogRepository;
+    private final com.wenect.donation_paltform.domain.activitylog.service.ActivityLogService activityLogService;
 
     /**
      * 사용자 프로필 조회
@@ -44,7 +45,7 @@ public class UserService {
      * 사용자 프로필 수정
      */
     @Transactional
-    public UserProfileResponse updateProfile(Long userId, UpdateProfileRequest request) {
+    public UserProfileResponse updateProfile(Long userId, UpdateProfileRequest request, String ipAddress) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 
@@ -62,12 +63,38 @@ public class UserService {
             }
         }
 
+        // 변경 내역 추적
+        StringBuilder updateDetails = new StringBuilder();
+        if (!user.getEmail().equals(request.getEmail())) {
+            updateDetails.append("이메일 변경, ");
+        }
+        if (!user.getUserName().equals(request.getUserName())) {
+            updateDetails.append("이름 변경, ");
+        }
+        if ((user.getPhone() == null && request.getPhone() != null) ||
+            (user.getPhone() != null && !user.getPhone().equals(request.getPhone()))) {
+            updateDetails.append("전화번호 변경, ");
+        }
+
         // 프로필 정보 업데이트
         user.setEmail(request.getEmail());
         user.setUserName(request.getUserName());
         user.setPhone(request.getPhone());
 
         User updatedUser = userRepository.save(user);
+
+        // 프로필 수정 활동 로그 기록
+        if (updateDetails.length() > 0) {
+            // 마지막 ", " 제거
+            String details = updateDetails.substring(0, updateDetails.length() - 2);
+            try {
+                activityLogService.logProfileUpdate(updatedUser, details, ipAddress);
+            } catch (Exception e) {
+                // 로그 기록 실패해도 프로필 수정은 정상 처리
+                log.error("프로필 수정 활동 로그 기록 실패 - userId: {}", userId, e);
+            }
+        }
+
         return UserProfileResponse.from(updatedUser);
     }
 
@@ -75,7 +102,7 @@ public class UserService {
      * 비밀번호 변경
      */
     @Transactional
-    public void changePassword(Long userId, ChangePasswordRequest request) {
+    public void changePassword(Long userId, ChangePasswordRequest request, String ipAddress) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 
@@ -97,6 +124,14 @@ public class UserService {
         // 비밀번호 변경
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
+
+        // 비밀번호 변경 활동 로그 기록
+        try {
+            activityLogService.logProfileUpdate(user, "비밀번호 변경", ipAddress);
+        } catch (Exception e) {
+            // 로그 기록 실패해도 비밀번호 변경은 정상 처리
+            log.error("비밀번호 변경 활동 로그 기록 실패 - userId: {}", userId, e);
+        }
     }
 
     /**

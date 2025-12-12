@@ -42,10 +42,12 @@ public class UserController {
     @PutMapping("/me")
     public ResponseEntity<ApiResponse<UserProfileResponse>> updateMyProfile(
             @RequestHeader("Authorization") String authorizationHeader,
-            @Valid @RequestBody UpdateProfileRequest request) {
+            @Valid @RequestBody UpdateProfileRequest request,
+            HttpServletRequest httpServletRequest) {
 
         Long userId = extractUserIdFromToken(authorizationHeader);
-        UserProfileResponse response = userService.updateProfile(userId, request);
+        String ipAddress = getClientIpAddress(httpServletRequest);
+        UserProfileResponse response = userService.updateProfile(userId, request, ipAddress);
 
         return ResponseEntity.ok(
                 ApiResponse.success(response, "프로필 수정 성공"));
@@ -57,10 +59,12 @@ public class UserController {
     @PutMapping("/me/password")
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @RequestHeader("Authorization") String authorizationHeader,
-            @Valid @RequestBody ChangePasswordRequest request) {
+            @Valid @RequestBody ChangePasswordRequest request,
+            HttpServletRequest httpServletRequest) {
 
         Long userId = extractUserIdFromToken(authorizationHeader);
-        userService.changePassword(userId, request);
+        String ipAddress = getClientIpAddress(httpServletRequest);
+        userService.changePassword(userId, request, ipAddress);
 
         return ResponseEntity.ok(
                 ApiResponse.success(null, "비밀번호 변경 성공"));

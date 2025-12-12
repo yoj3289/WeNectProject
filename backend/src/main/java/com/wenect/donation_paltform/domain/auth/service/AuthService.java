@@ -1,5 +1,6 @@
 package com.wenect.donation_paltform.domain.auth.service;
 
+import com.wenect.donation_paltform.domain.activitylog.service.ActivityLogService;
 import com.wenect.donation_paltform.domain.auth.dto.LoginRequestDto;
 import com.wenect.donation_paltform.domain.auth.dto.LoginResponseDto;
 import com.wenect.donation_paltform.domain.auth.dto.SignupRequestDto;
@@ -37,6 +38,8 @@ public class AuthService {
     private final OrganizationDocumentRepository documentRepository;
 
     private final com.wenect.donation_paltform.domain.auth.repository.EmailVerificationRepository emailVerificationRepository;
+
+    private final ActivityLogService activityLogService;
 
     @Transactional
     public SignupResponseDto signup(SignupRequestDto dto, MultipartFile file) {
@@ -149,8 +152,8 @@ public class AuthService {
     }
 
     // 로그인 메서드 추가
-    @Transactional(readOnly = true)
-    public LoginResponseDto login(LoginRequestDto dto) {
+    @Transactional
+    public LoginResponseDto login(LoginRequestDto dto, String ipAddress) {
         // 1. 사용자 조회
         User user = userRepository.findByEmail(dto.getEmail())
                 .orElseThrow(() -> new BadCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다"));
@@ -204,7 +207,15 @@ public class AuthService {
                 user.getEmail(),
                 user.getUserType().name());
 
-        // 6. 응답 DTO 반환
+        // 6. 로그인 활동 로그 기록
+        try {
+            activityLogService.logLogin(user, ipAddress);
+        } catch (Exception e) {
+            // 로그 기록 실패해도 로그인은 정상 처리
+            System.out.println("로그인 활동 로그 기록 실패 (무시): " + e.getMessage());
+        }
+
+        // 7. 응답 DTO 반환
         return LoginResponseDto.of(token, user, organizationName);
     }
 
