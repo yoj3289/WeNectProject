@@ -177,7 +177,7 @@ public class SettlementManagementService {
             .piggyId(piggyBank.getPiggyId()) // 저금통 ID 연결
             .settlementAmount(requestDto.getSettlementAmount())
             .bankName(requestDto.getBankName())
-            .accountNumber(requestDto.getAccountNumber()) // TODO: 암호화 처리
+            .accountNumber(requestDto.getAccountNumber()) // JPA Converter로 자동 암호화
             .accountHolder(requestDto.getAccountHolder())
             .status(Settlement.SettlementStatus.PENDING)
             .build();

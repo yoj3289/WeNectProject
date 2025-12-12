@@ -1,6 +1,7 @@
 package com.wenect.donation_paltform.domain.settlement.dto;
 
 import com.wenect.donation_paltform.domain.settlement.entity.Settlement;
+import com.wenect.donation_paltform.global.converter.AccountNumberConverter;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,6 +28,7 @@ public class SettlementResponseDto {
     private BigDecimal settlementAmount;
     private String bankName;
     private String accountNumber;
+    private String maskedAccountNumber; // 마스킹된 계좌번호 (외부 노출용)
     private String accountHolder;
     private String status; // PENDING, APPROVED, COMPLETED, REJECTED
     private LocalDateTime requestedAt;
@@ -40,13 +42,15 @@ public class SettlementResponseDto {
      * Entity -> DTO 변환
      */
     public static SettlementResponseDto fromEntity(Settlement settlement) {
+        String accountNumber = settlement.getAccountNumber();
         return SettlementResponseDto.builder()
             .settlementId(settlement.getSettlementId())
             .projectId(settlement.getProjectId())
             .piggyId(settlement.getPiggyId())
             .settlementAmount(settlement.getSettlementAmount())
             .bankName(settlement.getBankName())
-            .accountNumber(settlement.getAccountNumber())
+            .accountNumber(accountNumber)
+            .maskedAccountNumber(AccountNumberConverter.maskAccountNumber(accountNumber))
             .accountHolder(settlement.getAccountHolder())
             .status(settlement.getStatus().name())
             .requestedAt(settlement.getRequestedAt())
