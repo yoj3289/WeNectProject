@@ -55,10 +55,6 @@ public class Project {
     @Builder.Default
     private ProjectStatus status = ProjectStatus.ACTIVE;
 
-    // TODO: 나중에 DB에 컬럼 추가 후 주석 해제
-    // @Column(name = "rejection_reason", columnDefinition = "TEXT")
-    // private String rejectionReason;
-
     // 기부금 사용계획 (필수) - 사용자에게 공개되는 간단한 설명
     @Column(name = "budget_plan", columnDefinition = "TEXT")
     private String budgetPlan;

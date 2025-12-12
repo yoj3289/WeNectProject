@@ -9,15 +9,6 @@ const PAGE_SIZE = 20;
 // 탭 타입
 type TabType = 'donations' | 'messages';
 
-// 상태 필터 옵션
-const STATUS_OPTIONS = [
-  { value: '', label: '전체 상태' },
-  { value: 'completed', label: '완료' },
-  { value: 'pending', label: '대기중' },
-  { value: 'cancelled', label: '취소' },
-  { value: 'failed', label: '실패' },
-];
-
 // 기간 필터 옵션
 const PERIOD_OPTIONS = [
   { value: 'all', label: '전체 기간' },
@@ -37,9 +28,9 @@ const DonationManagementPage: React.FC = () => {
   // 현재 탭
   const [activeTab, setActiveTab] = useState<TabType>('donations');
 
-  // 필터 상태
+  // 필터 상태 - 기본적으로 결제 완료된 기부만 조회
   const [filters, setFilters] = useState<AdminDonationFilters>({
-    status: '',
+    status: 'completed',
     period: 'all',
     page: 0,
     size: PAGE_SIZE,
@@ -85,28 +76,6 @@ const DonationManagementPage: React.FC = () => {
     return new Intl.NumberFormat('ko-KR').format(amount) + '원';
   };
 
-  // 상태 뱃지 렌더링
-  const renderStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      COMPLETED: 'bg-green-100 text-green-700',
-      PENDING: 'bg-yellow-100 text-yellow-700',
-      CANCELLED: 'bg-gray-100 text-gray-700',
-      FAILED: 'bg-red-100 text-red-700',
-    };
-    const labels: Record<string, string> = {
-      COMPLETED: '완료',
-      PENDING: '대기중',
-      CANCELLED: '취소',
-      FAILED: '실패',
-    };
-    const upperStatus = status.toUpperCase();
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${styles[upperStatus] || 'bg-gray-100 text-gray-700'}`}>
-        {labels[upperStatus] || status}
-      </span>
-    );
-  };
-
   // Featured 토글 핸들러
   const handleToggleFeatured = async (donationId: number, currentFeatured: boolean) => {
     try {
@@ -126,10 +95,10 @@ const DonationManagementPage: React.FC = () => {
     setFilters(prev => ({ ...prev, page: newPage }));
   };
 
-  // 필터 초기화
+  // 필터 초기화 - 결제 완료 상태 유지
   const resetFilters = () => {
     setFilters({
-      status: '',
+      status: 'completed',
       period: 'all',
       page: 0,
       size: PAGE_SIZE,
@@ -224,15 +193,8 @@ const DonationManagementPage: React.FC = () => {
               <div className="flex items-center justify-between mb-3">
                 <p className="text-amber-100 text-sm">기부 프로젝트</p>
                 <div className="flex items-center gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    selectedDonation.status?.toUpperCase() === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                    selectedDonation.status?.toUpperCase() === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                    selectedDonation.status?.toUpperCase() === 'CANCELLED' ? 'bg-gray-100 text-gray-700' :
-                    'bg-red-100 text-red-700'
-                  }`}>
-                    {selectedDonation.status?.toUpperCase() === 'COMPLETED' ? '완료' :
-                     selectedDonation.status?.toUpperCase() === 'PENDING' ? '대기중' :
-                     selectedDonation.status?.toUpperCase() === 'CANCELLED' ? '취소' : '실패'}
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                    결제 완료
                   </span>
                   {selectedDonation.isFeatured && (
                     <span className="px-3 py-1 bg-white/20 text-white rounded-full text-xs font-medium flex items-center gap-1">
@@ -407,15 +369,10 @@ const DonationManagementPage: React.FC = () => {
                   </select>
                 </div>
 
-                <select
-                  value={filters.status || ''}
-                  onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm"
-                >
-                  {STATUS_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+                {/* 결제 완료된 기부만 표시됨을 안내 */}
+                <span className="px-3 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-medium">
+                  결제 완료 기부만 표시
+                </span>
 
                 <button
                   onClick={resetFilters}
@@ -447,8 +404,7 @@ const DonationManagementPage: React.FC = () => {
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기부일</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기부자</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">금액</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">상태</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">금액</th>
                         <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
                       </tr>
                     </thead>
@@ -470,13 +426,10 @@ const DonationManagementPage: React.FC = () => {
                               {donation.isAnonymous ? '익명' : donation.donorName}
                             </span>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 text-right">
                             <span className="text-gray-800 font-bold whitespace-nowrap">
                               {formatAmount(donation.amount)}
                             </span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            {renderStatusBadge(donation.status)}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-center">
@@ -506,9 +459,6 @@ const DonationManagementPage: React.FC = () => {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-800 truncate">{donation.projectTitle}</p>
                           <p className="text-lg font-bold text-amber-600 mt-1">{formatAmount(donation.amount)}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            {renderStatusBadge(donation.status)}
-                          </div>
                           <p className="text-xs text-gray-500 mt-2">
                             {donation.isAnonymous ? '익명' : donation.donorName} · {formatDate(donation.donatedAt)}
                           </p>

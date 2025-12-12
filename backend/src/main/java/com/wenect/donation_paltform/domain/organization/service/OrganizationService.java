@@ -83,8 +83,7 @@ public class OrganizationService {
                 .map(Project::getCurrentAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // TODO: 저금통 테이블 구현 후 실제 잔액 계산
-        // 현재는 결산 중인 프로젝트의 모금액으로 임시 대체
+        // 결산 중인 프로젝트의 모금액 합계 (piggy_banks 테이블 연동 가능)
         BigDecimal totalWalletBalance = projects.stream()
                 .filter(p -> p.getStatus() == Project.ProjectStatus.SETTLEMENT)
                 .map(Project::getCurrentAmount)

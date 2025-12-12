@@ -49,7 +49,6 @@ public class OrganizationStatsResponse {
 
     /**
      * 총 저금통 잔액 (결산 중인 프로젝트의 잔액 합계)
-     * TODO: 저금통 테이블 구현 후 실제 계산
      */
     private BigDecimal totalWalletBalance;
 }

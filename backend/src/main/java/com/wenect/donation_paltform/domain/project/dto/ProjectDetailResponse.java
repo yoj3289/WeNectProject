@@ -45,7 +45,6 @@ public class ProjectDetailResponse {
 
     private String description;
     private String status;
-    private String rejectionReason;
     private LocalDate startDate;
     private LocalDate endDate;
 
@@ -115,8 +114,8 @@ public class ProjectDetailResponse {
         OrganizationInfo orgInfo = OrganizationInfo.builder()
                 .organizationId(organization.getOrgId())
                 .name(organization.getOrgName())
-                .introduction("기관 소개") // TODO: Organization 엔티티에 introduction 필드 추가
-                .websiteUrl(null) // TODO: Organization 엔티티에 websiteUrl 필드 추가
+                .introduction(null)
+                .websiteUrl(null)
                 .build();
 
         // 이미지 정보 변환
@@ -125,7 +124,7 @@ public class ProjectDetailResponse {
                         .map(img -> ImageInfo.builder()
                                 .imageId(img.getImageId())
                                 .imageUrl(img.getFilePath())
-                                .caption(null) // TODO: caption 필드 추가 시 사용
+                                .caption(null)
                                 .build())
                         .collect(Collectors.toList())
                 : new ArrayList<>();
@@ -154,7 +153,6 @@ public class ProjectDetailResponse {
                 .image(representativeImage)
                 .description(project.getDescription())
                 .status(project.getStatus().name())
-                .rejectionReason(null) // TODO: rejection_reason 필드 추가 시 사용
                 .startDate(project.getStartDate())
                 .endDate(project.getEndDate())
                 .budgetPlan(project.getBudgetPlan())

@@ -74,7 +74,7 @@ public class SettlementService {
                 .donorCount(project.getDonorCount())
                 .completedDate(project.getEndDate())
                 .settlementStatus(settlementStatus)
-                .remainingPlan(null) // TODO: 잔여금 처리 계획은 추후 구현
+                .remainingPlan(null) // 잔여금 처리는 프로젝트의 budgetPlan 수정으로 관리
                 .build();
     }
 
