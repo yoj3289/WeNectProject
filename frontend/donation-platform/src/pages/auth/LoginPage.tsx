@@ -168,6 +168,7 @@ const LoginPage: React.FC = () => {
               <span className="text-sm text-stone-600">로그인 유지</span>
             </label>
             <button
+              onClick={() => navigate('/forgot-password')}
               className="text-sm text-amber-600 hover:text-amber-700 hover:underline disabled:text-stone-400 disabled:no-underline"
               disabled={isLoggingIn}
               tabIndex={-1}

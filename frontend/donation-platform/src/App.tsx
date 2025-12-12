@@ -16,6 +16,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
 import ReapplyPage from './pages/auth/ReapplyPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ProjectListPage from './pages/project/ProjectListPage';
 import ProjectDetailContainer from './pages/project/ProjectDetailContainer';
 import ProjectCreatePage from './pages/project/ProjectCreatePage';
@@ -515,6 +516,11 @@ const AppRoutes: React.FC = () => {
         <Route path="/reapply" element={
           <AuthLayout>
             <ReapplyPage />
+          </AuthLayout>
+        } />
+        <Route path="/forgot-password" element={
+          <AuthLayout>
+            <ForgotPasswordPage />
           </AuthLayout>
         } />
 

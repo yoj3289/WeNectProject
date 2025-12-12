@@ -9,8 +9,12 @@ import com.wenect.donation_paltform.domain.auth.dto.SendVerificationCodeRequest;
 import com.wenect.donation_paltform.domain.auth.dto.SendVerificationCodeResponse;
 import com.wenect.donation_paltform.domain.auth.dto.VerifyCodeRequest;
 import com.wenect.donation_paltform.domain.auth.dto.VerifyCodeResponse;
+import com.wenect.donation_paltform.domain.auth.dto.CheckEmailExistsRequest;
+import com.wenect.donation_paltform.domain.auth.dto.PasswordResetRequest;
+import com.wenect.donation_paltform.domain.auth.dto.PasswordResetResponse;
 import com.wenect.donation_paltform.domain.auth.service.AuthService;
 import com.wenect.donation_paltform.domain.auth.service.EmailVerificationService;
+import com.wenect.donation_paltform.domain.auth.service.PasswordResetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +32,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final EmailVerificationService emailVerificationService;
+    private final PasswordResetService passwordResetService;
 
     /*
      * // 회원가입 API
@@ -142,6 +147,80 @@ public class AuthController {
         LoginResponseDto responseDto = authService.refreshToken(userId);
         ApiResponse<LoginResponseDto> response = ApiResponse.success(responseDto, "토큰이 갱신되었습니다");
 
+        return ResponseEntity.ok(response);
+    }
+
+    // ==================== 비밀번호 찾기/재설정 API ====================
+
+    /**
+     * 비밀번호 찾기 - 이메일 존재 여부 확인
+     */
+    @PostMapping("/password/check-email")
+    public ResponseEntity<ApiResponse<Boolean>> checkEmailExists(
+            @Valid @RequestBody CheckEmailExistsRequest request) {
+        boolean exists = passwordResetService.isEmailExists(request.getEmail());
+        ApiResponse<Boolean> response = ApiResponse.success(
+                exists,
+                exists ? "가입된 이메일입니다" : "가입되지 않은 이메일입니다"
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 비밀번호 찾기 - 인증번호 발송
+     */
+    @PostMapping("/password/send-code")
+    public ResponseEntity<ApiResponse<SendVerificationCodeResponse>> sendPasswordResetCode(
+            @Valid @RequestBody SendVerificationCodeRequest request) {
+        passwordResetService.sendPasswordResetCode(request.getEmail());
+        SendVerificationCodeResponse responseDto = SendVerificationCodeResponse.of(
+                "인증번호가 발송되었습니다",
+                300 // 5분 = 300초
+        );
+        ApiResponse<SendVerificationCodeResponse> response = ApiResponse.success(
+                responseDto,
+                "비밀번호 재설정 인증번호가 이메일로 발송되었습니다"
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 비밀번호 찾기 - 인증번호 확인
+     */
+    @PostMapping("/password/verify-code")
+    public ResponseEntity<ApiResponse<VerifyCodeResponse>> verifyPasswordResetCode(
+            @Valid @RequestBody VerifyCodeRequest request) {
+        PasswordResetService.VerificationResult result = passwordResetService.verifyPasswordResetCode(
+                request.getEmail(),
+                request.getCode()
+        );
+
+        VerifyCodeResponse responseDto;
+        if (result.isSuccess()) {
+            responseDto = VerifyCodeResponse.success(result.getMessage());
+        } else {
+            responseDto = VerifyCodeResponse.failure(result.getMessage(), result.getRemainingSeconds());
+        }
+
+        ApiResponse<VerifyCodeResponse> response = ApiResponse.success(
+                responseDto,
+                result.getMessage()
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 비밀번호 재설정
+     */
+    @PostMapping("/password/reset")
+    public ResponseEntity<ApiResponse<PasswordResetResponse>> resetPassword(
+            @Valid @RequestBody PasswordResetRequest request) {
+        passwordResetService.resetPassword(request);
+        PasswordResetResponse responseDto = PasswordResetResponse.success("비밀번호가 성공적으로 변경되었습니다");
+        ApiResponse<PasswordResetResponse> response = ApiResponse.success(
+                responseDto,
+                "비밀번호가 성공적으로 변경되었습니다"
+        );
         return ResponseEntity.ok(response);
     }
 

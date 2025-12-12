@@ -228,3 +228,73 @@ export const checkEmailAvailability = async (email: string): Promise<boolean> =>
   );
   return response.data;  // ✅ ApiResponse의 data 필드에서 boolean 추출
 };
+
+// ==================== 비밀번호 찾기/재설정 API ====================
+
+export interface PasswordResetRequest {
+  email: string;
+  code: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface VerificationCodeResponse {
+  message: string;
+  expiresInSeconds: number;
+}
+
+export interface VerifyCodeResponse {
+  verified: boolean;
+  message: string;
+  remainingSeconds?: number;
+}
+
+export interface PasswordResetResponse {
+  success: boolean;
+  message: string;
+}
+
+/**
+ * 비밀번호 찾기 - 이메일 존재 여부 확인
+ * @returns true면 가입된 이메일, false면 가입되지 않은 이메일
+ */
+export const checkEmailExists = async (email: string): Promise<boolean> => {
+  const response = await apiClient.post<ApiResponse<boolean>>(
+    '/auth/password/check-email',
+    { email }
+  );
+  return response.data;
+};
+
+/**
+ * 비밀번호 찾기 - 인증번호 발송
+ */
+export const sendPasswordResetCode = async (email: string): Promise<VerificationCodeResponse> => {
+  const response = await apiClient.post<ApiResponse<VerificationCodeResponse>>(
+    '/auth/password/send-code',
+    { email }
+  );
+  return response.data;
+};
+
+/**
+ * 비밀번호 찾기 - 인증번호 확인
+ */
+export const verifyPasswordResetCode = async (email: string, code: string): Promise<VerifyCodeResponse> => {
+  const response = await apiClient.post<ApiResponse<VerifyCodeResponse>>(
+    '/auth/password/verify-code',
+    { email, code }
+  );
+  return response.data;
+};
+
+/**
+ * 비밀번호 재설정
+ */
+export const resetPassword = async (data: PasswordResetRequest): Promise<PasswordResetResponse> => {
+  const response = await apiClient.post<ApiResponse<PasswordResetResponse>>(
+    '/auth/password/reset',
+    data
+  );
+  return response.data;
+};
