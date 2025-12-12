@@ -49,7 +49,7 @@ public class OrganizationApprovalResponse {
                 .processedDate(org.getUser().getUpdatedAt() != null && !status.equals("pending")
                         ? formatDateTime(org.getUser().getUpdatedAt())
                         : null)
-                .rejectionReason(null) // TODO: 나중에 거절 사유 필드 추가 시 사용
+                .rejectionReason(org.getRejectionReason())
                 .build();
     }
 
