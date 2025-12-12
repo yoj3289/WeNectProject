@@ -1,6 +1,7 @@
 package com.wenect.donation_paltform.domain.admin.controller;
 
 import com.wenect.donation_paltform.domain.admin.dto.UserListResponse;
+import com.wenect.donation_paltform.domain.admin.dto.UserStatisticsResponse;
 import com.wenect.donation_paltform.domain.admin.service.AdminUserService;
 import com.wenect.donation_paltform.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -34,5 +35,18 @@ public class AdminUserController {
 
         return ResponseEntity.ok(
                 ApiResponse.success(users, "사용자 목록 조회 성공"));
+    }
+
+    /**
+     * 사용자별 활동 통계 조회
+     */
+    @GetMapping("/{userId}/statistics")
+    public ResponseEntity<ApiResponse<UserStatisticsResponse>> getUserStatistics(
+            @PathVariable Long userId) {
+
+        UserStatisticsResponse statistics = adminUserService.getUserStatistics(userId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(statistics, "사용자 통계 조회 성공"));
     }
 }

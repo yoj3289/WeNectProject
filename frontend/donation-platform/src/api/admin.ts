@@ -94,6 +94,12 @@ export interface AdminUserResponse {
   verified?: boolean;
 }
 
+export interface UserStatisticsResponse {
+  totalDonationAmount: number;
+  donationCount: number;
+  participatedProjects: number;
+}
+
 export interface OrganizationDocument {
   docId: number;
   fileName: string;
@@ -207,6 +213,13 @@ export const updateUserStatus = async (
   status: 'active' | 'inactive' | 'suspended'
 ): Promise<void> => {
   return apiClient.put<void>(`/admin/users/${userId}/status`, { status });
+};
+
+/**
+ * 사용자별 활동 통계 조회
+ */
+export const getUserStatistics = async (userId: number): Promise<{ data: UserStatisticsResponse }> => {
+  return apiClient.get<{ data: UserStatisticsResponse }>(`/admin/users/${userId}/statistics`);
 };
 
 // ==================== 정산 응답 타입 ====================

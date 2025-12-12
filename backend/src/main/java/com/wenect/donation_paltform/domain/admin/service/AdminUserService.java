@@ -1,8 +1,11 @@
 package com.wenect.donation_paltform.domain.admin.service;
 
 import com.wenect.donation_paltform.domain.admin.dto.UserListResponse;
+import com.wenect.donation_paltform.domain.admin.dto.UserStatisticsResponse;
 import com.wenect.donation_paltform.domain.auth.entity.User;
 import com.wenect.donation_paltform.domain.auth.repository.UserRepository;
+import com.wenect.donation_paltform.domain.donation.entity.Donation;
+import com.wenect.donation_paltform.domain.donation.repository.DonationRepository;
 import com.wenect.donation_paltform.domain.organization.entity.Organization;
 import com.wenect.donation_paltform.domain.organization.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +15,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -23,6 +27,7 @@ public class AdminUserService {
 
     private final UserRepository userRepository;
     private final OrganizationRepository organizationRepository;
+    private final DonationRepository donationRepository;
 
     /**
      * 사용자 목록 조회 (페이징, 검색, 필터링)
@@ -85,5 +90,36 @@ public class AdminUserService {
 
             return UserListResponse.from(user, orgName, verified);
         });
+    }
+
+    /**
+     * 사용자별 활동 통계 조회
+     */
+    public UserStatisticsResponse getUserStatistics(Long userId) {
+        // 완료된 기부 목록 조회
+        List<Donation> completedDonations = donationRepository.findByUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .filter(d -> d.getStatus() == Donation.DonationStatus.COMPLETED)
+                .collect(Collectors.toList());
+
+        // 총 기부 금액
+        BigDecimal totalAmount = completedDonations.stream()
+                .map(Donation::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // 기부 횟수
+        Long donationCount = (long) completedDonations.size();
+
+        // 참여 프로젝트 수 (중복 제거)
+        Long participatedProjects = completedDonations.stream()
+                .map(Donation::getProjectId)
+                .distinct()
+                .count();
+
+        return UserStatisticsResponse.builder()
+                .totalDonationAmount(totalAmount)
+                .donationCount(donationCount)
+                .participatedProjects(participatedProjects)
+                .build();
     }
 }

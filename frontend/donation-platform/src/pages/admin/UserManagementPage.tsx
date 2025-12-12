@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Eye, Edit, Trash2, X, Heart, FileText, Clock, Settings, Shield, LogOut, History, User, Mail, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { AdminDashboardProps } from '../../types/admin';
 import { useAdminUsers } from '../../hooks/useAdmin';
-import type { AdminUserResponse } from '../../api/admin';
+import type { AdminUserResponse, UserStatisticsResponse } from '../../api/admin';
+import * as adminApi from '../../api/admin';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
 interface UserManagementPageProps extends AdminDashboardProps {}
@@ -62,11 +63,33 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
   const [selectedRole, setSelectedRole] = useState<UserRole>('user');
   const [roleChangeReason, setRoleChangeReason] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
+  const [userStats, setUserStats] = useState<UserStatisticsResponse | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   // 필터 변경 시 페이지를 0으로 리셋
   React.useEffect(() => {
     setCurrentPage(0);
   }, [userTypeFilter, userStatusFilter, userSearchTerm]);
+
+  // 사용자 모달이 열릴 때 통계 데이터 로드
+  useEffect(() => {
+    const fetchUserStatistics = async () => {
+      if (showUserModal && selectedUser) {
+        setLoadingStats(true);
+        try {
+          const response = await adminApi.getUserStatistics((selectedUser as any).id);
+          setUserStats(response.data);
+        } catch (error) {
+          console.error('Failed to fetch user statistics:', error);
+          setUserStats(null);
+        } finally {
+          setLoadingStats(false);
+        }
+      }
+    };
+
+    fetchUserStatistics();
+  }, [showUserModal, selectedUser]);
 
   // ConfirmModal 상태
   const [confirmModal, setConfirmModal] = useState<{
@@ -439,20 +462,32 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
                   <div className="w-6 h-6 bg-stone-800 text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
                   <h4 className="font-medium text-stone-800">활동 통계</h4>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-amber-50 rounded-xl p-3 text-center">
-                    <p className="text-xs text-stone-600 mb-1">총 기부 금액</p>
-                    <p className="text-lg font-bold text-amber-600">{(selectedUser as User).totalDonations.toLocaleString()}원</p>
+                {loadingStats ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
                   </div>
-                  <div className="bg-stone-50 rounded-xl p-3 text-center">
-                    <p className="text-xs text-stone-600 mb-1">기부 횟수</p>
-                    <p className="text-lg font-bold text-stone-600">{(selectedUser as User).donationCount}회</p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-amber-50 rounded-xl p-3 text-center">
+                      <p className="text-xs text-stone-600 mb-1">총 기부 금액</p>
+                      <p className="text-lg font-bold text-amber-600">
+                        {userStats ? userStats.totalDonationAmount.toLocaleString() : '0'}원
+                      </p>
+                    </div>
+                    <div className="bg-stone-50 rounded-xl p-3 text-center">
+                      <p className="text-xs text-stone-600 mb-1">기부 횟수</p>
+                      <p className="text-lg font-bold text-stone-600">
+                        {userStats ? userStats.donationCount : '0'}회
+                      </p>
+                    </div>
+                    <div className="bg-blue-50 rounded-xl p-3 text-center">
+                      <p className="text-xs text-stone-600 mb-1">참여 프로젝트</p>
+                      <p className="text-lg font-bold text-blue-600">
+                        {userStats ? userStats.participatedProjects : '0'}개
+                      </p>
+                    </div>
                   </div>
-                  <div className="bg-blue-50 rounded-xl p-3 text-center">
-                    <p className="text-xs text-stone-600 mb-1">참여 프로젝트</p>
-                    <p className="text-lg font-bold text-blue-600">{(selectedUser as User).projects}개</p>
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* STEP 2: 권한 및 활동 관리 */}
