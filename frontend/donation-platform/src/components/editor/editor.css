@@ -172,6 +172,36 @@ h3 {
   height: 0;
 }
 
+/* 프로젝트 설명 콘텐츠 렌더링 스타일 */
+.project-description,
+.project-description * {
+  word-wrap: break-word !important;
+  word-break: keep-all !important;
+  overflow-wrap: anywhere !important;
+  white-space: normal !important;
+  max-width: 100% !important;
+  line-height: 1.8 !important;
+}
+
+.project-description p {
+  margin-bottom: 1rem;
+}
+
+.project-description img {
+  max-width: 100%;
+  height: auto;
+}
+
+.project-description ul,
+.project-description ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.project-description li {
+  margin: 0.25rem 0;
+}
+
 /* 모바일 반응형 - 제목 및 텍스트 크기 조절 */
 @media (max-width: 640px) {
   .ProseMirror h1,

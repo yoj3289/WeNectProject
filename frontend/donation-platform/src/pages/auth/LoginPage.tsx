@@ -1,18 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+
+const SAVED_EMAIL_KEY = 'wenect_saved_email';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [saveEmail, setSaveEmail] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const { login, isLoggingIn } = useAuth();
+
+  // 저장된 이메일 불러오기
+  useEffect(() => {
+    const savedEmail = localStorage.getItem(SAVED_EMAIL_KEY);
+    if (savedEmail) {
+      setLoginEmail(savedEmail);
+      setSaveEmail(true);
+    }
+  }, []);
 
   const handleLogin = async () => {
     if (!loginEmail || !loginPassword) {
@@ -25,8 +36,14 @@ const LoginPage: React.FC = () => {
       const result = await login({
         email: loginEmail,
         password: loginPassword,
-        rememberMe,
       });
+
+      // 아이디 저장 처리
+      if (saveEmail) {
+        localStorage.setItem(SAVED_EMAIL_KEY, loginEmail);
+      } else {
+        localStorage.removeItem(SAVED_EMAIL_KEY);
+      }
 
       // 거부된 사용자인 경우 재심사 요청 페이지로 이동
       if (result.isRejected && result.rejectionInfo) {
@@ -53,8 +70,7 @@ const LoginPage: React.FC = () => {
         navigate('/');
       }
 
-      // 입력 필드 초기화
-      setLoginEmail('');
+      // 비밀번호만 초기화 (이메일은 저장 옵션에 따라 유지)
       setLoginPassword('');
     } catch (error: any) {
       // 에러 처리
@@ -82,6 +98,17 @@ const LoginPage: React.FC = () => {
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !isLoggingIn) {
       handleLogin();
+    }
+  };
+
+  // 아이디 저장 체크박스 변경 핸들러
+  const handleSaveEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    setSaveEmail(checked);
+
+    // 체크 해제 시 저장된 이메일 삭제
+    if (!checked) {
+      localStorage.removeItem(SAVED_EMAIL_KEY);
     }
   };
 
@@ -159,13 +186,13 @@ const LoginPage: React.FC = () => {
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
+                checked={saveEmail}
+                onChange={handleSaveEmailChange}
                 disabled={isLoggingIn}
                 tabIndex={-1}
                 className="w-4 h-4 text-amber-500 border-stone-300 rounded focus:ring-amber-500 disabled:cursor-not-allowed"
               />
-              <span className="text-sm text-stone-600">로그인 유지</span>
+              <span className="text-sm text-stone-600">아이디 저장</span>
             </label>
             <button
               onClick={() => navigate('/forgot-password')}

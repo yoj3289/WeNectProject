@@ -249,9 +249,9 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     switch (activeTab) {
       case 'intro':
         return (
-          <div className="prose max-w-none">
+          <div className="w-full">
             <div
-              className="text-stone-700 leading-relaxed"
+              className="project-description text-stone-700"
               dangerouslySetInnerHTML={{ __html: sanitizeHTML(project.description) }}
             />
           </div>
@@ -535,27 +535,25 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               <div className="space-y-4">
                 {donorsWithMessages.map((donor) => (
                   <div key={donor.id} className="bg-white rounded-2xl border border-stone-200 p-4 sm:p-6 hover:shadow-md transition-all">
-                    <div className="flex items-start gap-3 sm:gap-4">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-50 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Heart size={20} className="sm:hidden text-amber-500" fill="currentColor" />
-                        <Heart size={24} className="hidden sm:block text-amber-500" fill="currentColor" />
+                    {/* 상단: 기부자 정보 */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 sm:w-11 sm:h-11 bg-amber-50 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Heart size={18} className="sm:hidden text-amber-500" fill="currentColor" />
+                        <Heart size={20} className="hidden sm:block text-amber-500" fill="currentColor" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
-                          <div className="min-w-0">
-                            <p className="font-medium text-sm sm:text-base text-stone-800 truncate">
-                              {donor.isAnonymous ? '익명의 기부자' : donor.name}
-                            </p>
-                            <p className="text-xs sm:text-sm text-stone-500">{donor.date}</p>
-                          </div>
-                          <p className="font-medium text-sm sm:text-base text-amber-600 flex-shrink-0">
-                            {formatAmount(donor.amount)}원
-                          </p>
-                        </div>
-                        <div className="p-3 sm:p-4 bg-stone-50 rounded-xl">
-                          <p className="text-sm sm:text-base text-stone-700 leading-relaxed">"{donor.message}"</p>
-                        </div>
+                        <p className="font-medium text-sm sm:text-base text-stone-800 truncate">
+                          {donor.isAnonymous ? '익명의 기부자' : donor.name}
+                        </p>
+                        <p className="text-xs sm:text-sm text-stone-500">{donor.date}</p>
                       </div>
+                      <p className="font-medium text-sm sm:text-base text-amber-600 flex-shrink-0">
+                        {formatAmount(donor.amount)}원
+                      </p>
+                    </div>
+                    {/* 하단: 메시지 (전체 너비) */}
+                    <div className="p-3 sm:p-4 bg-stone-50 rounded-xl">
+                      <p className="text-sm sm:text-base text-stone-700 leading-relaxed">"{donor.message}"</p>
                     </div>
                   </div>
                 ))}

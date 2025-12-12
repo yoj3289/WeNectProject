@@ -158,9 +158,9 @@ const ProjectActivePage: React.FC<ProjectActivePageProps> = ({
     switch (activeTab) {
       case 'intro':
         return (
-          <div className="prose max-w-none">
+          <div className="w-full">
             <div
-              className="text-gray-700 leading-relaxed"
+              className="project-description text-gray-700"
               dangerouslySetInnerHTML={{ __html: sanitizeHTML(project.description) }}
             />
           </div>
