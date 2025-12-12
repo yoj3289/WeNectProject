@@ -27,7 +27,7 @@ import toast from 'react-hot-toast';
 import DonationHistoryPage from './DonationHistoryPage';
 import StatisticsPage from './StatisticsPage';
 import { useAuthStore } from '../../stores/authStore';
-import { useUserFavoriteProjects, useProjects, useSettlementProjects, useToggleFavoriteProject } from '../../hooks/useProjects';
+import { useUserFavoriteProjects, useProjects, useSettlementProjects, useClosedProjects, useToggleFavoriteProject } from '../../hooks/useProjects';
 import { useOrganizationStats } from '../../hooks/useOrganization';
 import { useMyDonations } from '../../hooks/useDonations';
 import { useNotificationSettings, useUpdateNotificationSettings } from '../../hooks/useUsers';
@@ -127,14 +127,16 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   const { data: favoriteProjectIds = [], isLoading: isFavoriteIdsLoading } = useUserFavoriteProjects(isLoggedIn);
   const { data: allProjectsData, isLoading: isProjectsLoading } = useProjects({});
   const { data: allSettlementProjectsData, isLoading: isSettlementProjectsLoading } = useSettlementProjects({});
+  const { data: allClosedProjectsData, isLoading: isClosedProjectsLoading } = useClosedProjects({});
 
-  // ACTIVE + 결산 중(COMPLETED, SETTLEMENT, CLOSED) 모든 프로젝트에서 관심 프로젝트 필터링
+  // ACTIVE + 결산 중 + 종료 모든 프로젝트에서 관심 프로젝트 필터링
   const favoriteProjects = React.useMemo(() => {
     const activeProjects = allProjectsData?.content || [];
     const settlementProjects = allSettlementProjectsData?.content || [];
-    const allProjects = [...activeProjects, ...settlementProjects];
+    const closedProjects = allClosedProjectsData?.content || [];
+    const allProjects = [...activeProjects, ...settlementProjects, ...closedProjects];
     return allProjects.filter((p: Project) => favoriteProjectIds.includes(p.id));
-  }, [allProjectsData, allSettlementProjectsData, favoriteProjectIds]);
+  }, [allProjectsData, allSettlementProjectsData, allClosedProjectsData, favoriteProjectIds]);
 
   const toggleFavoriteMutation = useToggleFavoriteProject();
 
@@ -632,7 +634,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     <Heart className="text-amber-600" size={22} />
                   </div>
                   <p className="text-xl md:text-2xl font-light text-white mb-1">
-                    {isFavoriteIdsLoading || isProjectsLoading || isSettlementProjectsLoading ? (
+                    {isFavoriteIdsLoading || isProjectsLoading || isSettlementProjectsLoading || isClosedProjectsLoading ? (
                       <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                     ) : (
                       `${favoriteProjects.length}개`
@@ -822,7 +824,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                   </button>
                 </div>
 
-                {isFavoriteIdsLoading || isProjectsLoading || isSettlementProjectsLoading ? (
+                {isFavoriteIdsLoading || isProjectsLoading || isSettlementProjectsLoading || isClosedProjectsLoading ? (
                   <div className="flex justify-center py-12">
                     <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
                   </div>
@@ -1073,7 +1075,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                       placeholder="이메일을 입력하세요"
                     />
                   </div>
-                  <p className="text-xs text-stone-400 mt-1">이메일은 로그인 아이디로 사용되어 변경할 수 없습니다.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-stone-700 mb-2">전화번호</label>
@@ -1174,7 +1175,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
   // 관심 프로젝트 페이지
   const FavoriteProjectsPage = () => {
-    const [activeTab, setActiveTab] = useState<'active' | 'settlement'>('active');
+    const [activeTab, setActiveTab] = useState<'active' | 'settlement' | 'closed'>('active');
     const [searchKeyword, setSearchKeyword] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('전체');
     const [sortOption, setSortOption] = useState('최신순');
@@ -1182,12 +1183,19 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     const projectsPerPage = 6;
 
     const { data: settlementProjectsData, isLoading: isSettlementLoading } = useSettlementProjects();
+    const { data: closedProjectsData, isLoading: isClosedLoading } = useClosedProjects();
+
     const settlementProjectIdSet = React.useMemo(() => {
       if (!settlementProjectsData?.content) return new Set<number>();
       return new Set(settlementProjectsData.content.map((p: Project) => p.id));
     }, [settlementProjectsData]);
 
-    const isLoading = isFavoriteIdsLoading || isProjectsLoading || isSettlementProjectsLoading || isSettlementLoading;
+    const closedProjectIdSet = React.useMemo(() => {
+      if (!closedProjectsData?.content) return new Set<number>();
+      return new Set(closedProjectsData.content.map((p: Project) => p.id));
+    }, [closedProjectsData]);
+
+    const isLoading = isFavoriteIdsLoading || isProjectsLoading || isSettlementProjectsLoading || isSettlementLoading || isClosedLoading;
 
     const filteredFavoriteProjects = React.useMemo(() => {
       let projects = [...favoriteProjects];
@@ -1195,8 +1203,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
       // 탭 필터
       if (activeTab === 'settlement') {
         projects = projects.filter(p => settlementProjectIdSet.has(p.id));
+      } else if (activeTab === 'closed') {
+        projects = projects.filter(p => closedProjectIdSet.has(p.id));
       } else {
-        projects = projects.filter(p => !settlementProjectIdSet.has(p.id));
+        // active: 결산 중이나 종료가 아닌 프로젝트
+        projects = projects.filter(p => !settlementProjectIdSet.has(p.id) && !closedProjectIdSet.has(p.id));
       }
 
       // 검색
@@ -1232,7 +1243,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
       }
 
       return projects;
-    }, [favoriteProjects, activeTab, settlementProjectIdSet, searchKeyword, selectedCategory, sortOption]);
+    }, [favoriteProjects, activeTab, settlementProjectIdSet, closedProjectIdSet, searchKeyword, selectedCategory, sortOption]);
 
     const totalPages = Math.ceil(filteredFavoriteProjects.length / projectsPerPage);
     const currentProjects = filteredFavoriteProjects.slice(
@@ -1295,6 +1306,16 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 }`}
               >
                 결산 중
+              </button>
+              <button
+                onClick={() => setActiveTab('closed')}
+                className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-all ${
+                  activeTab === 'closed'
+                    ? 'bg-white text-stone-900 shadow-sm'
+                    : 'text-stone-500 hover:text-stone-700'
+                }`}
+              >
+                종료
               </button>
             </div>
 
