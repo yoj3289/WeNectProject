@@ -31,7 +31,7 @@ import { useUserFavoriteProjects, useProjects, useSettlementProjects, useToggleF
 import { useOrganizationStats } from '../../hooks/useOrganization';
 import { useMyDonations } from '../../hooks/useDonations';
 import { useNotificationSettings, useUpdateNotificationSettings } from '../../hooks/useUsers';
-import { deleteAccount } from '../../api/users';
+import { deleteAccount, updateProfile, changePassword } from '../../api/users';
 import type { NotificationSettingsResponse } from '../../api/users';
 import type {
   UserType,
@@ -192,7 +192,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     });
   };
 
-  const handleChangePassword = (currentPassword: string, newPassword: string, confirmPassword: string) => {
+  const handleChangePassword = async (currentPassword: string, newPassword: string, confirmPassword: string) => {
     if (newPassword !== confirmPassword) {
       toast.error('새 비밀번호가 일치하지 않습니다.');
       return;
@@ -201,8 +201,20 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
       toast.error('비밀번호는 8자 이상이어야 합니다.');
       return;
     }
-    toast.success('비밀번호가 변경되었습니다.');
-    setShowPasswordModal(false);
+
+    try {
+      // 백엔드 API 호출하여 비밀번호 변경
+      await changePassword({
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      });
+      toast.success('비밀번호가 변경되었습니다.');
+      setShowPasswordModal(false);
+    } catch (error: any) {
+      console.error('비밀번호 변경 실패:', error);
+      toast.error(error.response?.data?.message || '비밀번호 변경에 실패했습니다.');
+    }
   };
 
   // 비밀번호 변경 모달
@@ -320,11 +332,17 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
   // 회원 탈퇴 모달
   const DeleteAccountModal: React.FC = () => {
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [confirmText, setConfirmText] = useState('');
     const [reason, setReason] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
 
     const handleDeleteAccount = async () => {
+      if (!password) {
+        toast.error('비밀번호를 입력해주세요.');
+        return;
+      }
       if (confirmText !== '회원탈퇴') {
         toast.error("'회원탈퇴'를 정확히 입력해주세요.");
         return;
@@ -332,7 +350,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
       setIsDeleting(true);
       try {
-        await deleteAccount({ password: confirmText, reason });
+        await deleteAccount({ password, reason });
         toast.success('회원 탈퇴가 완료되었습니다.');
         logout();
         navigate('/');
@@ -374,6 +392,29 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 회원 탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.
                 기부 내역, 관심 프로젝트 등 모든 정보가 영구적으로 삭제됩니다.
               </p>
+            </div>
+
+            {/* 비밀번호 입력 */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                본인 확인을 위해 비밀번호를 입력해주세요
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="비밀번호"
+                  className="w-full px-4 py-3 pr-12 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
 
             {/* 확인 입력 */}
@@ -903,7 +944,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   // 프로필 수정 페이지
   const ProfileEditPage = () => {
     const [name, setName] = useState(userProfile.name);
-    const [email, setEmail] = useState(userProfile.email);
+    const [email] = useState(userProfile.email);
     const [phone, setPhone] = useState(userProfile.phone);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -935,19 +976,27 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     const handleSave = async () => {
       setIsLoading(true);
       try {
-        const updatedProfile: UserProfile = {
-          name,
+        // 백엔드 API 호출하여 DB에 저장
+        const response = await updateProfile({
           email,
+          userName: name,
           phone,
+        });
+
+        // 성공 시 로컬 상태 업데이트
+        const updatedProfile: UserProfile = {
+          name: response.userName,
+          email: response.email,
+          phone: response.phone,
           notificationSettings: userProfile.notificationSettings,
         };
         setUserProfile(updatedProfile);
-        updateUser({ userName: name, email: email, phone: phone });
+        updateUser({ userName: response.userName, email: response.email, phone: response.phone });
         toast.success('프로필이 수정되었습니다.');
         setSelectedMenu('main');
-      } catch (error) {
+      } catch (error: any) {
         console.error('프로필 수정 실패:', error);
-        toast.error('프로필 수정에 실패했습니다.');
+        toast.error(error.response?.data?.message || '프로필 수정에 실패했습니다.');
       } finally {
         setIsLoading(false);
       }
@@ -1011,17 +1060,20 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-2">이메일</label>
+                  <label className="block text-sm font-medium text-stone-700 mb-2">
+                    이메일 <span className="text-stone-400 text-xs font-normal">(변경 불가)</span>
+                  </label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
                     <input
                       type="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                      disabled
+                      className="w-full pl-11 pr-4 py-3 bg-stone-100 border border-stone-200 rounded-xl text-stone-500 cursor-not-allowed"
                       placeholder="이메일을 입력하세요"
                     />
                   </div>
+                  <p className="text-xs text-stone-400 mt-1">이메일은 로그인 아이디로 사용되어 변경할 수 없습니다.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-stone-700 mb-2">전화번호</label>
