@@ -661,7 +661,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 </h3>
                 <div className="space-y-1">
                   <button
-                    onClick={() => setSelectedMenu('profile-edit')}
+                    onClick={() => navigate('/profile?tab=profile-edit')}
                     className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
                   >
                     <span>기본 정보 수정</span>
@@ -693,21 +693,21 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 </h3>
                 <div className="space-y-1">
                   <button
-                    onClick={() => setSelectedMenu('donation-history')}
+                    onClick={() => navigate('/profile?tab=donation-history')}
                     className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
                   >
                     <span>기부 내역</span>
                     <ChevronRight size={16} className="text-stone-400 group-hover:text-amber-500" />
                   </button>
                   <button
-                    onClick={() => setSelectedMenu('favorite-projects')}
+                    onClick={() => navigate('/profile?tab=favorite-projects')}
                     className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
                   >
                     <span>관심 프로젝트</span>
                     <ChevronRight size={16} className="text-stone-400 group-hover:text-amber-500" />
                   </button>
                   <button
-                    onClick={() => setSelectedMenu('statistics')}
+                    onClick={() => navigate('/profile?tab=statistics')}
                     className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
                   >
                     <span>나의 기부 통계</span>
@@ -756,7 +756,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     </h2>
                   </div>
                   <button
-                    onClick={() => setSelectedMenu('donation-history')}
+                    onClick={() => navigate('/profile?tab=donation-history')}
                     className="text-amber-600 text-sm font-medium hover:text-amber-700 transition-colors flex items-center gap-1"
                   >
                     전체보기 <ChevronRight size={16} />
@@ -817,7 +817,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     </h2>
                   </div>
                   <button
-                    onClick={() => setSelectedMenu('favorite-projects')}
+                    onClick={() => navigate('/profile?tab=favorite-projects')}
                     className="text-amber-600 text-sm font-medium hover:text-amber-700 transition-colors flex items-center gap-1"
                   >
                     전체보기 <ChevronRight size={16} />
@@ -995,7 +995,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         setUserProfile(updatedProfile);
         updateUser({ userName: response.userName, email: response.email, phone: response.phone });
         toast.success('프로필이 수정되었습니다.');
-        setSelectedMenu('main');
+        navigate('/profile');
       } catch (error: any) {
         console.error('프로필 수정 실패:', error);
         toast.error(error.response?.data?.message || '프로필 수정에 실패했습니다.');
@@ -1019,7 +1019,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
           <div className="relative max-w-5xl mx-auto px-4 py-12">
             <button
-              onClick={() => setSelectedMenu('main')}
+              onClick={() => navigate(-1)}
               className="mb-4 text-stone-400 hover:text-white text-sm flex items-center gap-1 transition-colors"
             >
               <ChevronLeft size={16} />
@@ -1266,7 +1266,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
           <div className="relative max-w-5xl mx-auto px-4 py-12">
             <button
-              onClick={() => setSelectedMenu('main')}
+              onClick={() => navigate(-1)}
               className="mb-4 text-stone-400 hover:text-white text-sm flex items-center gap-1 transition-colors"
             >
               <ChevronLeft size={16} />
@@ -1473,11 +1473,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
       {selectedMenu === 'main' && <MyPageMain />}
       {selectedMenu === 'profile-edit' && <ProfileEditPage />}
       {selectedMenu === 'donation-history' && (
-        <DonationHistoryPage onBack={() => setSelectedMenu('main')} />
+        <DonationHistoryPage onBack={() => navigate(-1)} />
       )}
       {selectedMenu === 'favorite-projects' && <FavoriteProjectsPage />}
       {selectedMenu === 'statistics' && (
-        <StatisticsPage onBack={() => setSelectedMenu('main')} />
+        <StatisticsPage onBack={() => navigate(-1)} />
       )}
       {showPasswordModal && <PasswordChangeModal />}
       {showDeleteAccountModal && <DeleteAccountModal />}

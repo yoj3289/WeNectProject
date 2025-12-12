@@ -118,8 +118,7 @@ const Header: React.FC<HeaderProps> = ({
               {/* 관심 프로젝트 버튼 */}
               <button
                 onClick={() => {
-                  // 같은 경로에서도 탭 전환이 되도록 navigate + replace 사용
-                  navigate('/profile?tab=favorites', { replace: location.pathname === '/profile' });
+                  navigate('/profile?tab=favorite-projects');
                 }}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 title="관심 프로젝트"
@@ -284,10 +283,10 @@ const Header: React.FC<HeaderProps> = ({
                 <button
                   onClick={() => {
                     closeMobileMenu();
-                    navigate('/profile?tab=favorites', { replace: location.pathname === '/profile' });
+                    navigate('/profile?tab=favorite-projects');
                   }}
                   className={`px-4 py-3 text-sm font-medium flex items-center gap-3 transition-colors text-left w-full ${
-                    isActive('/profile') && location.search.includes('favorites')
+                    isActive('/profile') && location.search.includes('favorite-projects')
                       ? 'text-amber-600 bg-amber-50'
                       : 'text-stone-600 hover:bg-stone-50'
                   }`}
