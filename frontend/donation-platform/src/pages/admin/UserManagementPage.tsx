@@ -63,6 +63,11 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
   const [roleChangeReason, setRoleChangeReason] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
 
+  // 필터 변경 시 페이지를 0으로 리셋
+  React.useEffect(() => {
+    setCurrentPage(0);
+  }, [userTypeFilter, userStatusFilter, userSearchTerm]);
+
   // ConfirmModal 상태
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -107,6 +112,13 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
       projects: 0,
     };
   }) || [];
+
+  // 페이지네이션 정보
+  const totalElements = data?.totalElements || 0;
+  const totalPages = data?.totalPages || 0;
+  const pageSize = 20;
+  const startIndex = currentPage * pageSize + 1;
+  const endIndex = Math.min((currentPage + 1) * pageSize, totalElements);
 
   const activityLogs: ActivityLog[] = [
     { id: 1, userId: 1, action: '로그인', details: '정상 로그인', timestamp: '2024-03-16 14:30', ipAddress: '192.168.1.100' },
@@ -722,12 +734,51 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
 
           <div className="p-6 border-t border-gray-200 flex items-center justify-between">
             <p className="text-sm text-gray-600">
-              총 <strong>{filteredUsers.length}</strong>명 중 <strong>1-{filteredUsers.length}</strong> 표시
+              총 <strong>{totalElements}</strong>명 중 <strong>{totalElements > 0 ? startIndex : 0}-{endIndex}</strong> 표시
             </p>
             <div className="flex gap-2">
-              <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>이전</button>
-              <button className="px-3 py-1 border rounded-lg bg-amber-500 text-white border-amber-500">1</button>
-              <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>다음</button>
+              <button
+                className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={currentPage === 0}
+                onClick={() => setCurrentPage(currentPage - 1)}
+              >
+                이전
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i).map((pageNum) => {
+                // 현재 페이지 주변 5개만 표시
+                if (
+                  pageNum === 0 || // 첫 페이지
+                  pageNum === totalPages - 1 || // 마지막 페이지
+                  (pageNum >= currentPage - 2 && pageNum <= currentPage + 2) // 현재 페이지 주변
+                ) {
+                  return (
+                    <button
+                      key={pageNum}
+                      className={`px-3 py-1 border rounded-lg ${
+                        pageNum === currentPage
+                          ? 'bg-amber-500 text-white border-amber-500'
+                          : 'border-gray-300 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setCurrentPage(pageNum)}
+                    >
+                      {pageNum + 1}
+                    </button>
+                  );
+                } else if (
+                  pageNum === currentPage - 3 ||
+                  pageNum === currentPage + 3
+                ) {
+                  return <span key={pageNum} className="px-2">...</span>;
+                }
+                return null;
+              })}
+              <button
+                className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={currentPage >= totalPages - 1}
+                onClick={() => setCurrentPage(currentPage + 1)}
+              >
+                다음
+              </button>
             </div>
           </div>
         </div>

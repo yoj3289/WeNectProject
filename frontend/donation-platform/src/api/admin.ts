@@ -186,7 +186,7 @@ export const rejectProject = async (data: RejectProjectRequest): Promise<void> =
  */
 export const getAdminUsers = async (
   filters: AdminUserFilters = {}
-): Promise<{ content: AdminUserResponse[]; totalPages: number; currentPage: number }> => {
+): Promise<{ content: AdminUserResponse[]; totalPages: number; currentPage: number; totalElements: number }> => {
   const params = new URLSearchParams();
 
   Object.entries(filters).forEach(([key, value]) => {
