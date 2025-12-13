@@ -71,7 +71,7 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
     { id: 'settlements', icon: DollarSign, label: '정산 관리' },
     { id: 'expenses', icon: DollarSign, label: '지출 승인' },
     { id: 'reports', icon: Flag, label: '신고 관리', allowedUserTypes: ['admin'] },
-    { id: 'settings', icon: Settings, label: '설정', allowedUserTypes: ['admin'] },
+    //{ id: 'settings', icon: Settings, label: '설정', allowedUserTypes: ['admin'] }, //비활성화
   ];
 
   // 현재 사용자가 접근 가능한 메뉴만 필터링
