@@ -40,7 +40,7 @@ const ForgotPasswordPage: React.FC = () => {
 
   // 타이머 관리
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setInterval>;
     if (remainingTime > 0) {
       timer = setInterval(() => {
         setRemainingTime((prev) => {
