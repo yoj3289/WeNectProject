@@ -684,37 +684,43 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-5 shadow-md">
-                <h3 className="text-sm font-medium text-stone-800 mb-4 flex items-center gap-2">
-                  <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                    <Gift size={14} className="text-amber-600" />
+              {/* 나의 활동 섹션 - 관리자(admin)는 표시하지 않음
+                  - 일반 사용자(individual), 기관(organization)만 표시
+                  - 다시 활성화하려면: {user?.userType !== 'admin' && ( 를 제거하고 맨 끝의 )} 도 제거
+              */}
+              {user?.userType !== 'admin' && (
+                <div className="bg-white rounded-2xl p-5 shadow-md">
+                  <h3 className="text-sm font-medium text-stone-800 mb-4 flex items-center gap-2">
+                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                      <Gift size={14} className="text-amber-600" />
+                    </div>
+                    나의 활동
+                  </h3>
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => navigate('/profile?tab=donation-history')}
+                      className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
+                    >
+                      <span>기부 내역</span>
+                      <ChevronRight size={16} className="text-stone-400 group-hover:text-amber-500" />
+                    </button>
+                    <button
+                      onClick={() => navigate('/profile?tab=favorite-projects')}
+                      className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
+                    >
+                      <span>관심 프로젝트</span>
+                      <ChevronRight size={16} className="text-stone-400 group-hover:text-amber-500" />
+                    </button>
+                    <button
+                      onClick={() => navigate('/profile?tab=statistics')}
+                      className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
+                    >
+                      <span>나의 기부 통계</span>
+                      <ChevronRight size={16} className="text-stone-400 group-hover:text-amber-500" />
+                    </button>
                   </div>
-                  나의 활동
-                </h3>
-                <div className="space-y-1">
-                  <button
-                    onClick={() => navigate('/profile?tab=donation-history')}
-                    className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
-                  >
-                    <span>기부 내역</span>
-                    <ChevronRight size={16} className="text-stone-400 group-hover:text-amber-500" />
-                  </button>
-                  <button
-                    onClick={() => navigate('/profile?tab=favorite-projects')}
-                    className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
-                  >
-                    <span>관심 프로젝트</span>
-                    <ChevronRight size={16} className="text-stone-400 group-hover:text-amber-500" />
-                  </button>
-                  <button
-                    onClick={() => navigate('/profile?tab=statistics')}
-                    className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
-                  >
-                    <span>나의 기부 통계</span>
-                    <ChevronRight size={16} className="text-stone-400 group-hover:text-amber-500" />
-                  </button>
                 </div>
-              </div>
+              )}
 
               {userType === 'organization' && (
                 <div className="bg-white rounded-2xl p-5 shadow-md">
