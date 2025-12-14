@@ -1,10 +1,9 @@
 package com.wenect.donation_paltform.global.converter;
 
+import com.wenect.donation_paltform.global.config.EncryptionConfig;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
@@ -17,20 +16,18 @@ import java.util.Base64;
  * 계좌번호 암호화/복호화 컨버터
  * AES-256-GCM 암호화를 사용하여 DB 저장 시 암호화, 조회 시 복호화
  */
-@Converter
-@Component
+@Converter(autoApply = false)
 @Slf4j
 public class AccountNumberConverter implements AttributeConverter<String, String> {
 
     private static final String ALGORITHM = "AES/GCM/NoPadding";
     private static final int GCM_IV_LENGTH = 12;
     private static final int GCM_TAG_LENGTH = 128;
+    private static final String DEFAULT_KEY = "WeNectDonation2024SecureKey!!";
 
-    private static String secretKey;
-
-    @Value("${encryption.account.secret-key}")
-    public void setSecretKey(String key) {
-        AccountNumberConverter.secretKey = key;
+    private String getSecretKey() {
+        String key = EncryptionConfig.getAccountSecretKey();
+        return (key != null && !key.isEmpty()) ? key : DEFAULT_KEY;
     }
 
     @Override
@@ -49,7 +46,7 @@ public class AccountNumberConverter implements AttributeConverter<String, String
             new SecureRandom().nextBytes(iv);
 
             SecretKeySpec keySpec = new SecretKeySpec(
-                    secretKey.getBytes(StandardCharsets.UTF_8), "AES");
+                    getSecretKey().getBytes(StandardCharsets.UTF_8), "AES");
             GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
 
             Cipher cipher = Cipher.getInstance(ALGORITHM);
@@ -90,7 +87,7 @@ public class AccountNumberConverter implements AttributeConverter<String, String
             System.arraycopy(combined, iv.length, encrypted, 0, encrypted.length);
 
             SecretKeySpec keySpec = new SecretKeySpec(
-                    secretKey.getBytes(StandardCharsets.UTF_8), "AES");
+                    getSecretKey().getBytes(StandardCharsets.UTF_8), "AES");
             GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
 
             Cipher cipher = Cipher.getInstance(ALGORITHM);
