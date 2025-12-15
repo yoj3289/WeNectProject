@@ -6,13 +6,13 @@
 
 **따뜻한 마음을 연결하는 기부 플랫폼**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-140.245.64.178-blue?style=flat-square)](http://140.245.64.178)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-wenect.duckdns.org-blue?style=flat-square)](https://wenect.duckdns.org)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-6DB33F?style=flat-square&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat-square&logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
 
-[데모 사이트](http://140.245.64.178) | [기능 소개](#-주요-기능) | [기술 스택](#️-기술-스택) | [설치 방법](#-설치-및-실행)
+[데모 사이트](https://wenect.duckdns.org) | [기능 소개](#-주요-기능) | [기술 스택](#️-기술-스택) | [설치 방법](#-설치-및-실행)
 
 </div>
 
@@ -40,7 +40,9 @@
 
 ## 🌐 라이브 데모
 
-> **🔗 [http://140.245.64.178](http://140.245.64.178)**
+> **🔗 [https://wenect.duckdns.org](https://wenect.duckdns.org)**
+>
+> (IP 직접 접속: http://140.245.64.178)
 
 테스트 계정:
 - 이메일: `test@test.com`
@@ -287,7 +289,7 @@ encryption.account.secret-key=YOUR_SECRET_KEY
 ```env
 # .env
 VITE_API_BASE_URL=http://localhost:8080/api
-VITE_IMAGE_BASE_URL=http://140.245.64.178
+VITE_IMAGE_BASE_URL=https://wenect.duckdns.org
 ```
 
 ---
