@@ -728,9 +728,16 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
                       <FileText size={14} className="text-amber-600" />
                     </div>
-                    내 프로젝트
+                    기관 대시보드
                   </h3>
                   <div className="space-y-1">
+                    <button
+                      onClick={() => navigate('/organization/profile')}
+                      className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
+                    >
+                      <span>기관 프로필 관리</span>
+                      <ChevronRight size={16} className="text-stone-400 group-hover:text-amber-500" />
+                    </button>
                     <button
                       onClick={() => navigate('/projects/create')}
                       className="w-full py-2.5 text-left hover:bg-amber-50 rounded-lg px-3 text-sm text-stone-600 flex items-center justify-between group"
