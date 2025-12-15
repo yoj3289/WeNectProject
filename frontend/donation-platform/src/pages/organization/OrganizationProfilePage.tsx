@@ -110,11 +110,11 @@ const OrganizationProfilePage: React.FC = () => {
         />
         <div className="relative max-w-7xl mx-auto px-4 py-12">
           <Link
-            to="/profile"
+            to="/organization/dashboard"
             className="inline-flex items-center gap-2 text-stone-400 hover:text-white mb-6 transition-colors"
           >
             <ArrowLeft size={20} />
-            <span>돌아가기</span>
+            <span>대시보드로 돌아가기</span>
           </Link>
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-lg bg-amber-500/20 flex items-center justify-center">

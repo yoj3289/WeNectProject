@@ -155,9 +155,9 @@ const ProjectSettlementPage: React.FC<ProjectSettlementPageProps> = ({
     switch (activeTab) {
       case 'intro':
         return (
-          <div className="w-full">
+          <div className="prose max-w-none">
             <div
-              className="project-description text-stone-700"
+              className="text-stone-700 leading-relaxed"
               dangerouslySetInnerHTML={{ __html: sanitizeHTML(project.description) }}
             />
           </div>

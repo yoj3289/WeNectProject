@@ -201,7 +201,7 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     }
   };
 
-  // 로딩 상태 - 전체 화면 로딩 스피너
+  // 로딩 상태
   if (isLoadingProject) {
     return (
       <div className="bg-stone-50 min-h-screen flex items-center justify-center">
@@ -214,11 +214,11 @@ const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     );
   }
 
-  // 에러 상태 - 전체 화면 에러 표시
+  // 에러 상태
   if (isErrorProject || !project) {
     return (
       <div className="bg-stone-50 min-h-screen flex items-center justify-center">
-        <div className="bg-white rounded-2xl p-8 border border-stone-200 text-center max-w-md mx-4">
+        <div className="text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center">
             <AlertCircle className="w-8 h-8 text-amber-600" />
           </div>
