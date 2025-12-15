@@ -114,15 +114,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
   const isCurrentTabLoading = tabs.find(t => t.id === activeTab)?.isLoading;
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 md:p-6 lg:p-8 space-y-6">
       {/* 페이지 헤더 */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">대시보드</h1>
-        <p className="text-sm text-gray-600 mt-1">전체 시스템 현황을 한눈에 확인하세요</p>
+        <h1 className="text-xl md:text-2xl font-bold text-gray-800">대시보드</h1>
+        <p className="text-xs md:text-sm text-gray-600 mt-1">전체 시스템 현황을 한눈에 확인하세요</p>
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
         {isLoadingDashboard || isLoadingReports ? (
           <>
             <SkeletonCard />
@@ -221,27 +221,28 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
       {/* 최근 활동 섹션 */}
       <div>
-        <h2 className="text-lg font-bold text-gray-800 mb-1">최근 활동</h2>
-        <p className="text-sm text-gray-500 mb-4">최근 일주일간의 주요 활동 내역입니다</p>
+        <h2 className="text-base md:text-lg font-bold text-gray-800 mb-1">최근 활동</h2>
+        <p className="text-xs md:text-sm text-gray-500 mb-4">최근 일주일간의 주요 활동 내역입니다</p>
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="border-b border-gray-200">
-            <div className="flex">
+            <div className="flex overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-6 py-3 md:py-4 text-xs md:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-amber-500 text-amber-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                <tab.icon size={18} />
-                {tab.label}
+                <tab.icon size={16} className="md:w-[18px] md:h-[18px]" />
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.label.replace('최근 ', '').replace(' 요청', '').replace(' 승인', '')}</span>
                 {tab.isLoading ? (
-                  <span className="w-6 h-5 bg-gray-200 rounded-full animate-pulse"></span>
+                  <span className="w-5 md:w-6 h-4 md:h-5 bg-gray-200 rounded-full animate-pulse"></span>
                 ) : tab.count > 0 && (
-                  <span className={`px-2 py-0.5 text-xs rounded-full ${
+                  <span className={`px-1.5 md:px-2 py-0.5 text-xs rounded-full ${
                     activeTab === tab.id ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
                   }`}>
                     {tab.count}
@@ -255,15 +256,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
           {/* 최근 기부 탭 */}
           {activeTab === 'donations' && (
             <>
-            <table className="w-full">
+            <table className="w-full min-w-[640px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기부자</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">메시지</th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">금액</th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">홈 노출</th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">시간</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기부자</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden lg:table-cell">메시지</th>
+                  <th className="px-3 md:px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">금액</th>
+                  <th className="px-3 md:px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">홈 노출</th>
+                  <th className="px-3 md:px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase hidden md:table-cell">시간</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -278,9 +279,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 ) : donations.length > 0 ? (
                   (expandedTabs.donations ? donations : donations.slice(0, INITIAL_DISPLAY_COUNT)).map((donation: any, idx: number) => (
                     <tr key={idx} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 font-medium text-gray-800">{donation.donorName}</td>
-                      <td className="px-6 py-4 text-gray-600 max-w-[150px] truncate">{donation.projectTitle}</td>
-                      <td className="px-6 py-4 text-gray-600 max-w-[200px]">
+                      <td className="px-3 md:px-6 py-3 md:py-4 font-medium text-gray-800 text-sm">{donation.donorName}</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-gray-600 max-w-[120px] md:max-w-[150px] truncate text-sm">{donation.projectTitle}</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-gray-600 max-w-[200px] hidden lg:table-cell">
                         {donation.message ? (
                           <span className="truncate block" title={donation.message}>
                             {donation.message.length > 30 ? `${donation.message.substring(0, 30)}...` : donation.message}
@@ -289,13 +290,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                           <span className="text-gray-400 text-sm">-</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-right text-gray-800 font-semibold">{formatAmount(donation.amount)}원</td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-right text-gray-800 font-semibold text-sm">{formatAmount(donation.amount)}원</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                         {donation.message ? (
                           <button
                             onClick={() => handleToggleFeatured(donation.donationId, donation.isFeatured)}
                             disabled={toggleFeaturedMutation.isPending}
-                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                            className={`inline-flex items-center gap-0.5 md:gap-1 px-1.5 md:px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                               donation.isFeatured
                                 ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
                                 : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
@@ -305,20 +306,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                             {donation.isFeatured ? (
                               <>
                                 <Star size={12} className="fill-amber-500" />
-                                노출중
+                                <span className="hidden md:inline">노출중</span>
                               </>
                             ) : (
                               <>
                                 <Home size={12} />
-                                노출
+                                <span className="hidden md:inline">노출</span>
                               </>
                             )}
                           </button>
                         ) : (
-                          <span className="text-gray-400 text-xs">메시지 없음</span>
+                          <span className="text-gray-400 text-xs">-</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-right text-gray-500 text-sm">
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-right text-gray-500 text-xs md:text-sm hidden md:table-cell">
                         {new Date(donation.timestamp).toLocaleString('ko-KR', {
                           month: 'short',
                           day: 'numeric',
@@ -330,7 +331,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500 text-sm">
                       최근 기부 내역이 없습니다.
                     </td>
                   </tr>
@@ -357,14 +358,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
           {/* 기관 승인 요청 탭 */}
           {activeTab === 'organizations' && (
             <>
-            <table className="w-full">
+            <table className="w-full min-w-[560px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기관명</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">대표자</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">사업자번호</th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">신청일</th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기관명</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden md:table-cell">대표자</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden lg:table-cell">사업자번호</th>
+                  <th className="px-3 md:px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">신청일</th>
+                  <th className="px-3 md:px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -377,16 +378,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 ) : organizations.length > 0 ? (
                   (expandedTabs.organizations ? organizations : organizations.slice(0, INITIAL_DISPLAY_COUNT)).map((org: any) => (
                     <tr key={org.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 font-medium text-gray-800">{org.organizationName}</td>
-                      <td className="px-6 py-4 text-gray-600">{org.representativeName}</td>
-                      <td className="px-6 py-4 text-gray-600">{org.businessNumber}</td>
-                      <td className="px-6 py-4 text-right text-gray-500 text-sm">
+                      <td className="px-3 md:px-6 py-3 md:py-4 font-medium text-gray-800 text-sm">{org.organizationName}</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-gray-600 text-sm hidden md:table-cell">{org.representativeName}</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-gray-600 text-sm hidden lg:table-cell">{org.businessNumber}</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-right text-gray-500 text-xs md:text-sm">
                         {new Date(org.appliedDate).toLocaleDateString('ko-KR')}
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                         <button
                           onClick={() => handleNavigate('organizations')}
-                          className="text-amber-600 hover:text-amber-700 font-medium text-sm"
+                          className="text-amber-600 hover:text-amber-700 font-medium text-xs md:text-sm"
                         >
                           검토하기
                         </button>
@@ -395,7 +396,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500 text-sm">
                       대기 중인 기관 승인 요청이 없습니다.
                     </td>
                   </tr>
@@ -422,14 +423,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
           {/* 정산 요청 탭 */}
           {activeTab === 'settlements' && (
             <>
-            <table className="w-full">
+            <table className="w-full min-w-[560px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">신청일</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">예금주</th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">정산금액</th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden md:table-cell">신청일</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden lg:table-cell">예금주</th>
+                  <th className="px-3 md:px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">정산금액</th>
+                  <th className="px-3 md:px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -442,16 +443,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 ) : settlements.length > 0 ? (
                   (expandedTabs.settlements ? settlements : settlements.slice(0, INITIAL_DISPLAY_COUNT)).map((settlement: any) => (
                     <tr key={settlement.settlementId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-gray-500 text-sm">
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-gray-500 text-xs md:text-sm hidden md:table-cell">
                         {new Date(settlement.requestedAt).toLocaleDateString('ko-KR')}
                       </td>
-                      <td className="px-6 py-4 font-medium text-gray-800 max-w-xs truncate">{settlement.projectTitle}</td>
-                      <td className="px-6 py-4 text-gray-600">{settlement.accountHolder}</td>
-                      <td className="px-6 py-4 text-right text-gray-800 font-semibold">{formatAmount(settlement.settlementAmount)}원</td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-3 md:px-6 py-3 md:py-4 font-medium text-gray-800 max-w-[150px] md:max-w-xs truncate text-sm">{settlement.projectTitle}</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-gray-600 text-sm hidden lg:table-cell">{settlement.accountHolder}</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-right text-gray-800 font-semibold text-sm">{formatAmount(settlement.settlementAmount)}원</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                         <button
                           onClick={() => handleNavigate('settlements')}
-                          className="text-amber-600 hover:text-amber-700 font-medium text-sm"
+                          className="text-amber-600 hover:text-amber-700 font-medium text-xs md:text-sm"
                         >
                           검토하기
                         </button>
@@ -460,7 +461,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500 text-sm">
                       대기 중인 정산 요청이 없습니다.
                     </td>
                   </tr>
@@ -487,14 +488,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
           {/* 지출 승인 요청 탭 */}
           {activeTab === 'expenses' && (
             <>
-            <table className="w-full">
+            <table className="w-full min-w-[560px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">지출일</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">카테고리</th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">금액</th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden md:table-cell">지출일</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">카테고리</th>
+                  <th className="px-3 md:px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">금액</th>
+                  <th className="px-3 md:px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -507,22 +508,22 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 ) : expenses.length > 0 ? (
                   (expandedTabs.expenses ? expenses : expenses.slice(0, INITIAL_DISPLAY_COUNT)).map((expense: any) => (
                     <tr key={expense.expenseId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-gray-500 text-sm">
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-gray-500 text-xs md:text-sm hidden md:table-cell">
                         {new Date(expense.expenseDate).toLocaleDateString('ko-KR')}
                       </td>
-                      <td className="px-6 py-4 font-medium text-gray-800 max-w-xs truncate">
+                      <td className="px-3 md:px-6 py-3 md:py-4 font-medium text-gray-800 max-w-[120px] md:max-w-xs truncate text-sm">
                         {expense.projectTitle || `프로젝트 #${expense.projectId}`}
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">
+                      <td className="px-3 md:px-6 py-3 md:py-4">
+                        <span className="px-1.5 md:px-2 py-0.5 md:py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">
                           {expense.category}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right text-gray-800 font-semibold">{formatAmount(expense.amount)}원</td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-right text-gray-800 font-semibold text-sm">{formatAmount(expense.amount)}원</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                         <button
                           onClick={() => handleNavigate('expenses')}
-                          className="text-amber-600 hover:text-amber-700 font-medium text-sm"
+                          className="text-amber-600 hover:text-amber-700 font-medium text-xs md:text-sm"
                         >
                           검토하기
                         </button>
@@ -531,7 +532,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500 text-sm">
                       대기 중인 지출 승인 요청이 없습니다.
                     </td>
                   </tr>
@@ -560,15 +561,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
       {/* 통계 리포트 섹션 */}
       <div>
-        <h2 className="text-lg font-bold text-gray-800 mb-1">통계 리포트</h2>
-        <p className="text-sm text-gray-500 mb-4">기부, 회원, 프로젝트 현황을 한눈에 확인하세요</p>
+        <h2 className="text-base md:text-lg font-bold text-gray-800 mb-1">통계 리포트</h2>
+        <p className="text-xs md:text-sm text-gray-500 mb-4">기부, 회원, 프로젝트 현황을 한눈에 확인하세요</p>
         <AdminChartsSection />
       </div>
 
       {/* 카테고리별 프로젝트 분포 */}
       <div>
-        <h2 className="text-lg font-bold text-gray-800 mb-1">카테고리별 프로젝트 분포</h2>
-        <p className="text-sm text-gray-500 mb-4">카테고리별 프로젝트 현황을 확인하세요</p>
+        <h2 className="text-base md:text-lg font-bold text-gray-800 mb-1">카테고리별 프로젝트 분포</h2>
+        <p className="text-xs md:text-sm text-gray-500 mb-4">카테고리별 프로젝트 현황을 확인하세요</p>
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <div className="space-y-3">
           {isLoadingCategory ? (

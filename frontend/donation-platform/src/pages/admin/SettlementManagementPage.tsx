@@ -240,9 +240,9 @@ const SettlementManagementPage: React.FC = () => {
       {/* 정산 상세 모달 */}
       {showDetailModal && selectedSettlement && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+          <div className="bg-stone-50 rounded-2xl w-full max-w-[95%] md:max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
             {/* 헤더 - 다크 스타일 */}
-            <div className="bg-stone-800 px-6 py-5">
+            <div className="bg-stone-800 px-4 md:px-6 py-4 md:py-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
@@ -263,7 +263,7 @@ const SettlementManagementPage: React.FC = () => {
             </div>
 
             {/* 프로젝트 정보 카드 */}
-            <div className="bg-amber-500 px-6 py-5">
+            <div className="bg-amber-500 px-4 md:px-6 py-4 md:py-5">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-amber-100 text-sm">정산 대상 프로젝트</p>
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -308,7 +308,7 @@ const SettlementManagementPage: React.FC = () => {
             </div>
 
             {/* 스크롤 가능한 콘텐츠 영역 */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-5">
               {/* STEP 1: 계좌 정보 */}
               <div className="bg-white rounded-xl p-5 border border-stone-200">
                 <div className="flex items-center gap-3 mb-4">
@@ -489,24 +489,24 @@ const SettlementManagementPage: React.FC = () => {
       )}
 
       {/* 메인 콘텐츠 */}
-      <div className="p-8">
+      <div className="p-4 md:p-6 lg:p-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">정산 관리</h1>
-            <p className="text-sm text-gray-600 mt-1">기관의 정산 요청을 검토하고 처리합니다</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800">정산 관리</h1>
+            <p className="text-xs md:text-sm text-gray-600 mt-1">기관의 정산 요청을 검토하고 처리합니다</p>
           </div>
           <button
             onClick={loadData}
             disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold transition disabled:opacity-50"
+            className="flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold transition disabled:opacity-50 text-xs md:text-sm"
           >
             <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
-            새로고침
+            <span className="hidden sm:inline">새로고침</span>
           </button>
         </div>
 
         {/* 탭 */}
-        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+        <div className="flex flex-col sm:flex-row gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-full sm:w-fit">
           <button
             onClick={() => setActiveTab('pending')}
             className={`px-6 py-2 rounded-lg font-semibold transition ${
@@ -585,30 +585,30 @@ const SettlementManagementPage: React.FC = () => {
             <>
               {/* 데스크톱 테이블 뷰 */}
               <div className="hidden md:block overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[640px]">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">신청일</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트명</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">정산금액</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">상태</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
+                      <th className="px-3 md:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">신청일</th>
+                      <th className="px-3 md:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트명</th>
+                      <th className="px-3 md:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">정산금액</th>
+                      <th className="px-3 md:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">상태</th>
+                      <th className="px-3 md:px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {paginatedSettlements.map((settlement) => (
                       <tr key={settlement.settlementId} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
+                        <td className="px-3 md:px-4 py-3">
                           <span className="text-gray-600 text-sm whitespace-nowrap">{formatDate(settlement.requestedAt)}</span>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 md:px-4 py-3">
                           <span className="font-medium text-gray-800 line-clamp-1">{settlement.projectTitle || '-'}</span>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 md:px-4 py-3">
                           <span className="text-gray-800 font-bold whitespace-nowrap">{formatAmount(settlement.settlementAmount)}</span>
                         </td>
-                        <td className="px-4 py-3">{renderStatusBadge(settlement.status)}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 md:px-4 py-3">{renderStatusBadge(settlement.status)}</td>
+                        <td className="px-3 md:px-4 py-3">
                           <div className="flex items-center justify-center gap-1">
                             <button
                               onClick={() => {

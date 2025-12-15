@@ -257,25 +257,25 @@ const ExpenseApprovalPage: React.FC = () => {
   }, [activeTab, processedFilter, searchTerm]);
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-6 lg:p-8">
       {/* 페이지 헤더 */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">지출 승인 관리</h1>
-          <p className="text-sm text-gray-600 mt-1">기관의 지출 요청을 검토하고 승인/반려합니다</p>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">지출 승인 관리</h1>
+          <p className="text-xs md:text-sm text-gray-600 mt-1">기관의 지출 요청을 검토하고 승인/반려합니다</p>
         </div>
         <button
           onClick={loadData}
           disabled={isLoading}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold transition disabled:opacity-50"
+          className="flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold transition disabled:opacity-50 text-xs md:text-sm"
         >
           <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
-          새로고침
+          <span className="hidden sm:inline">새로고침</span>
         </button>
       </div>
 
       {/* 탭 */}
-      <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+      <div className="flex flex-col sm:flex-row gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-full sm:w-fit">
         <button
           onClick={() => setActiveTab('pending')}
           className={`px-6 py-2 rounded-lg font-semibold transition ${
@@ -306,7 +306,8 @@ const ExpenseApprovalPage: React.FC = () => {
       {/* 지출 목록 */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         {/* 필터 및 검색 */}
-        <div className="p-6 border-b border-gray-200 flex items-center gap-4">
+        <div className="p-4 md:p-6 border-b border-gray-200">
+          <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <input
@@ -314,20 +315,21 @@ const ExpenseApprovalPage: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="프로젝트명, 카테고리, 설명으로 검색..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
             />
           </div>
           {activeTab === 'processed' && (
             <select
               value={processedFilter}
               onChange={(e) => setProcessedFilter(e.target.value as ProcessedFilterType)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
             >
               <option value="ALL">모든 상태</option>
               <option value="APPROVED">승인됨</option>
               <option value="REJECTED">반려됨</option>
             </select>
           )}
+          </div>
         </div>
         {isLoading ? (
           <div className="p-12 text-center">
@@ -347,47 +349,47 @@ const ExpenseApprovalPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left py-4 px-6 font-semibold text-gray-700 whitespace-nowrap">날짜</th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-700 whitespace-nowrap">프로젝트</th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-700 whitespace-nowrap">카테고리</th>
-                  <th className="text-right py-4 px-6 font-semibold text-gray-700 whitespace-nowrap">금액</th>
-                  <th className="text-center py-4 px-6 font-semibold text-gray-700 whitespace-nowrap">상태</th>
-                  <th className="text-center py-4 px-6 font-semibold text-gray-700 whitespace-nowrap">작업</th>
+                  <th className="text-left py-3 md:py-4 px-3 md:px-6 font-semibold text-gray-700 whitespace-nowrap text-sm">날짜</th>
+                  <th className="text-left py-3 md:py-4 px-3 md:px-6 font-semibold text-gray-700 whitespace-nowrap text-sm hidden md:table-cell">프로젝트</th>
+                  <th className="text-left py-3 md:py-4 px-3 md:px-6 font-semibold text-gray-700 whitespace-nowrap text-sm">카테고리</th>
+                  <th className="text-right py-3 md:py-4 px-3 md:px-6 font-semibold text-gray-700 whitespace-nowrap text-sm">금액</th>
+                  <th className="text-center py-3 md:py-4 px-3 md:px-6 font-semibold text-gray-700 whitespace-nowrap text-sm">상태</th>
+                  <th className="text-center py-3 md:py-4 px-3 md:px-6 font-semibold text-gray-700 whitespace-nowrap text-sm">작업</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedExpenses.map((expense) => (
                   <tr key={expense.expenseId} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-4 px-6 whitespace-nowrap">
+                    <td className="py-3 md:py-4 px-3 md:px-6 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <Calendar size={16} className="text-gray-400 flex-shrink-0" />
                         <span className="text-sm">{formatDate(expense.expenseDate)}</span>
                       </div>
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-3 md:py-4 px-3 md:px-6 hidden md:table-cell">
                       <span className="text-sm font-medium text-gray-800 line-clamp-1 max-w-[200px]" title={expense.projectTitle || `#${expense.projectId}`}>
                         {expense.projectTitle || `#${expense.projectId}`}
                       </span>
                     </td>
-                    <td className="py-4 px-6 whitespace-nowrap">
+                    <td className="py-3 md:py-4 px-3 md:px-6 whitespace-nowrap">
                       <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium inline-block max-w-[120px] truncate" title={expense.category}>
                         {expense.category}
                       </span>
                     </td>
-                    <td className="py-4 px-6 text-right whitespace-nowrap">
-                      <span className="font-bold text-amber-600">
+                    <td className="py-3 md:py-4 px-3 md:px-6 text-right whitespace-nowrap">
+                      <span className="font-bold text-amber-600 text-sm">
                         {formatAmount(expense.amount)}원
                       </span>
                     </td>
-                    <td className="py-4 px-6 text-center whitespace-nowrap">
+                    <td className="py-3 md:py-4 px-3 md:px-6 text-center whitespace-nowrap">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(expense.status)}`}>
                         {getStatusLabel(expense.status)}
                       </span>
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-3 md:py-4 px-3 md:px-6">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => handleDetailClick(expense)}
@@ -427,11 +429,11 @@ const ExpenseApprovalPage: React.FC = () => {
 
         {/* 페이지네이션 */}
         {!isLoading && filteredExpenses.length > 0 && (
-          <div className="p-6 border-t border-gray-200 flex items-center justify-between">
+          <div className="p-4 md:p-6 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between gap-3">
             <p className="text-sm text-gray-600">
               총 <strong>{filteredExpenses.length}</strong>건
               {filteredExpenses.length > 0 && (
-                <span className="ml-2">
+                <span className="ml-2 hidden md:inline">
                   ({currentPage * PAGE_SIZE + 1}-{Math.min((currentPage + 1) * PAGE_SIZE, filteredExpenses.length)}건 표시)
                 </span>
               )}
@@ -484,9 +486,9 @@ const ExpenseApprovalPage: React.FC = () => {
       {/* 상세보기 모달 */}
       {showDetailModal && selectedExpense && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+          <div className="bg-stone-50 rounded-2xl w-full max-w-[95%] md:max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
             {/* 헤더 - 다크 스타일 */}
-            <div className="bg-stone-800 px-6 py-5">
+            <div className="bg-stone-800 px-4 md:px-6 py-4 md:py-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
@@ -512,7 +514,7 @@ const ExpenseApprovalPage: React.FC = () => {
             {/* 콘텐츠 영역 */}
             <div className="flex-1 overflow-y-auto">
               {/* 프로젝트 정보 카드 */}
-              <div className="bg-amber-500 px-6 py-5">
+              <div className="bg-amber-500 px-4 md:px-6 py-4 md:py-5">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-amber-100 text-sm">지출 대상 프로젝트</p>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -546,7 +548,7 @@ const ExpenseApprovalPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-6 space-y-6">
+              <div className="p-4 md:p-6 space-y-5 md:space-y-6">
                 {/* STEP 1: 지출 정보 */}
                 <div>
                   <div className="flex items-center gap-2 mb-4">
@@ -653,7 +655,7 @@ const ExpenseApprovalPage: React.FC = () => {
             </div>
 
             {/* 하단 버튼 */}
-            <div className="bg-white border-t border-stone-200 px-6 py-4 flex gap-3">
+            <div className="bg-white border-t border-stone-200 px-4 md:px-6 py-4 flex gap-2 md:gap-3">
               <button
                 onClick={() => {
                   setShowDetailModal(false);
@@ -688,10 +690,10 @@ const ExpenseApprovalPage: React.FC = () => {
 
       {/* 반려 모달 */}
       {showRejectModal && selectedExpense && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-stone-50 rounded-2xl max-w-md w-full mx-4 overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-stone-50 rounded-2xl w-full max-w-[95%] md:max-w-md overflow-hidden">
             {/* 헤더 */}
-            <div className="bg-stone-800 px-6 py-5">
+            <div className="bg-stone-800 px-4 md:px-6 py-4 md:py-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
                   <AlertCircle className="text-white" size={20} />
@@ -703,7 +705,7 @@ const ExpenseApprovalPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-4 md:p-6 space-y-4">
               <div className="bg-white rounded-xl p-4 border border-stone-200">
                 <p className="text-sm text-stone-600 mb-1">카테고리: {selectedExpense.category}</p>
                 <p className="text-sm text-stone-600 mb-1">금액: {formatAmount(selectedExpense.amount)}원</p>

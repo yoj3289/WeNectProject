@@ -91,17 +91,17 @@ const ReportManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 md:p-6 lg:p-8 space-y-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-stone-900">신고 관리</h1>
-          <p className="text-stone-500 text-sm mt-1">사용자 신고를 검토하고 처리합니다.</p>
+          <h1 className="text-xl md:text-2xl font-bold text-stone-900">신고 관리</h1>
+          <p className="text-xs md:text-sm text-stone-500 mt-1">사용자 신고를 검토하고 처리합니다.</p>
         </div>
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -161,7 +161,7 @@ const ReportManagementPage: React.FC = () => {
 
       {/* 필터 */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-200">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
             <input
@@ -169,7 +169,7 @@ const ReportManagementPage: React.FC = () => {
               placeholder="신고 대상 검색..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
             />
           </div>
           <select
@@ -178,7 +178,7 @@ const ReportManagementPage: React.FC = () => {
               setStatusFilter(e.target.value as ReportStatus | '');
               setCurrentPage(0);
             }}
-            className="px-4 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+            className="px-3 md:px-4 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white text-sm"
           >
             <option value="">전체 상태</option>
             <option value="PENDING">대기중</option>
@@ -192,7 +192,7 @@ const ReportManagementPage: React.FC = () => {
               setTypeFilter(e.target.value as ReportType | '');
               setCurrentPage(0);
             }}
-            className="px-4 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+            className="px-3 md:px-4 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white text-sm"
           >
             <option value="">전체 유형</option>
             <option value="COMMENT">댓글</option>
@@ -216,28 +216,28 @@ const ReportManagementPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[640px]">
               <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">
                     유형
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">
                     신고 대상
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider hidden md:table-cell">
                     사유
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider hidden lg:table-cell">
                     신고자
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">
                     상태
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider hidden md:table-cell">
                     접수일
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold text-stone-600 uppercase tracking-wider">
+                  <th className="px-3 md:px-6 py-3 text-center text-xs font-semibold text-stone-600 uppercase tracking-wider">
                     관리
                   </th>
                 </tr>
@@ -245,7 +245,7 @@ const ReportManagementPage: React.FC = () => {
               <tbody className="divide-y divide-stone-100">
                 {reports.map((report) => (
                   <tr key={report.reportId} className="hover:bg-stone-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <span className="p-1.5 bg-stone-100 rounded-lg">
                           {getTypeIcon(report.reportType)}
@@ -255,7 +255,7 @@ const ReportManagementPage: React.FC = () => {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 md:px-6 py-3 md:py-4">
                       <div className="max-w-xs">
                         <p className="text-sm font-medium text-stone-900 truncate">
                           {report.reportedItemTitle}
@@ -265,13 +265,13 @@ const ReportManagementPage: React.FC = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap hidden md:table-cell">
                       <span className="text-sm text-stone-700">{report.reasonLabel}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap hidden lg:table-cell">
                       <span className="text-sm text-stone-700">{report.reporterName}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
                       <span
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
                           report.status
@@ -281,12 +281,12 @@ const ReportManagementPage: React.FC = () => {
                         {report.statusLabel}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap hidden md:table-cell">
                       <span className="text-sm text-stone-500">
                         {new Date(report.createdAt).toLocaleDateString('ko-KR')}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => {
@@ -321,7 +321,7 @@ const ReportManagementPage: React.FC = () => {
 
         {/* 페이지네이션 */}
         {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-stone-200">
+          <div className="px-4 md:px-6 py-4 border-t border-stone-200">
             <Pagination
               currentPage={currentPage + 1}
               totalPages={totalPages}
@@ -334,9 +334,9 @@ const ReportManagementPage: React.FC = () => {
       {/* 상세 보기 모달 */}
       {showDetailModal && selectedReport && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+          <div className="bg-stone-50 rounded-2xl w-full max-w-[95%] md:max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
             {/* 헤더 - 다크 스타일 */}
-            <div className="bg-stone-800 px-6 py-5">
+            <div className="bg-stone-800 px-4 md:px-6 py-4 md:py-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
@@ -357,7 +357,7 @@ const ReportManagementPage: React.FC = () => {
             </div>
 
             {/* 신고 정보 카드 */}
-            <div className="bg-amber-500 px-6 py-5">
+            <div className="bg-amber-500 px-4 md:px-6 py-4 md:py-5">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-amber-100 text-sm">{REPORT_TYPE_LABELS[selectedReport.reportType]} 신고</p>
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(selectedReport.status)}`}>
@@ -386,7 +386,7 @@ const ReportManagementPage: React.FC = () => {
             </div>
 
             {/* 스크롤 가능한 콘텐츠 영역 */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-5">
               {/* STEP 1: 신고 사유 */}
               <div className="bg-white rounded-xl p-5 border border-stone-200">
                 <div className="flex items-center gap-3 mb-4">
@@ -473,9 +473,9 @@ const ReportManagementPage: React.FC = () => {
       {/* 처리 모달 */}
       {showProcessModal && selectedReport && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+          <div className="bg-stone-50 rounded-2xl w-full max-w-[95%] md:max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
             {/* 헤더 - 다크 스타일 */}
-            <div className="bg-stone-800 px-6 py-5">
+            <div className="bg-stone-800 px-4 md:px-6 py-4 md:py-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
@@ -496,7 +496,7 @@ const ReportManagementPage: React.FC = () => {
             </div>
 
             {/* 처리 대상 정보 */}
-            <div className="bg-amber-500 px-6 py-5">
+            <div className="bg-amber-500 px-4 md:px-6 py-4 md:py-5">
               <p className="text-amber-100 text-sm mb-2">처리 대상</p>
               <h3 className="text-white font-medium text-lg line-clamp-2">{selectedReport.reportedItemTitle}</h3>
               <div className="bg-white/20 backdrop-blur rounded-xl px-4 py-3 mt-3">
@@ -508,7 +508,7 @@ const ReportManagementPage: React.FC = () => {
             </div>
 
             {/* 스크롤 가능한 콘텐츠 영역 */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-5">
               {/* 처리 결과 선택 */}
               <div className="bg-white rounded-xl p-5 border border-stone-200">
                 <div className="flex items-center gap-3 mb-4">

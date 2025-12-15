@@ -281,7 +281,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
       {/* Role Change Modal */}
       {showRoleModal && selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6">
+          <div className="bg-white rounded-2xl w-full max-w-[95%] md:max-w-2xl p-4 md:p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-800">권한 변경</h2>
               <button onClick={() => setShowRoleModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
@@ -337,7 +337,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
       {/* Activity Log Modal */}
       {showActivityLog && selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-[95%] md:max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-gray-800">활동 로그</h2>
               <button onClick={() => setShowActivityLog(false)} className="p-2 hover:bg-gray-100 rounded-lg">
@@ -379,7 +379,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
       {/* Role History Modal */}
       {showRoleHistory && selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-[95%] md:max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-gray-800">권한 변경 이력</h2>
               <button onClick={() => setShowRoleHistory(false)} className="p-2 hover:bg-gray-100 rounded-lg">
@@ -414,9 +414,9 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
       {/* User Detail Modal */}
       {showUserModal && selectedUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+          <div className="bg-stone-50 rounded-2xl w-full max-w-[95%] md:max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
             {/* 헤더 - 다크 스타일 */}
-            <div className="bg-stone-800 px-6 py-5">
+            <div className="bg-stone-800 px-4 md:px-6 py-4 md:py-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
@@ -440,7 +440,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
             </div>
 
             {/* 사용자 정보 카드 */}
-            <div className="bg-amber-500 px-6 py-5">
+            <div className="bg-amber-500 px-4 md:px-6 py-4 md:py-5">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-amber-100 text-sm">회원 정보</p>
                 <div className="flex items-center gap-2">
@@ -474,7 +474,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
             </div>
 
             {/* 스크롤 가능한 콘텐츠 영역 */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-5">
               {/* STEP 1: 활동 통계 */}
               <div className="bg-white rounded-xl p-5 border border-stone-200">
                 <div className="flex items-center gap-3 mb-4">
@@ -596,10 +596,10 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({
       )}
 
       {/* Main Content */}
-      <div className="p-8">
+      <div className="p-4 md:p-6 lg:p-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">사용자 관리</h1>
-          <p className="text-sm text-gray-600 mt-1">회원 정보 및 권한을 관리합니다</p>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">사용자 관리</h1>
+          <p className="text-xs md:text-sm text-gray-600 mt-1">회원 정보 및 권한을 관리합니다</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">

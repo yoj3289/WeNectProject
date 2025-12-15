@@ -133,26 +133,26 @@ const SystemMonitoringDashboard: React.FC = () => {
   const serverStatus = getServerStatus();
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">시스템 모니터링</h2>
-          <p className="text-sm text-gray-600 mt-1">실시간 서버 상태 및 성능 지표</p>
+          <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-800">시스템 모니터링</h2>
+          <p className="text-xs md:text-sm text-gray-600 mt-1">실시간 서버 상태 및 성능 지표</p>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-600">마지막 업데이트</p>
-          <p className="text-lg font-semibold text-gray-800">{currentTime.toLocaleTimeString('ko-KR')}</p>
+        <div className="text-left md:text-right">
+          <p className="text-xs md:text-sm text-gray-600">마지막 업데이트</p>
+          <p className="text-base md:text-lg font-semibold text-gray-800">{currentTime.toLocaleTimeString('ko-KR')}</p>
         </div>
       </div>
 
       {/* 시스템 정보 카드 */}
-      <div className="grid grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-6">
         {/* 서버 상태 */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-6 hover:shadow-md transition">
+          <div className="flex items-center justify-between mb-3 md:mb-4">
             <div className="flex items-center gap-2">
-              <Server size={20} className="text-blue-500" />
-              <h3 className="font-bold text-gray-800">서버 상태</h3>
+              <Server size={18} className="text-blue-500 md:w-5 md:h-5" />
+              <h3 className="text-sm md:text-base font-bold text-gray-800">서버 상태</h3>
             </div>
             {getStatusIcon(serverStatus)}
           </div>
@@ -210,11 +210,11 @@ const SystemMonitoringDashboard: React.FC = () => {
         </div>
 
         {/* JVM 정보 */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-6 hover:shadow-md transition">
+          <div className="flex items-center justify-between mb-3 md:mb-4">
             <div className="flex items-center gap-2">
-              <Cpu size={20} className="text-purple-500" />
-              <h3 className="font-bold text-gray-800">JVM</h3>
+              <Cpu size={18} className="text-purple-500 md:w-5 md:h-5" />
+              <h3 className="text-sm md:text-base font-bold text-gray-800">JVM</h3>
             </div>
           </div>
 
@@ -246,11 +246,11 @@ const SystemMonitoringDashboard: React.FC = () => {
         </div>
 
         {/* 데이터베이스 */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-6 hover:shadow-md transition">
+          <div className="flex items-center justify-between mb-3 md:mb-4">
             <div className="flex items-center gap-2">
-              <Database size={20} className="text-orange-500" />
-              <h3 className="font-bold text-gray-800">데이터베이스</h3>
+              <Database size={18} className="text-orange-500 md:w-5 md:h-5" />
+              <h3 className="text-sm md:text-base font-bold text-gray-800">데이터베이스</h3>
             </div>
             {metrics.database.isConnected ? (
               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
@@ -323,13 +323,13 @@ const SystemMonitoringDashboard: React.FC = () => {
         </div>
 
         {/* 시스템 정보 */}
-        <div className="col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition">
-          <div className="flex items-center gap-2 mb-4">
-            <HardDrive size={20} className="text-green-500" />
-            <h3 className="font-bold text-gray-800">시스템 정보</h3>
+        <div className="md:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-6 hover:shadow-md transition">
+          <div className="flex items-center gap-2 mb-3 md:mb-4">
+            <HardDrive size={18} className="text-green-500 md:w-5 md:h-5" />
+            <h3 className="text-sm md:text-base font-bold text-gray-800">시스템 정보</h3>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 md:gap-4">
             <div>
               <p className="text-xs text-gray-600 mb-1">운영체제</p>
               <p className="text-sm font-semibold text-gray-800">{metrics.system.osName}</p>
@@ -354,13 +354,13 @@ const SystemMonitoringDashboard: React.FC = () => {
       </div>
 
       {/* 주요 알림 */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <AlertTriangle size={20} className="text-orange-500" />
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-6">
+        <h3 className="text-base md:text-lg font-bold text-gray-800 mb-3 md:mb-4 flex items-center gap-2">
+          <AlertTriangle size={18} className="text-orange-500 md:w-5 md:h-5" />
           시스템 상태 알림
         </h3>
 
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {metrics.cpuUsage > 80 && (
             <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
               <p className="text-sm font-semibold text-yellow-800">CPU 사용률 높음</p>

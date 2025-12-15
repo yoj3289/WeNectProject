@@ -181,9 +181,9 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
       {/* Detail Modal */}
       {showDetailModal && selectedApproval && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+          <div className="bg-stone-50 rounded-2xl w-full max-w-[95%] md:max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
             {/* 헤더 - 다크 스타일 */}
-            <div className="bg-stone-800 px-6 py-5">
+            <div className="bg-stone-800 px-4 md:px-6 py-4 md:py-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
@@ -207,7 +207,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
             </div>
 
             {/* 기관 정보 카드 */}
-            <div className="bg-amber-500 px-6 py-5">
+            <div className="bg-amber-500 px-4 md:px-6 py-4 md:py-5">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-amber-100 text-sm">기관 회원가입 신청</p>
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedApproval.status)}`}>
@@ -236,7 +236,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
             </div>
 
             {/* 스크롤 가능한 콘텐츠 영역 */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-5">
               {/* STEP 1: 기관 정보 */}
               <div className="bg-white rounded-xl p-5 border border-stone-200">
                 <div className="flex items-center gap-3 mb-4">
@@ -353,7 +353,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
       {/* Approve Modal */}
       {showApproveModal && selectedApproval && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6">
+          <div className="bg-white rounded-2xl w-full max-w-[95%] md:max-w-2xl p-4 md:p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-800">기관 회원가입 승인</h2>
               <button onClick={() => setShowApproveModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
@@ -399,9 +399,9 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
       {/* Reject Modal */}
       {showRejectModal && selectedApproval && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-stone-50 rounded-2xl max-w-2xl w-full overflow-hidden">
+          <div className="bg-stone-50 rounded-2xl w-full max-w-[95%] md:max-w-2xl overflow-hidden">
             {/* 헤더 */}
-            <div className="bg-stone-800 px-6 py-5">
+            <div className="bg-stone-800 px-4 md:px-6 py-4 md:py-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
@@ -418,7 +418,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
               </div>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-4 md:p-6 space-y-4">
               <div className="bg-amber-500 rounded-xl p-4">
                 <p className="text-sm text-white">
                   <strong>{selectedApproval.organizationName}</strong>의 회원가입을 거절하시겠습니까?
@@ -481,24 +481,24 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
       )}
 
       {/* Main Content */}
-      <div className="p-8">
+      <div className="p-4 md:p-6 lg:p-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">기관 회원가입 승인</h1>
-            <p className="text-sm text-gray-600 mt-1">기관 회원가입 신청을 검토하고 승인/거절 처리합니다</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800">기관 회원가입 승인</h1>
+            <p className="text-xs md:text-sm text-gray-600 mt-1">기관 회원가입 신청을 검토하고 승인/거절 처리합니다</p>
           </div>
           <button
             onClick={() => loadApprovals()}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold transition disabled:opacity-50"
+            className="flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold transition disabled:opacity-50 text-xs md:text-sm"
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-            새로고침
+            <span className="hidden sm:inline">새로고침</span>
           </button>
         </div>
 
         {/* 통계 카드 */}
-        <div className="grid grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 mb-6">
           <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -535,7 +535,8 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div className="p-6 border-b border-gray-200 flex items-center gap-4">
+          <div className="p-4 md:p-6 border-b border-gray-200">
+            <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
               <input
@@ -543,31 +544,32 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="기관명, 대표자명, 이메일로 검색..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
               />
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
             >
               <option value="all">모든 상태</option>
               <option value="pending">승인대기</option>
               <option value="approved">승인완료</option>
               <option value="rejected">거절</option>
             </select>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[640px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기관명</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">대표자명</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">연락처</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">신청일</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">상태</th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기관명</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden md:table-cell">대표자명</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden lg:table-cell">연락처</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">신청일</th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">상태</th>
+                  <th className="px-3 md:px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -586,17 +588,17 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
                 ) : (
                   paginatedApprovals.map((approval) => (
                   <tr key={approval.userId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium text-gray-800">{approval.userName}</td>
-                    <td className="px-6 py-4 text-gray-600">{approval.representativeName}</td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">{approval.phone}</td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">{approval.appliedDate}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 md:px-6 py-3 md:py-4 font-medium text-gray-800 text-sm">{approval.userName}</td>
+                    <td className="px-3 md:px-6 py-3 md:py-4 text-gray-600 text-sm hidden md:table-cell">{approval.representativeName}</td>
+                    <td className="px-3 md:px-6 py-3 md:py-4 text-gray-600 text-sm hidden lg:table-cell">{approval.phone}</td>
+                    <td className="px-3 md:px-6 py-3 md:py-4 text-gray-600 text-xs md:text-sm">{approval.appliedDate}</td>
+                    <td className="px-3 md:px-6 py-3 md:py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(approval.status)}`}>
                         {getStatusLabel(approval.status)}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-2">
+                    <td className="px-3 md:px-6 py-3 md:py-4">
+                      <div className="flex items-center justify-center gap-1 md:gap-2">
                         <button
                           onClick={() => {
                             setSelectedApproval(approval);
@@ -640,7 +642,7 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
           </div>
 
           {/* 푸터 - 페이지네이션 */}
-          <div className="p-6 border-t border-gray-200 flex items-center justify-between">
+          <div className="p-4 md:p-6 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between gap-3">
             <p className="text-sm text-gray-600">
               총 <strong>{filteredApprovals.length}</strong>건
               {filteredApprovals.length > 0 && (

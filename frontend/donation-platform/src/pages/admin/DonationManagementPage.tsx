@@ -166,9 +166,9 @@ const DonationManagementPage: React.FC = () => {
       {/* 상세 모달 */}
       {showDetailModal && selectedDonation && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-stone-50 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+          <div className="bg-stone-50 rounded-2xl w-full max-w-[95%] md:max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
             {/* 헤더 - 다크 스타일 */}
-            <div className="bg-stone-800 px-6 py-5">
+            <div className="bg-stone-800 px-4 md:px-6 py-4 md:py-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
@@ -189,7 +189,7 @@ const DonationManagementPage: React.FC = () => {
             </div>
 
             {/* 프로젝트 정보 카드 */}
-            <div className="bg-amber-500 px-6 py-5">
+            <div className="bg-amber-500 px-4 md:px-6 py-4 md:py-5">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-amber-100 text-sm">기부 프로젝트</p>
                 <div className="flex items-center gap-2">
@@ -226,7 +226,7 @@ const DonationManagementPage: React.FC = () => {
             </div>
 
             {/* 스크롤 가능한 콘텐츠 영역 */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-5">
               {/* STEP 1: 기부자 정보 */}
               <div className="bg-white rounded-xl p-5 border border-stone-200">
                 <div className="flex items-center gap-3 mb-4">
@@ -304,11 +304,11 @@ const DonationManagementPage: React.FC = () => {
       )}
 
       {/* 메인 콘텐츠 */}
-      <div className="p-8">
+      <div className="p-4 md:p-6 lg:p-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">기부 관리</h1>
-            <p className="text-sm text-gray-600 mt-1">
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800">기부 관리</h1>
+            <p className="text-xs md:text-sm text-gray-600 mt-1">
               {activeTab === 'donations'
                 ? '전체 기부 내역을 조회합니다'
                 : '응원 메시지를 확인하고 홈페이지 노출을 관리합니다'}
@@ -317,18 +317,18 @@ const DonationManagementPage: React.FC = () => {
           <button
             onClick={() => refetch()}
             disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold transition disabled:opacity-50"
+            className="flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold transition disabled:opacity-50 text-xs md:text-sm"
           >
             <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
-            새로고침
+            <span className="hidden sm:inline">새로고침</span>
           </button>
         </div>
 
         {/* 탭 네비게이션 */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex flex-col sm:flex-row gap-2 mb-6">
           <button
             onClick={() => setActiveTab('donations')}
-            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition ${
+            className={`flex items-center justify-center gap-2 px-4 md:px-5 py-2 md:py-3 rounded-xl font-semibold transition text-sm ${
               activeTab === 'donations'
                 ? 'bg-amber-500 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -339,7 +339,7 @@ const DonationManagementPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('messages')}
-            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition ${
+            className={`flex items-center justify-center gap-2 px-4 md:px-5 py-2 md:py-3 rounded-xl font-semibold transition text-sm ${
               activeTab === 'messages'
                 ? 'bg-amber-500 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -398,40 +398,40 @@ const DonationManagementPage: React.FC = () => {
               <>
                 {/* 데스크톱 테이블 뷰 */}
                 <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full">
+                  <table className="w-full min-w-[640px]">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기부일</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기부자</th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">금액</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
+                        <th className="px-3 md:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기부일</th>
+                        <th className="px-3 md:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">프로젝트</th>
+                        <th className="px-3 md:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">기부자</th>
+                        <th className="px-3 md:px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">금액</th>
+                        <th className="px-3 md:px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">액션</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {donations.map((donation: any) => (
                         <tr key={donation.donationId} className="hover:bg-gray-50">
-                          <td className="px-4 py-3">
+                          <td className="px-3 md:px-4 py-3">
                             <span className="text-gray-600 text-sm whitespace-nowrap">
                               {formatDate(donation.donatedAt || donation.approvedAt || donation.createdAt)}
                             </span>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 md:px-4 py-3">
                             <span className="font-medium text-gray-800 line-clamp-1 max-w-[200px]">
                               {donation.projectTitle}
                             </span>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 md:px-4 py-3">
                             <span className="text-gray-700 text-sm">
                               {donation.isAnonymous ? '익명' : donation.donorName}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-right">
+                          <td className="px-3 md:px-4 py-3 text-right">
                             <span className="text-gray-800 font-bold whitespace-nowrap">
                               {formatAmount(donation.amount)}
                             </span>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 md:px-4 py-3">
                             <div className="flex items-center justify-center">
                               <button
                                 onClick={() => {

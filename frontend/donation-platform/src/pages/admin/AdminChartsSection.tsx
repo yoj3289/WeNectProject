@@ -118,46 +118,47 @@ const AdminChartsSection: React.FC = () => {
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
       {/* 탭 영역 */}
       <div className="border-b border-gray-200">
-        <div className="flex items-center justify-between px-6 py-3">
-          <div className="flex">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-3 md:px-6 py-3">
+          <div className="flex overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-5 py-2 text-sm font-medium rounded-lg mr-2 transition-colors ${
+                className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-1.5 md:py-2 text-xs md:text-sm font-medium rounded-lg mr-2 transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-amber-100 text-amber-700'
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                <tab.icon size={18} />
-                {tab.label}
+                <tab.icon size={16} className="md:w-[18px] md:h-[18px]" />
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.label.replace(' 추이', '').replace(' 현황', '')}</span>
               </button>
             ))}
           </div>
 
           {/* 기간 선택 */}
-          <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+          <div className="flex items-center gap-1.5 md:gap-2 bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setPeriod('weekly')}
-              className={`flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              className={`flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium rounded-md transition-colors ${
                 period === 'weekly'
                   ? 'bg-white text-amber-700 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              <Calendar size={14} />
+              <Calendar size={12} className="md:w-[14px] md:h-[14px]" />
               주간
             </button>
             <button
               onClick={() => setPeriod('monthly')}
-              className={`flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              className={`flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium rounded-md transition-colors ${
                 period === 'monthly'
                   ? 'bg-white text-amber-700 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              <Calendar size={14} />
+              <Calendar size={12} className="md:w-[14px] md:h-[14px]" />
               월간
             </button>
           </div>
@@ -165,7 +166,7 @@ const AdminChartsSection: React.FC = () => {
       </div>
 
       {/* 차트 영역 */}
-      <div className="p-6">
+      <div className="p-3 md:p-6">
         {isCurrentLoading ? (
           <SkeletonChart />
         ) : isCurrentError ? (
@@ -176,14 +177,14 @@ const AdminChartsSection: React.FC = () => {
             {activeTab === 'donation' && (
               <div>
                 {/* 요약 통계 */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-amber-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">총 기부 금액 ({period === 'weekly' ? '8주간' : '12개월'})</p>
-                    <p className="text-2xl font-bold text-amber-600">{formatAmount(donationTotals.amount)}원</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-6">
+                  <div className="bg-amber-50 rounded-lg p-3 md:p-4">
+                    <p className="text-xs md:text-sm text-gray-600 mb-1">총 기부 금액 ({period === 'weekly' ? '8주간' : '12개월'})</p>
+                    <p className="text-lg md:text-2xl font-bold text-amber-600">{formatAmount(donationTotals.amount)}원</p>
                   </div>
-                  <div className="bg-stone-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">총 기부 건수</p>
-                    <p className="text-2xl font-bold text-stone-600">{donationTotals.count}건</p>
+                  <div className="bg-stone-50 rounded-lg p-3 md:p-4">
+                    <p className="text-xs md:text-sm text-gray-600 mb-1">총 기부 건수</p>
+                    <p className="text-lg md:text-2xl font-bold text-stone-600">{donationTotals.count}건</p>
                   </div>
                 </div>
 
@@ -253,14 +254,14 @@ const AdminChartsSection: React.FC = () => {
             {activeTab === 'user' && (
               <div>
                 {/* 요약 통계 */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-amber-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">일반 회원 ({period === 'weekly' ? '8주간' : '12개월'})</p>
-                    <p className="text-2xl font-bold text-amber-600">{userTotals.individual}명</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-6">
+                  <div className="bg-amber-50 rounded-lg p-3 md:p-4">
+                    <p className="text-xs md:text-sm text-gray-600 mb-1">일반 회원 ({period === 'weekly' ? '8주간' : '12개월'})</p>
+                    <p className="text-lg md:text-2xl font-bold text-amber-600">{userTotals.individual}명</p>
                   </div>
-                  <div className="bg-stone-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">기관 회원</p>
-                    <p className="text-2xl font-bold text-stone-600">{userTotals.organization}명</p>
+                  <div className="bg-stone-50 rounded-lg p-3 md:p-4">
+                    <p className="text-xs md:text-sm text-gray-600 mb-1">기관 회원</p>
+                    <p className="text-lg md:text-2xl font-bold text-stone-600">{userTotals.organization}명</p>
                   </div>
                 </div>
 
@@ -314,43 +315,43 @@ const AdminChartsSection: React.FC = () => {
             {activeTab === 'project' && (
               <div>
                 {/* 요약 통계 카드 */}
-                <div className="grid grid-cols-5 gap-3 mb-6">
-                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <div className="grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3 mb-4 md:mb-6">
+                  <div className="bg-gray-50 rounded-lg p-2 md:p-3 text-center">
                     <p className="text-xs text-gray-500 mb-1">전체</p>
-                    <p className="text-xl font-bold text-gray-800">{projectStats.total}</p>
+                    <p className="text-base md:text-xl font-bold text-gray-800">{projectStats.total}</p>
                   </div>
-                  <div className="bg-blue-50 rounded-lg p-3 text-center">
+                  <div className="bg-blue-50 rounded-lg p-2 md:p-3 text-center">
                     <p className="text-xs text-gray-500 mb-1">진행 중</p>
-                    <p className="text-xl font-bold text-blue-600">{projectStats.ongoing}</p>
+                    <p className="text-base md:text-xl font-bold text-blue-600">{projectStats.ongoing}</p>
                   </div>
-                  <div className="bg-amber-50 rounded-lg p-3 text-center">
+                  <div className="bg-amber-50 rounded-lg p-2 md:p-3 text-center">
                     <p className="text-xs text-gray-500 mb-1">결산 중</p>
-                    <p className="text-xl font-bold text-amber-600">{projectStats.settlement}</p>
+                    <p className="text-base md:text-xl font-bold text-amber-600">{projectStats.settlement}</p>
                   </div>
-                  <div className="bg-green-50 rounded-lg p-3 text-center">
+                  <div className="bg-green-50 rounded-lg p-2 md:p-3 text-center">
                     <p className="text-xs text-gray-500 mb-1">종료</p>
-                    <p className="text-xl font-bold text-green-600">{projectStats.closed}</p>
+                    <p className="text-base md:text-xl font-bold text-green-600">{projectStats.closed}</p>
                   </div>
-                  <div className="bg-red-50 rounded-lg p-3 text-center">
+                  <div className="bg-red-50 rounded-lg p-2 md:p-3 text-center">
                     <p className="text-xs text-gray-500 mb-1">반려</p>
-                    <p className="text-xl font-bold text-red-500">{projectStats.rejected}</p>
+                    <p className="text-base md:text-xl font-bold text-red-500">{projectStats.rejected}</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                   {/* 파이 차트 - 프로젝트 상태별 분포 */}
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">프로젝트 상태 분포</h4>
+                    <h4 className="text-xs md:text-sm font-medium text-gray-700 mb-2 md:mb-3">프로젝트 상태 분포</h4>
                     {pieData.length > 0 ? (
-                      <div style={{ width: '100%', height: 260, minWidth: 0 }}>
+                      <div style={{ width: '100%', height: 220, minWidth: 0 }} className="md:h-[260px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                             <Pie
                               data={pieData}
                               cx="50%"
                               cy="50%"
-                              innerRadius={50}
-                              outerRadius={80}
+                              innerRadius={40}
+                              outerRadius={70}
                               paddingAngle={2}
                               dataKey="value"
                               label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
@@ -365,7 +366,7 @@ const AdminChartsSection: React.FC = () => {
                         </ResponsiveContainer>
                       </div>
                     ) : (
-                      <div className="h-64 flex items-center justify-center text-gray-400 text-sm">
+                      <div className="h-56 md:h-64 flex items-center justify-center text-gray-400 text-xs md:text-sm">
                         프로젝트 데이터가 없습니다
                       </div>
                     )}
@@ -373,23 +374,23 @@ const AdminChartsSection: React.FC = () => {
 
                   {/* 바 차트 - 프로젝트 추이 */}
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">프로젝트 추이 ({period === 'weekly' ? '8주간' : '12개월'})</h4>
+                    <h4 className="text-xs md:text-sm font-medium text-gray-700 mb-2 md:mb-3">프로젝트 추이 ({period === 'weekly' ? '8주간' : '12개월'})</h4>
                     {projectChartData.length > 0 ? (
-                      <div style={{ width: '100%', height: 260, minWidth: 0 }}>
+                      <div style={{ width: '100%', height: 220, minWidth: 0 }} className="md:h-[260px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={projectChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6B7280' }} />
-                            <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} />
+                            <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#6B7280' }} className="md:text-[10px]" />
+                            <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} className="md:text-[10px]" />
                             <Tooltip />
-                            <Legend wrapperStyle={{ fontSize: 11 }} />
+                            <Legend wrapperStyle={{ fontSize: 10 }} />
                             <Bar dataKey="newProjects" name="신규" fill="#60A5FA" radius={[4, 4, 0, 0]} />
                             <Bar dataKey="completedProjects" name="완료" fill="#34D399" radius={[4, 4, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
                     ) : (
-                      <div className="h-64 flex items-center justify-center text-gray-400 text-sm">
+                      <div className="h-56 md:h-64 flex items-center justify-center text-gray-400 text-xs md:text-sm">
                         프로젝트 추이 데이터가 없습니다
                       </div>
                     )}

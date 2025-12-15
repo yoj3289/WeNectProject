@@ -81,42 +81,61 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
   });
 
   return (
-    <div className={`fixed left-0 top-0 h-screen bg-stone-800 text-white transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'}`}>
-      {/* 헤더 */}
-      <div className="p-4 border-b border-stone-700 flex items-center justify-between">
-        {sidebarOpen && <h1 className="text-xl font-bold">위넥트 관리자</h1>}
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 hover:bg-stone-700 rounded-lg"
-        >
-          <Menu size={20} />
-        </button>
-      </div>
+    <>
+      {/* 모바일 오버레이 배경 */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-      {/* 네비게이션 메뉴 */}
-      <nav className="p-4 space-y-2">
-        {visibleMenuItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.id}
-              onClick={() => {
-                setActiveMenu(item.id);
-                navigate(`/admin/${item.id}`);
-              }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                activeMenu === item.id
-                  ? 'bg-amber-500 text-white'
-                  : 'text-stone-300 hover:bg-stone-700'
-              }`}
-            >
-              <Icon size={20} />
-              {sidebarOpen && <span className="font-medium">{item.label}</span>}
-            </button>
-          );
-        })}
-      </nav>
-    </div>
+      {/* 사이드바 */}
+      <div className={`fixed left-0 top-0 h-screen bg-stone-800 text-white transition-all duration-300 z-40 ${
+        sidebarOpen
+          ? 'w-64 translate-x-0'
+          : 'w-64 -translate-x-full lg:translate-x-0 lg:w-20'
+      }`}>
+        {/* 헤더 */}
+        <div className="p-4 border-b border-stone-700 flex items-center justify-between">
+          {sidebarOpen && <h1 className="text-base md:text-xl font-bold">위넥트 관리자</h1>}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 hover:bg-stone-700 rounded-lg"
+          >
+            <Menu size={20} />
+          </button>
+        </div>
+
+        {/* 네비게이션 메뉴 */}
+        <nav className="p-4 space-y-2">
+          {visibleMenuItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveMenu(item.id);
+                  navigate(`/admin/${item.id}`);
+                  // 모바일에서는 메뉴 클릭 후 사이드바 닫기
+                  if (window.innerWidth < 1024) {
+                    setSidebarOpen(false);
+                  }
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  activeMenu === item.id
+                    ? 'bg-amber-500 text-white'
+                    : 'text-stone-300 hover:bg-stone-700'
+                }`}
+              >
+                <Icon size={20} />
+                {sidebarOpen && <span className="text-sm md:text-base font-medium">{item.label}</span>}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+    </>
   );
 };
 
