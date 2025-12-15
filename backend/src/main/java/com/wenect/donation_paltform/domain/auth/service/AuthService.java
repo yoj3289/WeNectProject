@@ -41,8 +41,11 @@ public class AuthService {
 
     private final ActivityLogService activityLogService;
 
+    /**
+     * 기관 회원가입 (프로필 이미지 포함)
+     */
     @Transactional
-    public SignupResponseDto signup(SignupRequestDto dto, MultipartFile file) {
+    public SignupResponseDto signup(SignupRequestDto dto, MultipartFile file, MultipartFile profileImage) {
         // 1. 이메일 중복 확인
         if (userRepository.existsByEmail(dto.getEmail())) {
             throw new DuplicateEmailException();
@@ -52,10 +55,11 @@ public class AuthService {
         System.out.println("========== 회원가입 시작 ==========");
         System.out.println("UserType: " + dto.getUserType());
         System.out.println("File: " + (file != null ? file.getOriginalFilename() : "null"));
+        System.out.println("ProfileImage: " + (profileImage != null ? profileImage.getOriginalFilename() : "null"));
         System.out.println("OrganizationName: " + dto.getOrganizationName());
         System.out.println("BusinessNumber: " + dto.getBusinessNumber());
 
-        // 2. 파일 저장 (기관 회원인 경우)
+        // 2. 파일 저장 (기관 회원인 경우 - 사업자등록증)
         if (dto.getUserType() == User.UserType.ORGANIZATION && file != null) {
             try {
                 String filePath = fileStorageService.saveFile(file);
@@ -65,21 +69,32 @@ public class AuthService {
             }
         }
 
-        // 3. User 엔티티 생성
+        // 3. 프로필 이미지 저장 (기관 회원인 경우)
+        String profileImagePath = null;
+        if (dto.getUserType() == User.UserType.ORGANIZATION && profileImage != null && !profileImage.isEmpty()) {
+            try {
+                profileImagePath = fileStorageService.saveOrganizationImage(profileImage);
+            } catch (Exception e) {
+                throw new RuntimeException("프로필 이미지 저장 중 오류가 발생했습니다", e);
+            }
+        }
+
+        // 4. User 엔티티 생성
         User user = User.builder()
                 .email(dto.getEmail())
                 .password(passwordEncoder.encode(dto.getPassword()))
                 .userName(dto.getUserName())
                 .phone(dto.getPhone())
                 .userType(dto.getUserType())
+                .profileImage(profileImagePath)  // 프로필 이미지 설정
                 .build();
 
-        // 4. DB 저장
+        // 5. DB 저장
         User savedUser = userRepository.save(user);
 
-        // 5. 기관 회원인 경우 organizations와 파일 저장
+        // 6. 기관 회원인 경우 organizations와 파일 저장
         if (dto.getUserType() == User.UserType.ORGANIZATION) {
-            // 5-1. organizations 테이블 저장
+            // 6-1. organizations 테이블 저장
             Organization org = Organization.builder()
                     .user(savedUser)
                     .orgName(dto.getOrganizationName())
@@ -90,7 +105,7 @@ public class AuthService {
                     .build();
             Organization savedOrg = organizationRepository.save(org);
 
-            // 5-2. organization_documents 테이블에 파일 정보 저장
+            // 6-2. organization_documents 테이블에 파일 정보 저장
             if (file != null && dto.getDocumentPath() != null) {
                 OrganizationDocument document = OrganizationDocument.builder()
                         .organization(savedOrg)
@@ -103,7 +118,7 @@ public class AuthService {
             }
         }
 
-        // 6. 이메일 인증 데이터 삭제 (회원가입 완료 후 정리)
+        // 7. 이메일 인증 데이터 삭제 (회원가입 완료 후 정리)
         try {
             emailVerificationRepository.deleteByEmail(dto.getEmail());
         } catch (Exception e) {
@@ -111,8 +126,16 @@ public class AuthService {
             System.out.println("이메일 인증 데이터 삭제 실패 (무시): " + e.getMessage());
         }
 
-        // 7. 응답 DTO 변환
+        // 8. 응답 DTO 변환
         return SignupResponseDto.from(savedUser);
+    }
+
+    /**
+     * 기존 회원가입 (기존 호환성 유지 - 프로필 이미지 없이)
+     */
+    @Transactional
+    public SignupResponseDto signup(SignupRequestDto dto, MultipartFile file) {
+        return signup(dto, file, null);
     }
 
     @Transactional

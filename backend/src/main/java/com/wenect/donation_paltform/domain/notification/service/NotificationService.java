@@ -8,6 +8,7 @@ import com.wenect.donation_paltform.domain.notification.entity.Notification;
 import com.wenect.donation_paltform.domain.notification.repository.NotificationRepository;
 import com.wenect.donation_paltform.domain.user.dto.NotificationSettingsDto;
 import com.wenect.donation_paltform.domain.user.service.UserService;
+import com.wenect.donation_paltform.global.websocket.NotificationWebSocketHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final ObjectMapper objectMapper;
     private final UserService userService;
+    private final NotificationWebSocketHandler webSocketHandler;
 
     /**
      * 알림 설정 유형
@@ -101,6 +103,9 @@ public class NotificationService {
             log.info("알림 생성 완료 - userId: {}, type: {}, notificationId: {}",
                     userId, type, saved.getNotificationId());
 
+            // WebSocket으로 실시간 알림 전송
+            sendRealTimeNotification(userId, saved);
+
             return saved;
 
         } catch (JsonProcessingException e) {
@@ -147,6 +152,9 @@ public class NotificationService {
         notification.markAsRead();
         notificationRepository.save(notification);
 
+        // WebSocket으로 읽지 않은 알림 개수 업데이트
+        sendUnreadCountUpdate(userId);
+
         log.info("알림 읽음 처리 - notificationId: {}, userId: {}", notificationId, userId);
     }
 
@@ -163,6 +171,9 @@ public class NotificationService {
         }
 
         notificationRepository.saveAll(unreadNotifications);
+
+        // WebSocket으로 읽지 않은 알림 개수 업데이트 (0으로)
+        webSocketHandler.sendUnreadCountUpdate(userId, 0);
 
         log.info("모든 알림 읽음 처리 - userId: {}, count: {}", userId, unreadNotifications.size());
     }
@@ -528,5 +539,51 @@ public class NotificationService {
         );
 
         createNotification(userId, "deadline_soon", "project", title, message, link, metadata);
+    }
+
+    // ==================== WebSocket 실시간 알림 헬퍼 메서드 ====================
+
+    /**
+     * WebSocket으로 실시간 알림 전송
+     */
+    private void sendRealTimeNotification(Long userId, Notification notification) {
+        try {
+            NotificationResponse response = NotificationResponse.from(notification);
+            webSocketHandler.sendNotificationToUser(userId, response);
+
+            // 읽지 않은 알림 개수도 함께 업데이트
+            sendUnreadCountUpdate(userId);
+
+        } catch (Exception e) {
+            // WebSocket 전송 실패해도 알림 저장은 성공으로 처리
+            log.warn("WebSocket 실시간 알림 전송 실패 - userId: {}, notificationId: {}",
+                    userId, notification.getNotificationId(), e);
+        }
+    }
+
+    /**
+     * WebSocket으로 읽지 않은 알림 개수 업데이트 전송
+     */
+    private void sendUnreadCountUpdate(Long userId) {
+        try {
+            long unreadCount = notificationRepository.countByUserIdAndIsReadFalse(userId);
+            webSocketHandler.sendUnreadCountUpdate(userId, unreadCount);
+        } catch (Exception e) {
+            log.warn("WebSocket 읽지 않은 알림 개수 업데이트 실패 - userId: {}", userId, e);
+        }
+    }
+
+    /**
+     * 사용자가 온라인인지 확인
+     */
+    public boolean isUserOnline(Long userId) {
+        return webSocketHandler.isUserOnline(userId);
+    }
+
+    /**
+     * 현재 온라인 사용자 수 조회
+     */
+    public int getOnlineUserCount() {
+        return webSocketHandler.getConnectedUserCount();
     }
 }

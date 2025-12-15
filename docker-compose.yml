@@ -68,6 +68,7 @@ services:
       - wenect-network
     volumes:
       - ./uploads:/usr/share/nginx/html/uploads  # 업로드 파일 서빙
+      - /etc/letsencrypt:/etc/letsencrypt:ro  # SSL 인증서 마운트
 
 volumes:
   mysql_data:

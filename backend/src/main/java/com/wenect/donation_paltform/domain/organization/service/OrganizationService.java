@@ -3,6 +3,8 @@ package com.wenect.donation_paltform.domain.organization.service;
 import com.wenect.donation_paltform.domain.auth.entity.User;
 import com.wenect.donation_paltform.domain.auth.repository.UserRepository;
 import com.wenect.donation_paltform.domain.organization.dto.OrganizationListResponse;
+import com.wenect.donation_paltform.domain.organization.dto.OrganizationProfileResponseDto;
+import com.wenect.donation_paltform.domain.organization.dto.OrganizationProfileUpdateDto;
 import com.wenect.donation_paltform.domain.organization.dto.OrganizationStatsResponse;
 import com.wenect.donation_paltform.domain.organization.entity.Organization;
 import com.wenect.donation_paltform.domain.organization.entity.OrganizationDocument;
@@ -239,8 +241,8 @@ public class OrganizationService {
                             .orgId(org.getOrgId())
                             .orgName(org.getOrgName())
                             .representative(org.getRepresentative())
-                            .description(null) // User 엔티티에 bio 필드 없음
-                            .logoUrl(null) // User 엔티티에 profileImage 필드 없음
+                            .description(org.getUser().getBio())
+                            .logoUrl(org.getUser().getProfileImage())
                             .totalProjects(totalProjects)
                             .activeProjects(activeProjects)
                             .settlementProjects(settlementProjects)
@@ -277,5 +279,77 @@ public class OrganizationService {
         // 6. Page 객체 생성
         Pageable pageable = PageRequest.of(page, size);
         return new org.springframework.data.domain.PageImpl<>(pagedResponses, pageable, responses.size());
+    }
+
+    /**
+     * 기관 프로필 조회
+     *
+     * @param userId 사용자 ID
+     * @return 기관 프로필 정보
+     */
+    @Transactional(readOnly = true)
+    public OrganizationProfileResponseDto getOrganizationProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        Organization organization = organizationRepository.findByUser_UserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
+
+        return OrganizationProfileResponseDto.from(organization, user);
+    }
+
+    /**
+     * 기관 프로필 수정
+     * - bio(소개글)만 수정 가능
+     * - 기관명, 대표자명 등은 재심사 필요
+     *
+     * @param userId 사용자 ID
+     * @param updateDto 수정 정보
+     * @return 수정된 프로필 정보
+     */
+    @Transactional
+    public OrganizationProfileResponseDto updateOrganizationProfile(Long userId, OrganizationProfileUpdateDto updateDto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        Organization organization = organizationRepository.findByUser_UserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
+
+        // 소개글 수정
+        if (updateDto.getBio() != null) {
+            user.setBio(updateDto.getBio());
+        }
+
+        userRepository.save(user);
+
+        return OrganizationProfileResponseDto.from(organization, user);
+    }
+
+    /**
+     * 기관 프로필 이미지 수정
+     *
+     * @param userId 사용자 ID
+     * @param profileImage 프로필 이미지 파일
+     * @return 수정된 프로필 정보
+     */
+    @Transactional
+    public OrganizationProfileResponseDto updateOrganizationProfileImage(Long userId, MultipartFile profileImage) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        Organization organization = organizationRepository.findByUser_UserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
+
+        try {
+            // 기존 이미지 삭제 로직 (필요시)
+            // 새 이미지 저장
+            String imageUrl = fileStorageService.saveOrganizationImage(profileImage);
+            user.setProfileImage(imageUrl);
+            userRepository.save(user);
+        } catch (Exception e) {
+            throw new RuntimeException("프로필 이미지 저장 중 오류가 발생했습니다.", e);
+        }
+
+        return OrganizationProfileResponseDto.from(organization, user);
     }
 }

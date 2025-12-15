@@ -1,6 +1,8 @@
 package com.wenect.donation_paltform.domain.organization.controller;
 
 import com.wenect.donation_paltform.domain.organization.dto.OrganizationListResponse;
+import com.wenect.donation_paltform.domain.organization.dto.OrganizationProfileResponseDto;
+import com.wenect.donation_paltform.domain.organization.dto.OrganizationProfileUpdateDto;
 import com.wenect.donation_paltform.domain.organization.dto.OrganizationStatsResponse;
 import com.wenect.donation_paltform.domain.organization.entity.Organization;
 import com.wenect.donation_paltform.domain.organization.repository.OrganizationRepository;
@@ -190,6 +192,107 @@ public class OrganizationController {
     }
 
     /**
+     * 기관 프로필 조회
+     * GET /api/organization/profile
+     *
+     * @param authHeader Authorization 헤더 (JWT 토큰)
+     * @return 기관 프로필 정보
+     */
+    @GetMapping("/profile")
+    public ResponseEntity<ApiResponse<OrganizationProfileResponseDto>> getOrganizationProfile(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        try {
+            Long userId = getUserIdFromToken(authHeader);
+            OrganizationProfileResponseDto profile = organizationService.getOrganizationProfile(userId);
+
+            return ResponseEntity.ok(
+                    ApiResponse.success(profile, "프로필 조회 성공"));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error(e.getMessage(), "INVALID_REQUEST"));
+        } catch (Exception e) {
+            log.error("프로필 조회 실패", e);
+            return ResponseEntity.internalServerError().body(
+                    ApiResponse.error("프로필 조회 중 오류가 발생했습니다.", "INTERNAL_ERROR"));
+        }
+    }
+
+    /**
+     * 기관 프로필 수정 (소개글)
+     * PUT /api/organization/profile
+     *
+     * @param authHeader Authorization 헤더 (JWT 토큰)
+     * @param updateDto 수정 정보
+     * @return 수정된 프로필 정보
+     */
+    @PutMapping("/profile")
+    public ResponseEntity<ApiResponse<OrganizationProfileResponseDto>> updateOrganizationProfile(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody OrganizationProfileUpdateDto updateDto) {
+
+        try {
+            Long userId = getUserIdFromToken(authHeader);
+            OrganizationProfileResponseDto profile = organizationService.updateOrganizationProfile(userId, updateDto);
+
+            return ResponseEntity.ok(
+                    ApiResponse.success(profile, "프로필 수정 성공"));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error(e.getMessage(), "INVALID_REQUEST"));
+        } catch (Exception e) {
+            log.error("프로필 수정 실패", e);
+            return ResponseEntity.internalServerError().body(
+                    ApiResponse.error("프로필 수정 중 오류가 발생했습니다.", "INTERNAL_ERROR"));
+        }
+    }
+
+    /**
+     * 기관 프로필 이미지 수정
+     * POST /api/organization/profile/image
+     *
+     * @param authHeader Authorization 헤더 (JWT 토큰)
+     * @param profileImage 프로필 이미지 파일
+     * @return 수정된 프로필 정보
+     */
+    @PostMapping("/profile/image")
+    public ResponseEntity<ApiResponse<OrganizationProfileResponseDto>> updateOrganizationProfileImage(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestParam("profileImage") MultipartFile profileImage) {
+
+        try {
+            // 이미지 유효성 검사
+            if (profileImage == null || profileImage.isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error("프로필 이미지가 필요합니다.", "INVALID_REQUEST"));
+            }
+
+            // 이미지 타입 검사
+            String contentType = profileImage.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error("이미지 파일만 업로드 가능합니다.", "INVALID_FILE_TYPE"));
+            }
+
+            Long userId = getUserIdFromToken(authHeader);
+            OrganizationProfileResponseDto profile = organizationService.updateOrganizationProfileImage(userId, profileImage);
+
+            return ResponseEntity.ok(
+                    ApiResponse.success(profile, "프로필 이미지 수정 성공"));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error(e.getMessage(), "INVALID_REQUEST"));
+        } catch (Exception e) {
+            log.error("프로필 이미지 수정 실패", e);
+            return ResponseEntity.internalServerError().body(
+                    ApiResponse.error("프로필 이미지 수정 중 오류가 발생했습니다.", "INTERNAL_ERROR"));
+        }
+    }
+
+    /**
      * JWT 토큰에서 기관 ID(orgId) 추출
      * User ID → Organization ID 매핑
      *
@@ -209,5 +312,20 @@ public class OrganizationController {
                 .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다. userId: " + userId));
 
         return organization.getOrgId();
+    }
+
+    /**
+     * JWT 토큰에서 User ID 추출
+     *
+     * @param authHeader Authorization 헤더
+     * @return User ID
+     */
+    private Long getUserIdFromToken(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new IllegalArgumentException("인증 토큰이 필요합니다");
+        }
+
+        String token = authHeader.substring(7); // "Bearer " 제거
+        return jwtTokenProvider.getUserId(token);
     }
 }

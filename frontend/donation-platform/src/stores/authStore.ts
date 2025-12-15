@@ -12,6 +12,7 @@ interface User {
   profileImageUrl?: string;
   organizationName?: string; // 기관명 (기관 사용자인 경우)
   createdAt?: string; // 가입일 (함께한 일수 계산용)
+  profileIncomplete?: boolean; // 프로필 미완성 여부 (기관 사용자)
 }
 
 interface AuthState {

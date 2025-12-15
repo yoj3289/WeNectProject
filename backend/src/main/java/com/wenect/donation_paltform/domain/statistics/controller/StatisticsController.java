@@ -2,7 +2,6 @@ package com.wenect.donation_paltform.domain.statistics.controller;
 
 import com.wenect.donation_paltform.domain.statistics.dto.StatisticsSummaryResponse;
 import com.wenect.donation_paltform.domain.statistics.service.StatisticsService;
-import com.wenect.donation_paltform.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

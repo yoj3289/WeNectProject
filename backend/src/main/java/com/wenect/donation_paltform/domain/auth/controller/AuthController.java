@@ -56,8 +56,9 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<SignupResponseDto>> signup(
             @Valid @RequestPart("data") SignupRequestDto dto,
-            @RequestPart(value = "file", required = false) MultipartFile file) {
-        SignupResponseDto responseDto = authService.signup(dto, file);
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            @RequestPart(value = "profileImage", required = false) MultipartFile profileImage) {
+        SignupResponseDto responseDto = authService.signup(dto, file, profileImage);
         ApiResponse<SignupResponseDto> response = ApiResponse.success(responseDto, "회원가입이 완료되었습니다");
 
         return ResponseEntity.ok(response);

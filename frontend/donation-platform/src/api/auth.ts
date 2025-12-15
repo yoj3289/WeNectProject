@@ -134,13 +134,14 @@ export interface AuthResponse {
     userName: string;
     userType: UserType;
     phone?: string;
-    profileImageUrl?: string;
+    profileImage?: string;  // 프로필 이미지 URL
     organizationName?: string;
     businessNumber?: string;
     representativeName?: string;
     createdAt?: string;
   };
   isRejected?: boolean; // 승인 거부 여부
+  profileIncomplete?: boolean; // 프로필 미완성 여부 (기관 사용자)
   rejectionInfo?: {
     rejectionReason: string; // 거부 사유
     rejectionFields: string; // 거부된 필드 목록 (JSON)

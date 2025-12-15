@@ -156,6 +156,8 @@ const SignupPage: React.FC = () => {
   const [signupBusinessNumber, setSignupBusinessNumber] = useState('');
   const [signupRepName, setSignupRepName] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);  // 기관 로고 이미지
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);  // 미리보기 URL
   const [errorMessage, setErrorMessage] = useState('');
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
@@ -359,6 +361,35 @@ const SignupPage: React.FC = () => {
     setErrorMessage('');
   };
 
+  // 프로필 이미지 업로드 핸들러
+  const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 파일 크기 제한 (2MB)
+    const maxSize = 2 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setErrorMessage('프로필 이미지는 2MB 이하여야 합니다.');
+      return;
+    }
+
+    // 이미지 파일만 허용
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage('이미지 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    // 미리보기 생성
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfileImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    setProfileImageFile(file);
+    setErrorMessage('');
+  };
+
   const validateForm = (): boolean => {
     // 이메일 중복 확인 여부
     if (!isEmailChecked) {
@@ -468,9 +499,14 @@ const SignupPage: React.FC = () => {
         type: 'application/json'
       }));
 
-      // file 파트 (기관 회원인 경우)
+      // file 파트 (기관 회원인 경우 - 사업자등록증)
       if (uploadedFile && signupType === 'organization') {
         formData.append('file', uploadedFile);
+      }
+
+      // profileImage 파트 (기관 회원인 경우 - 로고 이미지)
+      if (profileImageFile && signupType === 'organization') {
+        formData.append('profileImage', profileImageFile);
       }
 
       // FormData 전송
@@ -489,6 +525,8 @@ const SignupPage: React.FC = () => {
       setSignupBusinessNumber('');
       setSignupRepName('');
       setUploadedFile(null);
+      setProfileImageFile(null);
+      setProfileImagePreview(null);
       setIsEmailChecked(false);
       setIsEmailAvailable(false);
     } catch (error: any) {
@@ -611,11 +649,21 @@ const SignupPage: React.FC = () => {
       {/* 다음 버튼 */}
       <button
         onClick={handleNextStep}
-        className="w-full mt-6 py-3 bg-amber-500 text-stone-900 rounded-lg font-bold hover:bg-amber-400 transition-colors flex items-center justify-center gap-2"
+        disabled={!agreeTerms || !agreePrivacy}
+        className={`w-full mt-6 py-3 rounded-lg font-bold transition-colors flex items-center justify-center gap-2 ${
+          agreeTerms && agreePrivacy
+            ? 'bg-amber-500 text-stone-900 hover:bg-amber-400'
+            : 'bg-stone-300 text-stone-500 cursor-not-allowed'
+        }`}
       >
         <span>다음</span>
         <ChevronRight size={18} />
       </button>
+      {(!agreeTerms || !agreePrivacy) && (
+        <p className="text-xs text-stone-500 text-center mt-2">
+          필수 약관에 동의하시면 다음 단계로 진행할 수 있습니다.
+        </p>
+      )}
 
       <div className="text-center mt-4">
         <span className="text-sm text-stone-500">이미 계정이 있으신가요? </span>
@@ -661,6 +709,8 @@ const SignupPage: React.FC = () => {
           onClick={() => {
             setSignupType('individual');
             setUploadedFile(null);
+            setProfileImageFile(null);
+            setProfileImagePreview(null);
           }}
           disabled={isSigningUp}
           className={`flex-1 py-3 rounded-lg font-bold text-sm transition-colors disabled:cursor-not-allowed ${signupType === 'individual'
@@ -927,6 +977,52 @@ const SignupPage: React.FC = () => {
                 disabled={isSigningUp}
                 className="w-full px-3 py-2.5 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:bg-stone-100 disabled:cursor-not-allowed text-sm"
               />
+            </div>
+
+            {/* 기관 로고 이미지 */}
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+                기관 로고 이미지 <span className="text-stone-400 text-xs font-normal">(선택)</span>
+              </label>
+              <div className="flex items-center gap-4">
+                {/* 이미지 미리보기 */}
+                <div className="w-20 h-20 rounded-lg border-2 border-dashed border-stone-300 overflow-hidden flex items-center justify-center bg-stone-50">
+                  {profileImagePreview ? (
+                    <img
+                      src={profileImagePreview}
+                      alt="기관 로고 미리보기"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-stone-400 text-center">
+                      <Upload size={24} />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    id="profile-image-upload"
+                    accept="image/*"
+                    onChange={handleProfileImageUpload}
+                    disabled={isSigningUp}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="profile-image-upload"
+                    className={`inline-flex items-center gap-2 px-4 py-2 bg-stone-100 text-stone-700 rounded-lg font-medium text-sm hover:bg-stone-200 transition-colors ${isSigningUp ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                  >
+                    <Upload size={16} />
+                    {profileImageFile ? '이미지 변경' : '이미지 선택'}
+                  </label>
+                  {profileImageFile && (
+                    <p className="text-xs text-stone-500 mt-1">{profileImageFile.name}</p>
+                  )}
+                  <p className="text-xs text-stone-400 mt-1">
+                    JPG, PNG (최대 2MB) - 나중에 등록해도 됩니다
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* 기관 인증서류 첨부 */}

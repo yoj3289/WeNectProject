@@ -81,6 +81,18 @@ public class User {
     @Column(name = "last_penalty_reason", length = 500)
     private String lastPenaltyReason;
 
+    /**
+     * 프로필 이미지 URL (기관 로고 또는 개인 프로필)
+     */
+    @Column(name = "profile_image", length = 500)
+    private String profileImage;
+
+    /**
+     * 소개글/설명 (기관 소개 또는 개인 소개)
+     */
+    @Column(name = "bio", columnDefinition = "TEXT")
+    private String bio;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

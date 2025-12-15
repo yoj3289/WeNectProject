@@ -29,6 +29,7 @@ import IntroductionPage from './pages/IntroductionPage';
 import OrganizationListPage from './pages/organization/OrganizationListPage';
 import OrganizationProjectsPage from './pages/organization/OrganizationProjectsPage';
 import OrganizationDashboardPage from './pages/organization/OrganizationDashboardPage';
+import OrganizationProfilePage from './pages/organization/OrganizationProfilePage';
 import PiggyBankManagementPage from './pages/organization/PiggyBankManagementPage';
 import OrganizationProjectStatisticsPage from './pages/organization/OrganizationProjectStatisticsPage';
 import DashboardPage from './pages/admin/DashboardPage';
@@ -846,6 +847,11 @@ const AppRoutes: React.FC = () => {
               <Route path="/organization/dashboard" element={
                 <ProtectedRoute allowedUserTypes={['organization']}>
                   <OrganizationDashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/organization/profile" element={
+                <ProtectedRoute allowedUserTypes={['organization']}>
+                  <OrganizationProfilePage />
                 </ProtectedRoute>
               } />
               <Route path="/organization/projects/:projectId/piggybank" element={

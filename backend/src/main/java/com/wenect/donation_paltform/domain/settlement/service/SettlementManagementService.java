@@ -1,5 +1,12 @@
 package com.wenect.donation_paltform.domain.settlement.service;
 
+import com.wenect.donation_paltform.domain.finance.entity.FinancialAuditLog;
+import com.wenect.donation_paltform.domain.finance.entity.FinancialTransaction;
+import com.wenect.donation_paltform.domain.finance.entity.PlatformLedger.LedgerCategory;
+import com.wenect.donation_paltform.domain.finance.repository.FinancialAuditLogRepository;
+import com.wenect.donation_paltform.domain.finance.repository.FinancialTransactionRepository;
+import com.wenect.donation_paltform.domain.finance.service.LedgerService;
+import com.wenect.donation_paltform.domain.finance.service.PlatformAccountService;
 import com.wenect.donation_paltform.domain.notification.service.NotificationService;
 import com.wenect.donation_paltform.domain.piggybank.entity.PiggyBank;
 import com.wenect.donation_paltform.domain.piggybank.repository.PiggyBankRepository;
@@ -17,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,6 +51,12 @@ public class SettlementManagementService {
     private final SettlementEmailService settlementEmailService;
     private final com.wenect.donation_paltform.domain.organization.repository.OrganizationRepository organizationRepository;
     private final NotificationService notificationService;
+
+    // Finance 도메인 연동
+    private final LedgerService ledgerService;
+    private final PlatformAccountService platformAccountService;
+    private final FinancialTransactionRepository financialTransactionRepository;
+    private final FinancialAuditLogRepository financialAuditLogRepository;
 
     // ==================== 상태 전환 중앙화 메서드 ====================
 
@@ -88,21 +102,25 @@ public class SettlementManagementService {
     }
 
     /**
-     * 프로젝트 상태를 CLOSED로 전환 (결산 완료 시)
+     * 프로젝트 상태를 CLOSED로 전환 (정산 승인 완료 시)
+     * NOTE: 정산 승인 시 기관 계좌로 직접 송금 후 바로 CLOSED 상태로 전환
      */
     @Transactional
     public void transitionToClosed(Long projectId) {
         Project project = projectRepository.findById(projectId)
             .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
 
-        if (project.getStatus() != Project.ProjectStatus.SETTLEMENT) {
+        // COMPLETED 또는 SETTLEMENT 상태에서 CLOSED로 전환 가능
+        if (project.getStatus() != Project.ProjectStatus.COMPLETED &&
+            project.getStatus() != Project.ProjectStatus.SETTLEMENT) {
             throw new IllegalStateException(
-                String.format("결산 완료 불가: 현재 상태 %s (SETTLEMENT 상태여야 함)", project.getStatus()));
+                String.format("종료 전환 불가: 현재 상태 %s (COMPLETED 또는 SETTLEMENT 상태여야 함)", project.getStatus()));
         }
 
+        Project.ProjectStatus previousStatus = project.getStatus();
         project.setStatus(Project.ProjectStatus.CLOSED);
         projectRepository.save(project);
-        log.info("프로젝트 상태 전환: SETTLEMENT → CLOSED (projectId: {})", projectId);
+        log.info("프로젝트 상태 전환: {} → CLOSED (projectId: {})", previousStatus, projectId);
     }
 
     /**
@@ -237,6 +255,7 @@ public class SettlementManagementService {
 
     /**
      * 정산 승인 (관리자)
+     * NOTE: 정산 승인 시 기관의 계좌로 직접 송금 처리 (저금통 X)
      */
     @Transactional
     public SettlementResponseDto approveSettlement(Long settlementId, SettlementApproveDto approveDto) {
@@ -249,45 +268,31 @@ public class SettlementManagementService {
             throw new IllegalStateException("대기 중인 정산만 승인 가능합니다.");
         }
 
-        // 3. 저금통 조회 (이미 생성되어 있음)
-        PiggyBank piggyBank = piggyBankRepository.findById(settlement.getPiggyId())
-            .orElseThrow(() -> new IllegalArgumentException("저금통을 찾을 수 없습니다."));
-
-        // 4. 저금통에 모금액 입금
-        log.info("입금 전 저금통 상태 - piggyId: {}, projectId: {}, totalAmount: {}, balance: {}",
-            piggyBank.getPiggyId(), piggyBank.getProjectId(), piggyBank.getTotalAmount(), piggyBank.getBalance());
-
-        piggyBank.deposit(settlement.getSettlementAmount());
-
-        log.info("입금 후 저금통 상태 - piggyId: {}, projectId: {}, totalAmount: {}, balance: {}",
-            piggyBank.getPiggyId(), piggyBank.getProjectId(), piggyBank.getTotalAmount(), piggyBank.getBalance());
-
-        PiggyBank savedPiggyBank = piggyBankRepository.save(piggyBank);
-
-        log.info("저장 후 저금통 상태 - piggyId: {}, projectId: {}, totalAmount: {}, balance: {}",
-            savedPiggyBank.getPiggyId(), savedPiggyBank.getProjectId(), savedPiggyBank.getTotalAmount(), savedPiggyBank.getBalance());
-
-        // 5. 정산 승인 처리
-        settlement.approve(piggyBank.getPiggyId(), approveDto.getAdminMemo());
-        Settlement savedSettlement = settlementRepository.save(settlement);
-
-        log.info("정산 승인 완료 - settlementId: {}, piggyId: {}, 입금액: {}",
-            settlementId, piggyBank.getPiggyId(), settlement.getSettlementAmount());
-
-        // 6. 프로젝트 상태를 SETTLEMENT로 변경 (중앙화된 메서드 사용)
-        transitionToSettlement(settlement.getProjectId());
-
-        // 7. 프로젝트 정보 조회
+        // 3. 프로젝트 정보 조회
         Project project = projectRepository.findById(settlement.getProjectId())
             .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
 
-        // 8. Organization 조회 및 정산 승인 완료 이메일 발송
+        // 4. 정산 승인 처리 (기관 계좌로 직접 송금 - 저금통 사용 X)
+        settlement.approve(settlement.getPiggyId(), approveDto.getAdminMemo());
+        Settlement savedSettlement = settlementRepository.save(settlement);
+
+        log.info("정산 승인 완료 - settlementId: {}, 정산금액: {}, 은행: {}, 예금주: {}",
+            settlementId, settlement.getSettlementAmount(),
+            settlement.getBankName(), settlement.getAccountHolder());
+
+        // 5. Finance 도메인 연동: 플랫폼 원장에 기관 계좌 송금 기록
+        recordFinanceForSettlement(savedSettlement, project.getOrgId());
+
+        // 6. 프로젝트 상태를 CLOSED로 변경 (정산 완료 = 프로젝트 종료)
+        transitionToClosed(settlement.getProjectId());
+
+        // 7. Organization 조회 및 정산 승인 완료 이메일 발송
         com.wenect.donation_paltform.domain.organization.entity.Organization organization =
             organizationRepository.findById(project.getOrgId())
                 .orElseThrow(() -> new IllegalArgumentException("기관 정보를 찾을 수 없습니다."));
         settlementEmailService.sendSettlementApprovalEmail(savedSettlement, organization, project.getTitle());
 
-        // 9. 정산 승인 알림 생성
+        // 8. 정산 승인 알림 생성
         try {
             Long userId = organization.getUser().getUserId();
             notificationService.createSettlementApprovalNotification(userId, project.getTitle(), savedSettlement.getSettlementId());
@@ -403,6 +408,83 @@ public class SettlementManagementService {
     @Transactional(readOnly = true)
     public Long getPendingSettlementCount() {
         return settlementRepository.countByStatus(Settlement.SettlementStatus.PENDING);
+    }
+
+    // ==================== Finance 도메인 연동 메서드 ====================
+
+    /**
+     * 정산 승인 시 Finance 도메인에 기록
+     * - 플랫폼 원장에 출금 기록 (기관 정산)
+     * - 거래 내역 기록
+     * - 감사 로그 기록
+     * NOTE: 위넥트 플랫폼은 수수료를 받지 않음
+     */
+    private void recordFinanceForSettlement(Settlement settlement, Long organizationId) {
+        try {
+            Long platformAccountId = platformAccountService.getPrimaryAccountId();
+            BigDecimal settlementAmount = settlement.getSettlementAmount();
+
+            // NOTE: 위넥트 플랫폼은 수수료가 없음 - 전액 기관에 지급
+            BigDecimal netAmount = settlementAmount;
+
+            // 1. 원장에 기관 정산 출금 기록 (기관 계좌로 직접 송금)
+            ledgerService.recordWithdrawal(
+                platformAccountId,
+                LedgerCategory.ORG_SETTLEMENT,
+                netAmount,
+                "Settlement",
+                settlement.getSettlementId(),
+                String.format("기관 정산 출금 - 프로젝트 ID: %d, 은행: %s, 계좌: %s",
+                    settlement.getProjectId(), settlement.getBankName(), settlement.getAccountHolder()),
+                settlement.getProjectId(),
+                organizationId,
+                null,
+                "SYSTEM"
+            );
+
+            // 2. 거래 내역 기록 (기관 계좌로 직접 송금)
+            FinancialTransaction transaction = FinancialTransaction.builder()
+                .transactionCode(FinancialTransaction.generateTransactionCode(
+                    FinancialTransaction.TransactionType.ORG_SETTLEMENT))
+                .transactionType(FinancialTransaction.TransactionType.ORG_SETTLEMENT)
+                .amount(settlementAmount)
+                .feeAmount(BigDecimal.ZERO)  // 수수료 없음
+                .netAmount(netAmount)
+                .fromAccountType(FinancialTransaction.AccountType.PLATFORM)
+                .fromAccountId(platformAccountId)
+                .toAccountType(FinancialTransaction.AccountType.ORGANIZATION)  // 기관 계좌로 직접 송금
+                .toAccountId(organizationId)
+                .projectId(settlement.getProjectId())
+                .organizationId(organizationId)
+                .settlementId(settlement.getSettlementId())
+                .status(FinancialTransaction.TransactionStatus.COMPLETED)
+                .description(String.format("기관 정산 - %s %s", settlement.getBankName(), settlement.getAccountHolder()))
+                .performedByType("SYSTEM")
+                .build();
+            transaction.complete();
+            financialTransactionRepository.save(transaction);
+
+            // 3. 감사 로그 기록
+            FinancialAuditLog auditLog = FinancialAuditLog.builder()
+                .action(FinancialAuditLog.AuditAction.APPROVE)
+                .entityType("Settlement")
+                .entityId(settlement.getSettlementId())
+                .performedBy(0L) // 시스템
+                .performedByRole(FinancialAuditLog.PerformerRole.SYSTEM)
+                .projectId(settlement.getProjectId())
+                .organizationId(organizationId)
+                .description(String.format("기관 정산 승인 - 금액: %s (수수료 없음), 은행: %s, 예금주: %s",
+                    settlementAmount, settlement.getBankName(), settlement.getAccountHolder()))
+                .build();
+            financialAuditLogRepository.save(auditLog);
+
+            log.info("Finance 기록 완료 - settlementId: {}, amount: {} (수수료 없음, 기관 계좌로 직접 송금)",
+                settlement.getSettlementId(), settlementAmount);
+
+        } catch (Exception e) {
+            // Finance 기록 실패해도 정산 승인은 진행 (로그만 남김)
+            log.error("Finance 기록 실패 - settlementId: {}", settlement.getSettlementId(), e);
+        }
     }
 
     /**

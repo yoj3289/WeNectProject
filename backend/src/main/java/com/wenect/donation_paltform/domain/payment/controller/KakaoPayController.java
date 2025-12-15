@@ -13,7 +13,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -27,9 +26,6 @@ public class KakaoPayController {
 
     private final KakaoPayService kakaoPayService;
     private final DonationService donationService;
-
-    // TID를 임시로 저장할 맵 (실제로는 Redis 등 사용 권장)
-    private final Map<String, String> tidStorage = new HashMap<>();
 
     /**
      * 결제 준비 API - 기부 내역 생성 및 카카오페이 결제 준비

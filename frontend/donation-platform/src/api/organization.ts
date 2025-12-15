@@ -127,3 +127,70 @@ export const getOrganizationProjects = async (
 
   return apiClient.get<PageResponse<Project>>(`/organization/projects?${params.toString()}`);
 };
+
+/**
+ * 기관 프로필 응답 타입
+ */
+export interface OrganizationProfile {
+  orgId: number;
+  orgName: string;
+  registrationNumber: string;
+  representative: string;
+  email: string;
+  phone: string;
+  profileImage: string | null;
+  bio: string | null;
+  approvalStatus: string;
+  verified: boolean;
+  createdAt: string;
+  profileIncomplete: boolean;
+}
+
+/**
+ * 기관 프로필 수정 요청 타입
+ */
+export interface OrganizationProfileUpdateRequest {
+  bio?: string;
+}
+
+/**
+ * 기관 프로필 조회
+ * GET /api/organization/profile
+ */
+export const getOrganizationProfile = async (): Promise<OrganizationProfile> => {
+  const response = await apiClient.get<{ success: boolean; data: OrganizationProfile; message: string }>(
+    '/organization/profile'
+  );
+  return response.data;
+};
+
+/**
+ * 기관 프로필 수정 (소개글)
+ * PUT /api/organization/profile
+ */
+export const updateOrganizationProfile = async (
+  data: OrganizationProfileUpdateRequest
+): Promise<OrganizationProfile> => {
+  const response = await apiClient.put<{ success: boolean; data: OrganizationProfile; message: string }>(
+    '/organization/profile',
+    data
+  );
+  return response.data;
+};
+
+/**
+ * 기관 프로필 이미지 수정
+ * POST /api/organization/profile/image
+ */
+export const updateOrganizationProfileImage = async (
+  profileImage: File
+): Promise<OrganizationProfile> => {
+  const formData = new FormData();
+  formData.append('profileImage', profileImage);
+
+  const response = await apiClient.post<{ success: boolean; data: OrganizationProfile; message: string }>(
+    '/organization/profile/image',
+    formData
+  );
+  return response.data;
+};

@@ -1,6 +1,5 @@
 package com.wenect.donation_paltform.domain.user.scheduler;
 
-import com.wenect.donation_paltform.domain.auth.entity.User;
 import com.wenect.donation_paltform.domain.auth.repository.UserRepository;
 import com.wenect.donation_paltform.domain.user.entity.UserDeletionLog;
 import com.wenect.donation_paltform.domain.user.repository.UserDeletionLogRepository;

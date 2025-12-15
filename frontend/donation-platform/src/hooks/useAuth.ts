@@ -23,8 +23,15 @@ export function useAuth() {
         return;
       }
 
+      // user에 profileIncomplete 정보 추가
+      const userWithProfile = {
+        ...data.user,
+        profileImageUrl: data.user.profileImage,
+        profileIncomplete: data.profileIncomplete,
+      };
+
       // Zustand 스토어 업데이트
-      setLogin(data.token!, data.user);
+      setLogin(data.token!, userWithProfile);
 
       // API 클라이언트에 토큰 설정
       apiClient.setToken(data.token!);

@@ -53,6 +53,15 @@ dependencies {
 
 	// 이메일 발송 의존성
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+	// WebSocket 실시간 알림
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+	// Redis 캐싱
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+	// SMS 발송 (NCP SENS API 연동을 위한 HTTP Client)
+	implementation 'org.apache.httpcomponents.client5:httpclient5:5.3'
 }
 
 tasks.named('test') {

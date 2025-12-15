@@ -209,4 +209,15 @@ public interface DonationRepository extends JpaRepository<Donation, Long> {
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);
 
+    // ==================== Finance 도메인 연동용 ====================
+
+    /**
+     * 결제 수단, 상태, 기간으로 기부 내역 조회 (PG 정산용)
+     */
+    List<Donation> findByPaymentMethodAndStatusAndDonatedAtBetween(
+            Donation.PaymentMethod paymentMethod,
+            Donation.DonationStatus status,
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime);
+
 }

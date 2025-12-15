@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, TrendingUp, BarChart3, CheckCircle, Clock, Wallet, Loader2, AlertCircle, Edit, Eye, Plus, Target, Users, LayoutGrid, List } from 'lucide-react';
+import { Search, TrendingUp, BarChart3, CheckCircle, Clock, Wallet, Loader2, AlertCircle, Edit, Eye, Plus, Target, Users, LayoutGrid, List, User } from 'lucide-react';
 import { useOrganizationStats, useOrganizationProjects } from '../../hooks/useOrganization';
 import { useUpdateProject } from '../../hooks/useProjects';
 import { getCategoryLabel } from '../../types';
@@ -11,8 +11,12 @@ import { SettlementRequestModal } from '../../components/settlement/SettlementRe
 import EditProjectModal from '../../components/project/EditProjectModal';
 import { getProjectStatusLabel, getProjectStatusBadgeStyle, canEditProject } from '../../utils/projectStatus';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import { useAuthStore } from '../../stores/authStore';
 
 const OrganizationDashboardPage: React.FC = () => {
+  // Auth State
+  const { user } = useAuthStore();
+
   // State
   const [statusFilter, setStatusFilter] = useState<'active' | 'settlement' | ''>('');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
@@ -112,6 +116,14 @@ const OrganizationDashboardPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               <Link
+                to="/organization/profile"
+                className="inline-flex items-center gap-2 px-4 sm:px-6 py-3 bg-white/10 border border-white/20 text-white rounded-xl font-medium hover:bg-white/20 transition-colors"
+              >
+                <User size={18} />
+                <span className="hidden sm:inline">프로필 관리</span>
+                <span className="sm:hidden">프로필</span>
+              </Link>
+              <Link
                 to="/organization/statistics"
                 className="inline-flex items-center gap-2 px-4 sm:px-6 py-3 bg-white/10 border border-white/20 text-white rounded-xl font-medium hover:bg-white/20 transition-colors"
               >
@@ -182,6 +194,25 @@ const OrganizationDashboardPage: React.FC = () => {
                 </div>
                 <p className="text-lg sm:text-2xl font-light text-white break-all">{formatAmount(stats.totalFunding)}원</p>
               </div>
+            </div>
+          )}
+
+          {/* 프로필 미완성 알림 */}
+          {user?.profileIncomplete && (
+            <div className="mt-6 bg-amber-500/20 backdrop-blur-sm border border-amber-500/30 rounded-xl p-4 flex items-start gap-3">
+              <AlertCircle className="text-amber-400 flex-shrink-0 mt-0.5" size={20} />
+              <div className="flex-1">
+                <h3 className="font-bold text-white">기관 프로필을 완성해주세요</h3>
+                <p className="text-sm text-white/80 mt-1">
+                  기관 로고 이미지를 등록하면 후원자들에게 더 신뢰감을 줄 수 있습니다.
+                </p>
+              </div>
+              <Link
+                to="/organization/profile"
+                className="px-4 py-2 bg-amber-500 text-stone-900 rounded-lg font-bold text-sm hover:bg-amber-400 transition-colors whitespace-nowrap"
+              >
+                프로필 수정
+              </Link>
             </div>
           )}
         </div>

@@ -24,7 +24,7 @@ public class EncryptionConfig {
     public void init() {
         if (secretKey == null || secretKey.isEmpty()) {
             log.warn("암호화 키가 설정되지 않았습니다. 기본 키를 사용합니다.");
-            accountSecretKey = "WeNectDonation2024SecureKey!!";
+            accountSecretKey = "WeNectDonation2024SecureKey!@#$%^"; // 정확히 32바이트
         } else {
             accountSecretKey = secretKey;
             log.info("암호화 키가 정상적으로 로드되었습니다.");

@@ -164,6 +164,44 @@ public class FileStorageService {
     }
 
     /**
+     * 기관 프로필 이미지 (로고) 저장
+     */
+    public String saveOrganizationImage(MultipartFile file) throws IOException {
+        // 안전한 파일명 생성 (한글 제거)
+        String fileName = generateSafeFileName(file.getOriginalFilename());
+
+        // 절대 경로 사용
+        Path uploadPath = getAbsoluteUploadPath("organizations/logos");
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        Path filePath = uploadPath.resolve(fileName);
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+        return "/uploads/organizations/logos/" + fileName;
+    }
+
+    /**
+     * 사용자 프로필 이미지 저장
+     */
+    public String saveUserProfileImage(MultipartFile file) throws IOException {
+        // 안전한 파일명 생성 (한글 제거)
+        String fileName = generateSafeFileName(file.getOriginalFilename());
+
+        // 절대 경로 사용
+        Path uploadPath = getAbsoluteUploadPath("users/profiles");
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        Path filePath = uploadPath.resolve(fileName);
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+        return "/uploads/users/profiles/" + fileName;
+    }
+
+    /**
      * 파일 삭제 시
      * @param filePath 삭제할 파일의 경로 (예: "/uploads/projects/images/123456_image.jpg")
      */

@@ -75,6 +75,28 @@ public class RemoteFileStorageService {
     }
 
     /**
+     * 기관 프로필 이미지 (로고) 저장 (로컬 또는 원격)
+     */
+    public String saveOrganizationImage(MultipartFile file) throws IOException {
+        if (remoteUploadEnabled) {
+            return uploadToRemote(file, "/api/files/upload/organization-image");
+        } else {
+            return localFileStorageService.saveOrganizationImage(file);
+        }
+    }
+
+    /**
+     * 사용자 프로필 이미지 저장 (로컬 또는 원격)
+     */
+    public String saveUserProfileImage(MultipartFile file) throws IOException {
+        if (remoteUploadEnabled) {
+            return uploadToRemote(file, "/api/files/upload/user-profile");
+        } else {
+            return localFileStorageService.saveUserProfileImage(file);
+        }
+    }
+
+    /**
      * 원격 서버로 파일 업로드
      */
     private String uploadToRemote(MultipartFile file, String endpoint) throws IOException {

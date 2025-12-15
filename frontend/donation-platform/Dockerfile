@@ -29,8 +29,9 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy built assets from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose port
+# Expose ports
 EXPOSE 80
+EXPOSE 443
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --retries=5 \

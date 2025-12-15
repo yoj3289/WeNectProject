@@ -3,11 +3,9 @@ package com.wenect.donation_paltform.domain.admin.service;
 import com.wenect.donation_paltform.domain.admin.dto.CategoryDistributionResponse;
 import com.wenect.donation_paltform.domain.admin.dto.DashboardStatsResponse;
 import com.wenect.donation_paltform.domain.auth.repository.UserRepository;
-import com.wenect.donation_paltform.domain.donation.entity.Donation;
 import com.wenect.donation_paltform.domain.donation.repository.DonationRepository;
 import com.wenect.donation_paltform.domain.organization.entity.Organization;
 import com.wenect.donation_paltform.domain.organization.repository.OrganizationRepository;
-import com.wenect.donation_paltform.domain.project.entity.Project;
 import com.wenect.donation_paltform.domain.project.repository.ProjectRepository;
 import com.wenect.donation_paltform.domain.settlement.entity.Settlement;
 import com.wenect.donation_paltform.domain.settlement.repository.SettlementRepository;
@@ -25,6 +23,10 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * 관리자 대시보드 서비스
+ * [성능 개선] Redis 캐싱 적용
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -40,7 +42,9 @@ public class AdminDashboardService {
     /**
      * 대시보드 통계 조회
      * [성능 개선] findAll() -> 집계 쿼리로 변경
+     * [캐싱] Redis 캐시 적용 - 15분간 캐시 유지
      */
+    @Cacheable(value = "dashboardStats", key = "'adminDashboard'")
     public DashboardStatsResponse getDashboardStats() {
         // 1. 오늘 기부 금액 (집계 쿼리 사용)
         LocalDateTime todayStart = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);

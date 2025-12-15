@@ -23,7 +23,7 @@ public class AccountNumberConverter implements AttributeConverter<String, String
     private static final String ALGORITHM = "AES/GCM/NoPadding";
     private static final int GCM_IV_LENGTH = 12;
     private static final int GCM_TAG_LENGTH = 128;
-    private static final String DEFAULT_KEY = "WeNectDonation2024SecureKey!!";
+    private static final String DEFAULT_KEY = "WeNectDonation2024SecureKey!@#$%^"; // 정확히 32바이트
 
     private String getSecretKey() {
         String key = EncryptionConfig.getAccountSecretKey();
