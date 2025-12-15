@@ -10,6 +10,7 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-6DB33F?style=flat-square&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat-square&logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
 
 [데모 사이트](http://140.245.64.178) | [기능 소개](#-주요-기능) | [기술 스택](#️-기술-스택) | [설치 방법](#-설치-및-실행)
 
@@ -23,11 +24,17 @@
 
 기부자와 수혜자를 연결하여 투명하고 신뢰할 수 있는 기부 문화를 만들어갑니다. 개인 및 단체 기부자 모두 쉽고 편리하게 기부에 참여할 수 있으며, 다양한 결제 수단을 지원합니다.
 
-### 🎯 프로젝트 목표
-- 투명한 기부 프로세스 제공
-- 사용자 친화적인 기부 경험
-- 커뮤니티를 통한 기부 문화 확산
-- 안전한 결제 시스템 구축
+### 🎯 프로젝트 특징
+
+> **💡 100% 수수료 무료 플랫폼**
+>
+> WeNect는 플랫폼 수수료, PG 수수료 등 일체의 수수료를 받지 않습니다.
+> 기부자가 기부한 금액이 전액 수혜 기관에 전달됩니다.
+
+- **투명한 기부 프로세스**: 모든 기부 내역과 정산 과정이 투명하게 공개됩니다
+- **실시간 알림 시스템**: WebSocket 기반 실시간 알림으로 기부 현황을 즉시 확인
+- **안전한 결제**: 카카오페이, 토스페이 등 검증된 결제 시스템 연동
+- **커뮤니티**: 기부 문화 확산을 위한 소통 공간
 
 ---
 
@@ -43,34 +50,57 @@
 
 ## ✨ 주요 기능
 
-### 🏠 메인 기능
+### 🏠 기부 기능
 | 기능 | 설명 |
 |------|------|
-| **프로젝트 탐색** | 다양한 기부 프로젝트 검색 및 필터링 |
-| **기부하기** | 카카오페이, 토스페이를 통한 간편 결제 |
-| **프로젝트 등록** | 단체 회원의 기부 프로젝트 생성 |
-| **기부 현황** | 실시간 모금 현황 및 진행률 확인 |
+| **프로젝트 탐색** | 카테고리별 검색, 필터링, 정렬 |
+| **기부하기** | 카카오페이, 토스페이 간편 결제 |
+| **실시간 현황** | 모금 진행률, 기부자 수 실시간 확인 |
+| **저금통** | 개인별 기부금 적립 및 관리 |
 
 ### 👤 회원 기능
 | 기능 | 설명 |
 |------|------|
-| **회원가입** | 개인/단체 회원 가입 (약관 동의 포함) |
-| **로그인/로그아웃** | JWT 기반 인증 |
-| **마이페이지** | 기부 내역, 프로필 관리 |
-| **프로필 수정** | 개인정보 및 프로필 이미지 변경 |
+| **회원가입** | 개인(USER) / 단체(ORGANIZATION) 회원 구분 |
+| **JWT 인증** | Access Token 기반 보안 인증 |
+| **마이페이지** | 기부 내역, 저금통, 프로필 관리 |
+| **비밀번호 찾기** | 이메일 기반 비밀번호 재설정 |
+
+### 🏢 기관(단체) 기능
+| 기능 | 설명 |
+|------|------|
+| **프로젝트 등록** | 기부 프로젝트 생성 및 관리 |
+| **정산 요청** | 모금 완료 후 정산 신청 |
+| **대시보드** | 프로젝트별 기부 현황 통계 |
+| **프로필 관리** | 기관 정보 및 계좌 정보 관리 |
+
+### 🔔 알림 시스템
+| 기능 | 설명 |
+|------|------|
+| **실시간 알림** | WebSocket 기반 즉시 알림 |
+| **SMS 알림** | 중요 이벤트 문자 알림 (NCP SENS) |
+| **알림 설정** | 알림 유형별 수신 설정 |
+
+### 👨‍💼 관리자 기능
+| 기능 | 설명 |
+|------|------|
+| **기관 승인** | 신규 기관 가입 심사 및 승인/반려 |
+| **프로젝트 관리** | 프로젝트 승인, 수정, 삭제 |
+| **정산 관리** | 정산 요청 승인 및 송금 처리 |
+| **통계 대시보드** | 플랫폼 전체 통계 조회 |
 
 ### 💬 커뮤니티
 | 기능 | 설명 |
 |------|------|
 | **게시글 작성** | 기부 후기, 정보 공유 |
-| **댓글/대댓글** | 게시글에 대한 소통 |
+| **댓글/대댓글** | 소통 및 토론 |
 | **좋아요** | 게시글 및 댓글 좋아요 |
-| **링크 공유** | 댓글 링크 복사 및 공유 |
+| **링크 공유** | SNS 공유 기능 |
 
 ### 💳 결제 시스템
 | 결제 수단 | 상태 |
 |-----------|------|
-| **토스페이** | ✅ 연동 완료 (일반 카드 결제) |
+| **토스페이** | ✅ 연동 완료 |
 | **카카오페이** | ✅ 연동 완료 |
 
 ---
@@ -84,9 +114,12 @@
 | Spring Boot | 3.5.6 | 웹 프레임워크 |
 | Spring Security | - | 인증/인가 |
 | Spring Data JPA | - | ORM |
+| Spring WebSocket | - | 실시간 통신 |
 | MySQL | 8.0 | 데이터베이스 |
+| Redis | - | 캐싱 (성능 최적화) |
 | JWT | - | 토큰 기반 인증 |
 | Argon2 | - | 비밀번호 암호화 |
+| AES-256 | - | 계좌번호 암호화 |
 
 ### Frontend
 | 기술 | 버전 | 설명 |
@@ -106,14 +139,18 @@
 |------|------|
 | Docker | 컨테이너화 |
 | Docker Compose | 멀티 컨테이너 관리 |
+| Kubernetes | 오케스트레이션 (k8s) |
 | Nginx | 리버스 프록시 & 정적 파일 서빙 |
 | Oracle Cloud | 클라우드 인프라 (VM) |
+| Jenkins | CI/CD 파이프라인 |
 
-### 결제 연동
+### 외부 서비스 연동
 | 서비스 | 설명 |
 |--------|------|
-| Toss Payments | 토스페이 일반 결제 |
+| Toss Payments | 토스페이 결제 |
 | Kakao Pay | 카카오페이 결제 |
+| NCP SENS | SMS 문자 알림 |
+| Spring Mail | 이메일 발송 |
 
 ---
 
@@ -125,13 +162,24 @@ WeNect/
 │   ├── src/main/java/
 │   │   └── com/wenect/donation_paltform/
 │   │       ├── domain/
-│   │       │   ├── auth/         # 인증/인가
+│   │       │   ├── auth/         # 인증/인가 (로그인, 회원가입)
 │   │       │   ├── user/         # 사용자 관리
+│   │       │   ├── organization/ # 기관(단체) 관리
 │   │       │   ├── project/      # 기부 프로젝트
 │   │       │   ├── donation/     # 기부 내역
 │   │       │   ├── payment/      # 결제 (카카오페이, 토스페이)
+│   │       │   ├── piggybank/    # 저금통 (개인 기부금 적립)
+│   │       │   ├── settlement/   # 정산 관리
+│   │       │   ├── finance/      # 재무/수익 관리
+│   │       │   ├── notification/ # 알림 시스템
+│   │       │   ├── statistics/   # 통계
+│   │       │   ├── admin/        # 관리자 기능
 │   │       │   └── community/    # 커뮤니티 (게시글, 댓글)
-│   │       └── global/           # 공통 설정, 보안, 예외처리
+│   │       └── global/
+│   │           ├── config/       # 설정 (Redis, WebSocket, Security)
+│   │           ├── websocket/    # WebSocket 핸들러
+│   │           ├── service/      # 공통 서비스 (SMS, 파일)
+│   │           └── exception/    # 예외 처리
 │   ├── build.gradle
 │   └── Dockerfile
 │
@@ -140,14 +188,24 @@ WeNect/
 │   │   ├── components/           # 재사용 컴포넌트
 │   │   ├── pages/                # 페이지 컴포넌트
 │   │   ├── hooks/                # 커스텀 훅
-│   │   ├── lib/                  # 유틸리티
-│   │   └── store/                # 상태 관리
+│   │   ├── api/                  # API 호출
+│   │   ├── stores/               # Zustand 상태 관리
+│   │   └── lib/                  # 유틸리티
 │   ├── package.json
 │   ├── Dockerfile
 │   └── nginx.conf
 │
+├── k8s/                          # Kubernetes 매니페스트
+│   ├── namespace.yaml
+│   ├── configmap.yaml
+│   ├── secret.yaml
+│   ├── mysql-deployment.yaml
+│   ├── backend-deployment.yaml
+│   ├── frontend-deployment.yaml
+│   └── ingress.yaml
+│
 ├── docker-compose.yml            # Docker 구성
-├── uploads/                      # 업로드 파일 저장소
+├── Jenkinsfile                   # CI/CD 파이프라인
 └── README.md
 ```
 
@@ -158,6 +216,7 @@ WeNect/
 ### 사전 요구사항
 - Docker & Docker Compose
 - (선택) Java 17, Node.js 18+
+- (선택) Redis Server
 
 ### Docker로 실행 (권장)
 
@@ -189,14 +248,40 @@ npm install
 npm run dev
 ```
 
+**Redis (캐싱 사용 시)**
+```bash
+# Windows: Redis 설치 후 실행
+redis-server
+
+# Docker로 실행
+docker run -d -p 6379:6379 redis:alpine
+```
+
 ---
 
 ## 🔧 환경 설정
 
 ### Backend 설정 파일
-- `application.yml` - 기본 설정
-- `application-prod.yml` - 운영 환경
-- `application-pay.yml` - 결제 API 키 (gitignore)
+| 파일 | 설명 |
+|------|------|
+| `application.properties` | 기본 설정 (DB, Redis, SMS) |
+| `application-pay.yml` | 결제 API 키 (gitignore) |
+
+### 주요 설정 항목
+
+```properties
+# Redis 캐싱
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
+
+# SMS (NCP SENS)
+sms.ncp.enabled=false
+sms.ncp.access-key=YOUR_ACCESS_KEY
+sms.ncp.secret-key=YOUR_SECRET_KEY
+
+# 계좌번호 암호화 (AES-256)
+encryption.account.secret-key=YOUR_SECRET_KEY
+```
 
 ### Frontend 환경 변수
 ```env
@@ -204,28 +289,6 @@ npm run dev
 VITE_API_BASE_URL=http://localhost:8080/api
 VITE_IMAGE_BASE_URL=http://140.245.64.178
 ```
-
----
-
-## 📱 스크린샷
-
-| 메인 페이지 | 프로젝트 상세 |
-|-------------|---------------|
-| 기부 프로젝트 목록 | 프로젝트 정보 및 기부하기 |
-
-| 커뮤니티 | 결제 |
-|----------|------|
-| 게시글/댓글 | 토스페이/카카오페이 |
-
----
-
-## 🔐 보안
-
-- **비밀번호 암호화**: Argon2
-- **인증**: JWT (Access Token)
-- **CORS**: 설정 완료
-- **환경 변수**: Git 제외 (.gitignore)
-- **API 키**: 별도 설정 파일로 관리
 
 ---
 
@@ -237,6 +300,7 @@ VITE_IMAGE_BASE_URL=http://140.245.64.178
 | POST | `/api/auth/signup` | 회원가입 |
 | POST | `/api/auth/login` | 로그인 |
 | GET | `/api/auth/me` | 내 정보 조회 |
+| POST | `/api/auth/password/reset` | 비밀번호 재설정 |
 
 ### 프로젝트
 | Method | Endpoint | 설명 |
@@ -253,6 +317,13 @@ VITE_IMAGE_BASE_URL=http://140.245.64.178
 | POST | `/api/payments/kakao/ready` | 카카오페이 결제 준비 |
 | POST | `/api/payments/kakao/approve` | 카카오페이 결제 승인 |
 
+### 알림
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/notifications` | 알림 목록 |
+| PUT | `/api/notifications/{id}/read` | 알림 읽음 처리 |
+| WS | `/ws/notifications` | WebSocket 실시간 알림 |
+
 ### 커뮤니티
 | Method | Endpoint | 설명 |
 |--------|----------|------|
@@ -260,6 +331,39 @@ VITE_IMAGE_BASE_URL=http://140.245.64.178
 | POST | `/api/community/posts` | 게시글 작성 |
 | GET | `/api/community/posts/{id}/comments` | 댓글 목록 |
 | POST | `/api/community/posts/{id}/comments` | 댓글 작성 |
+
+---
+
+## 🔐 보안
+
+- **비밀번호 암호화**: Argon2 (OWASP 권장)
+- **계좌번호 암호화**: AES-256 (JPA Converter)
+- **인증**: JWT Access Token
+- **CORS**: 화이트리스트 기반 설정
+- **환경 변수**: Git 제외 (.gitignore)
+- **API 키**: 별도 설정 파일로 관리
+
+---
+
+## 📝 업데이트 로그
+
+### v1.1.0 (2025.12)
+- ✨ WebSocket 실시간 알림 시스템 추가
+- ✨ Redis 캐싱 적용 (통계, 대시보드)
+- ✨ SMS 알림 연동 (NCP SENS)
+- ✨ 기관 프로필 관리 기능 추가
+- 🔧 정산 시스템 개선 (직접 계좌 송금)
+- 🔧 수수료 정책 변경 (0% 수수료)
+- 🐛 계좌번호 암호화 초기화 문제 해결
+- 🐛 TypeScript 빌드 에러 수정
+
+### v1.0.0 (2025.11)
+- 기본 기부 플랫폼 기능 구현
+- 회원가입/로그인 (개인/단체)
+- 프로젝트 CRUD
+- 카카오페이/토스페이 결제 연동
+- 커뮤니티 (게시글, 댓글, 대댓글)
+- 좋아요, 링크 공유 기능
 
 ---
 
@@ -271,21 +375,8 @@ VITE_IMAGE_BASE_URL=http://140.245.64.178
 |------|------|
 | **Backend** | Spring Boot, API 개발, DB 설계 |
 | **Frontend** | React, UI/UX 구현 |
-| **DevOps** | Docker, 배포, 인프라 |
+| **DevOps** | Docker, K8s, CI/CD, 인프라 |
 | **기획** | 서비스 기획, 요구사항 정의 |
-
----
-
-## 📝 업데이트 로그
-
-### v1.0.0 (2025.11)
-- 기본 기부 플랫폼 기능 구현
-- 회원가입/로그인 (개인/단체)
-- 프로젝트 CRUD
-- 카카오페이 결제 연동
-- 토스페이 결제 연동
-- 커뮤니티 (게시글, 댓글, 대댓글)
-- 좋아요, 링크 공유 기능
 
 ---
 
@@ -314,5 +405,7 @@ VITE_IMAGE_BASE_URL=http://140.245.64.178
 <div align="center">
 
 **Made with ❤️ by WeNect Team**
+
+*"기부의 가치를 연결합니다"*
 
 </div>
