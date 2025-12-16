@@ -67,10 +67,35 @@ const OrganizationProjectStatisticsPage: React.FC = () => {
     }
   };
 
+  // 로딩 상태 - 헤더는 표시하고 콘텐츠만 로딩 스피너
   if (summaryLoading || projectsLoading) {
     return (
-      <div className="bg-stone-50 min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" message="프로젝트 통계를 불러오는 중..." />
+      <div className="bg-stone-50 min-h-screen">
+        {/* 다크 헤더 */}
+        <div className="bg-stone-900 text-white">
+          <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <button
+                onClick={() => navigate('/organization/dashboard')}
+                className="p-2 hover:bg-stone-800 rounded-xl transition-colors"
+              >
+                <ArrowLeft size={20} className="sm:w-6 sm:h-6" />
+              </button>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 bg-amber-500/20 rounded-lg sm:rounded-xl">
+                  <BarChart3 className="text-amber-400 w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div>
+                  <h1 className="text-lg sm:text-2xl font-bold">프로젝트 통계</h1>
+                  <p className="text-stone-400 text-xs sm:text-sm mt-0.5">통계 정보를 불러오는 중...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-8">
+          <LoadingSpinner size="lg" message="프로젝트 통계를 불러오는 중..." />
+        </div>
       </div>
     );
   }
