@@ -30,13 +30,16 @@ public class PostController {
      */
     @GetMapping
     public ResponseEntity<ApiResponse<PostListResponse>> getPosts(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             @RequestParam(value = "type", required = false) String type,
             @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
 
         try {
-            PostListResponse response = postService.getPosts(type, search, page, size);
+            // 로그인한 사용자인 경우 userId 추출 (좋아요 상태 확인용)
+            Long userId = getUserIdFromTokenOptional(authHeader);
+            PostListResponse response = postService.getPosts(type, search, page, size, userId);
             return ResponseEntity.ok(ApiResponse.success(response, "게시글 목록 조회 성공"));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(
@@ -49,9 +52,13 @@ public class PostController {
      * GET /api/posts/{id}
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PostResponse>> getPost(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<PostResponse>> getPost(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable Long id) {
         try {
-            PostResponse response = postService.getPost(id);
+            // 로그인한 사용자인 경우 userId 추출 (좋아요 상태 확인용)
+            Long userId = getUserIdFromTokenOptional(authHeader);
+            PostResponse response = postService.getPost(id, userId);
             return ResponseEntity.ok(ApiResponse.success(response, "게시글 조회 성공"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(
@@ -193,7 +200,7 @@ public class PostController {
     }
 
     /**
-     * JWT 토큰에서 userId 추출
+     * JWT 토큰에서 userId 추출 (필수)
      */
     private Long getUserIdFromToken(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -202,5 +209,21 @@ public class PostController {
 
         String token = authHeader.substring(7);
         return jwtTokenProvider.getUserId(token);
+    }
+
+    /**
+     * JWT 토큰에서 userId 추출 (선택 - 토큰이 없으면 null 반환)
+     */
+    private Long getUserIdFromTokenOptional(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return null;
+        }
+
+        try {
+            String token = authHeader.substring(7);
+            return jwtTokenProvider.getUserId(token);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
