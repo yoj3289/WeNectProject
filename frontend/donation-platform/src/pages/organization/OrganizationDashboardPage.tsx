@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, TrendingUp, BarChart3, CheckCircle, Clock, Wallet, Loader2, AlertCircle, Edit, Eye, Plus, Target, Users, LayoutGrid, List, User } from 'lucide-react';
+import { Search, TrendingUp, BarChart3, CheckCircle, Clock, Wallet, Loader2, AlertCircle, Edit, Eye, Plus, Target, Users, LayoutGrid, List, ArrowLeft } from 'lucide-react';
 import { useOrganizationStats, useOrganizationProjects } from '../../hooks/useOrganization';
 import { useUpdateProject } from '../../hooks/useProjects';
 import { getCategoryLabel } from '../../types';
@@ -107,6 +107,13 @@ const OrganizationDashboardPage: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-transparent to-stone-900" />
 
         <div className="relative max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-12">
+          <Link
+            to="/profile"
+            className="inline-flex items-center gap-2 text-stone-400 hover:text-white mb-6 transition-colors"
+          >
+            <ArrowLeft size={20} />
+            <span>돌아가기</span>
+          </Link>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <p className="text-amber-400 uppercase tracking-[0.3em] text-xs mb-3">Dashboard</p>
@@ -115,14 +122,6 @@ const OrganizationDashboardPage: React.FC = () => {
               </h1>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-              <Link
-                to="/organization/profile"
-                className="inline-flex items-center gap-2 px-4 sm:px-6 py-3 bg-white/10 border border-white/20 text-white rounded-xl font-medium hover:bg-white/20 transition-colors"
-              >
-                <User size={18} />
-                <span className="hidden sm:inline">프로필 관리</span>
-                <span className="sm:hidden">프로필</span>
-              </Link>
               <Link
                 to="/organization/statistics"
                 className="inline-flex items-center gap-2 px-4 sm:px-6 py-3 bg-white/10 border border-white/20 text-white rounded-xl font-medium hover:bg-white/20 transition-colors"

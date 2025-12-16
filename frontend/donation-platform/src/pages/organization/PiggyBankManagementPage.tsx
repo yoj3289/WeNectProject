@@ -6,6 +6,7 @@ import { usePiggyBankByProject, usePiggyBankDetail } from '../../hooks/usePiggyB
 import { useCloseProjectSettlement, useProject } from '../../hooks/useProjects';
 import { WithdrawalModal } from '../../components/piggybank/WithdrawalModal';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import type { Expense } from '../../types';
 
 /**
@@ -147,41 +148,13 @@ const PiggyBankManagementPage: React.FC = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="bg-stone-50 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Wallet className="w-16 h-16 text-stone-300 mx-auto mb-4 animate-pulse" />
-          <p className="text-stone-500">저금통 정보를 불러오는 중...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isError || !piggyBank) {
-    return (
-      <div className="bg-stone-50 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
-          <p className="text-stone-600 mb-4">저금통 정보를 불러오는데 실패했습니다.</p>
-          <button
-            onClick={() => refetch()}
-            className="px-6 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600"
-          >
-            다시 시도
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // 프로젝트 상태 확인
   const isProjectClosed = project?.status?.toUpperCase() === 'CLOSED';
 
-  const canWithdraw = piggyBank.status === 'ACTIVE' && piggyBank.balance > 0 && !isProjectClosed;
+  const canWithdraw = piggyBank?.status === 'ACTIVE' && (piggyBank?.balance ?? 0) > 0 && !isProjectClosed;
   // 잔액이 0이 되면 저금통 상태가 자동으로 WITHDRAWN으로 변경됨
   // 프로젝트가 이미 CLOSED 상태면 종료 버튼 대신 종료됨 상태 표시
-  const canCloseProject = piggyBank.status === 'WITHDRAWN' && piggyBank.balance === 0 && !isProjectClosed;
+  const canCloseProject = piggyBank?.status === 'WITHDRAWN' && piggyBank?.balance === 0 && !isProjectClosed;
 
   // 프로젝트 종료 핸들러
   const handleCloseProject = async () => {
@@ -195,6 +168,80 @@ const PiggyBankManagementPage: React.FC = () => {
       toast.error(error.message || '프로젝트 종료에 실패했습니다.');
     }
   };
+
+  // 로딩 상태 - 전체 페이지 로딩 스피너
+  if (isLoading) {
+    return (
+      <div className="bg-stone-50 min-h-screen">
+        {/* 다크 헤더 */}
+        <div className="bg-stone-900 text-white">
+          <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <button
+                onClick={() => navigate('/organization/dashboard')}
+                className="p-2 hover:bg-stone-800 rounded-xl transition-colors"
+              >
+                <ArrowLeft size={20} className="sm:w-6 sm:h-6" />
+              </button>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 bg-amber-500/20 rounded-lg sm:rounded-xl">
+                  <Wallet className="text-amber-400 w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div>
+                  <h1 className="text-lg sm:text-2xl font-bold">저금통 관리</h1>
+                  <p className="text-stone-400 text-xs sm:text-sm mt-0.5">저금통 정보를 불러오는 중...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-8">
+          <LoadingSpinner size="lg" message="저금통 정보를 불러오는 중..." />
+        </div>
+      </div>
+    );
+  }
+
+  // 에러 상태
+  if (isError || !piggyBank) {
+    return (
+      <div className="bg-stone-50 min-h-screen">
+        {/* 다크 헤더 */}
+        <div className="bg-stone-900 text-white">
+          <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <button
+                onClick={() => navigate('/organization/dashboard')}
+                className="p-2 hover:bg-stone-800 rounded-xl transition-colors"
+              >
+                <ArrowLeft size={20} className="sm:w-6 sm:h-6" />
+              </button>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 bg-amber-500/20 rounded-lg sm:rounded-xl">
+                  <Wallet className="text-amber-400 w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div>
+                  <h1 className="text-lg sm:text-2xl font-bold">저금통 관리</h1>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-2xl p-8 border border-stone-200 text-center">
+            <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+            <p className="text-stone-600 mb-4">저금통 정보를 불러오는데 실패했습니다.</p>
+            <button
+              onClick={() => refetch()}
+              className="px-6 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600"
+            >
+              다시 시도
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-stone-50 min-h-screen">
