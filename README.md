@@ -411,3 +411,5 @@ VITE_IMAGE_BASE_URL=https://wenect.duckdns.org
 *"기부의 가치를 연결합니다"*
 
 </div>
+#   C I / C D   T e s t  
+ 
