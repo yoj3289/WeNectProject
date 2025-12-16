@@ -41,7 +41,7 @@ const COLORS = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4'
 const OrganizationProjectStatisticsPage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(undefined);
-  const [period, setPeriod] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
+  const [period, setPeriod] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
   const [expandedProject, setExpandedProject] = useState<number | null>(null);
 
   const { data: summary, isLoading: summaryLoading } = useOrganizationSummary();
