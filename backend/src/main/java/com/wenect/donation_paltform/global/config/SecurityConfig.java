@@ -41,7 +41,9 @@ public class SecurityConfig {
             "http://localhost:5174",
             "http://localhost:5175",
             "http://localhost:5176",
-            "http://localhost:5177"
+            "http://localhost:5177",
+            "http://140.245.64.178",  // VM IP
+            "https://wenect.duckdns.org"  // 프로덕션 도메인
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
