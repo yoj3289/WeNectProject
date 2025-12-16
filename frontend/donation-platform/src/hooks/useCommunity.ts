@@ -12,13 +12,15 @@ export function usePosts(filters: communityApi.PostFilters = {}) {
 }
 
 /**
- * 게시글 상세
+ * 게시글 상세 (조회수 증가를 위해 매번 API 호출)
  */
 export function usePost(id: number) {
   return useQuery({
     queryKey: ['post', id],
     queryFn: () => communityApi.getPost(id),
     enabled: !!id,
+    staleTime: 0, // 항상 stale 상태로 취급
+    refetchOnMount: 'always', // 마운트 시 항상 refetch
   });
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MessageSquare, Eye, Heart, Search, Reply, Image as ImageIcon, Send, X,
   Pin, Loader2, Link, Edit2, Trash2, Users, Megaphone, HelpCircle,
@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import type { CommunityPost, PostType } from '../../types';
 import { POST_TYPE_LABELS, canWritePostType, getWritablePostTypes } from '../../types';
 import type { UserType } from '../../types';
-import { usePosts, useLikePost, useCreateComment, useComments, useLikeComment, useUpdateComment, useDeleteComment } from '../../hooks/useCommunity';
+import { usePosts, usePost, useLikePost, useCreateComment, useComments, useLikeComment, useUpdateComment, useDeleteComment } from '../../hooks/useCommunity';
 import { createPost } from '../../api/community';
 import { useAuth } from '../../hooks/useAuth';
 import ConfirmModal from '../../components/common/ConfirmModal';
@@ -84,7 +84,7 @@ const BoardPage: React.FC<BoardPageProps> = ({
 
   const { user } = useAuth();
 
-  const { data: postsData, isLoading, isError } = usePosts({
+  const { data: postsData, isLoading, isError, refetch: refetchPosts } = usePosts({
     type: selectedCategory === 'all' ? undefined : selectedCategory,
     keyword: searchTerm
   });
@@ -96,6 +96,22 @@ const BoardPage: React.FC<BoardPageProps> = ({
   const deleteCommentMutation = useDeleteComment();
 
   const { data: commentsData } = useComments(selectedPost?.id || 0);
+
+  // 게시글 상세 조회 API 호출 (조회수 증가를 위해)
+  const { data: postDetailData, refetch: refetchPostDetail } = usePost(selectedPost?.id || 0);
+
+  // 서버에서 게시글 상세 데이터가 오면 selectedPost 업데이트
+  useEffect(() => {
+    if (postDetailData && selectedPost) {
+      setSelectedPost(prev => prev ? {
+        ...prev,
+        views: postDetailData.viewCount,
+        likes: postDetailData.likeCount,
+        isLiked: postDetailData.isLiked,
+        commentCount: postDetailData.commentCount
+      } : null);
+    }
+  }, [postDetailData]);
 
   const convertedComments = commentsData?.content
     ?.map(comment => ({
@@ -166,12 +182,15 @@ const BoardPage: React.FC<BoardPageProps> = ({
       return;
     }
     try {
-      await likePostMutation.mutateAsync(selectedPost.id);
+      const response = await likePostMutation.mutateAsync(selectedPost.id);
+      // 서버 응답으로 상태 업데이트
       setSelectedPost(prev => prev ? {
         ...prev,
-        likes: prev.isLiked ? (prev.likes || 1) - 1 : (prev.likes || 0) + 1,
-        isLiked: !prev.isLiked
+        likes: response.likeCount,
+        isLiked: response.isLiked
       } : null);
+      // 게시글 목록과 상세 데이터 새로고침
+      refetchPostDetail();
     } catch (error) {
       toast.error('좋아요 처리에 실패했습니다.');
     }
@@ -589,9 +608,11 @@ const BoardPage: React.FC<BoardPageProps> = ({
               {selectedPost.images && selectedPost.images.length > 0 && (
                 <div className="mt-6 pt-6 border-t border-stone-200">
                   <p className="text-xs text-stone-500 uppercase tracking-wider mb-3">첨부 이미지</p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {selectedPost.images.map((image, index) => (
-                      <img key={index} src={image} alt="" className="w-full h-32 object-cover border border-stone-200" />
+                      <a key={index} href={image} target="_blank" rel="noopener noreferrer" className="block">
+                        <img src={image} alt="" className="w-full h-auto max-h-64 object-contain border border-stone-200 bg-stone-50 cursor-pointer hover:opacity-90 transition-opacity" />
+                      </a>
                     ))}
                   </div>
                 </div>

@@ -40,7 +40,7 @@ public class PostService {
     /**
      * 게시글 목록 조회 (페이징, 필터링, 검색)
      */
-    public PostListResponse getPosts(String type, String search, int page, int size) {
+    public PostListResponse getPosts(String type, String search, int page, int size, Long currentUserId) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<Post> postPage;
 
@@ -59,7 +59,7 @@ public class PostService {
         }
 
         List<PostResponse> content = postPage.getContent().stream()
-                .map(this::convertToResponse)
+                .map(post -> convertToResponse(post, currentUserId))
                 .collect(Collectors.toList());
 
         return PostListResponse.builder()
@@ -75,7 +75,7 @@ public class PostService {
      * 게시글 상세 조회
      */
     @Transactional
-    public PostResponse getPost(Long postId) {
+    public PostResponse getPost(Long postId, Long currentUserId) {
         Post post = postRepository.findByIdAndNotDeleted(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
@@ -83,7 +83,7 @@ public class PostService {
         post.incrementViewCount();
         postRepository.save(post);
 
-        return convertToResponse(post);
+        return convertToResponse(post, currentUserId);
     }
 
     /**
