@@ -16,7 +16,7 @@ class ApiClient {
   constructor() {
     this.axiosInstance = axios.create({
       baseURL: API_BASE_URL,
-      timeout: 30000,
+      timeout: 180000, // 180초 (3분) - 저사양 VM 환경 대응
       headers: {
         'Content-Type': 'application/json',
       },

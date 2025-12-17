@@ -12,8 +12,11 @@ export const queryClient = new QueryClient({
       // 윈도우 포커스 시 자동 재조회 비활성화
       refetchOnWindowFocus: false,
 
-      // 실패 시 재시도 1회
-      retry: 1,
+      // 실패 시 재시도 3회 (저사양 VM 환경 대응)
+      retry: 3,
+
+      // 재시도 간격 (점진적 증가: 1초 → 2초 → 4초)
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
 
       // 데이터가 "신선한" 상태로 유지되는 시간 (5분)
       staleTime: 5 * 60 * 1000,
