@@ -23,6 +23,21 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: wenect-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - wenect-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Spring Boot Backend
   backend:
     build:
@@ -38,10 +53,14 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: none
       SPRING_JPA_SHOW_SQL: "false"
       JWT_SECRET: your-jwt-secret-key-must-be-at-least-256-bits-long-for-security
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      ENCRYPTION_ACCOUNT_SECRET_KEY: "WeNectDonation2024SecureKey!@#$%^"
     ports:
       - "8080:8080"
     depends_on:
       - mysql
+      - redis
     networks:
       - wenect-network
     volumes:
