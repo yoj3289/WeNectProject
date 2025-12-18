@@ -345,7 +345,12 @@ export const getCategoryDistribution = async (): Promise<{ data: CategoryDistrib
  */
 export const getOrganizationApprovals = async (
   filters: OrganizationApprovalFilters = {}
-): Promise<{ content: OrganizationApprovalResponse[]; totalPages: number; currentPage: number }> => {
+): Promise<{
+  content: OrganizationApprovalResponse[];
+  totalPages: number;
+  currentPage: number;
+  stats?: { pending: number; approved: number; rejected: number };
+}> => {
   const params = new URLSearchParams();
 
   Object.entries(filters).forEach(([key, value]) => {

@@ -78,6 +78,15 @@ const OrganizationApprovalPage: React.FC<OrganizationApprovalPageProps> = () => 
       setLoading(true);
       const response = await getOrganizationApprovals({ status: statusFilter });
       setApprovals(response.content || []);
+
+      // 백엔드에서 받은 통계 데이터 설정
+      if (response.stats) {
+        setStats({
+          pending: response.stats.pending || 0,
+          approved: response.stats.approved || 0,
+          rejected: response.stats.rejected || 0,
+        });
+      }
     } catch (error) {
       console.error('기관 목록 조회 실패:', error);
       toast.error('기관 목록을 불러오는데 실패했습니다.');
